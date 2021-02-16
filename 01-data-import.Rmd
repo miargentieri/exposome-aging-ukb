@@ -2179,8 +2179,7 @@ exposures <- list(
 reduce <- Reduce(function(x, y) merge(x = x, 
                                    y = y, 
                                    by = "eid",  
-                                   all = TRUE), 
-              exposures)
+                                   all = TRUE), exposures)
 
 saveRDS(reduce, file = "/Users/austin.argentieri/OneDrive - Nexus365/DPhil Research/UKB/Datasets/4. Categorized raw datasets/ukb_all_exposures.rds")
 ```
