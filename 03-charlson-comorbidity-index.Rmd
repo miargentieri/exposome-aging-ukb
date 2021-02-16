@@ -1,0 +1,107 @@
+## Coding the Charlson comorbidity index
+
+```{css, echo=FALSE}
+
+pre {
+  max-height: 800px;
+  overflow-y: auto;
+}
+
+pre[class] {
+  max-height: 800px;
+}
+```
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+knitr::opts_chunk$set(warning = FALSE)
+knitr::opts_chunk$set(message = FALSE)
+knitr::opts_chunk$set(results = 'hide')
+knitr::opts_chunk$set(eval =  FALSE)
+```
+
+The Charlson comorbidity index was coded using ICD-10 hospital inpatient codes. Since the goal of using the Charlson comorbidity index was to exclude those with comorbid conditions at baseline, only those ICD-10 codes that have a corresponding date before each participant's recruitment date were used to create the comorbidity index.
+
+<br /> 
+```{r load}
+
+# import UKB ICD 10 codes dataset
+dat <- readRDS("/Users/austin.argentieri/OneDrive - Nexus365/DPhil Research/UKB/Datasets/4. Categorized raw datasets/ukb_ICD10_codes_all_years.rds")
+
+library(comorbidity)
+library(summarytools)
+
+### Prepare data -------------------------------------------------------------------
+
+## creating vectors of column names
+
+# ICD 10 all codes
+prefix <- "f.41270.0."
+suffix <- seq(0,212)
+
+ICD10_all <- paste0(prefix, suffix)
+
+# ICD 10 all codes dates
+prefix <- "f.41280.0."
+suffix <- seq(0,212)
+
+ICD10_all_date <- paste0(prefix, suffix)
+
+# ICD 10 all codes diagnosed before baseline
+prefix <- "ICD10_baseline.0."
+suffix <- seq(0,212)
+
+ICD_baseline <- paste0(prefix, suffix)
+
+# recruitment_date = dat$f.53.0.0
+
+# find col numbers for ICD10 code vars
+icd_first <- match("f.41270.0.0", names(dat)) # col #
+icd_last <- match("f.41270.0.212", names(dat)) # col #
+
+# need to turn ICD10 variables into characters, since ifelse converts factors to integers and messes up the responses
+dat[icd_first:icd_last] <- lapply(dat[icd_first:icd_last], as.character)
+
+## loop to keep only ICD-10 codes registered before baseline
+for(j in seq_along(ICD_baseline)){
+  dat[[ICD_baseline[j]]] <- ifelse(dat[[ICD10_all_date[j]]] < dat$f.53.0.0, 
+                                       dat[[ICD10_all[j]]], 
+                                       NA)
+}
+
+# subset into new df
+df_charlson <- subset(dat, select = c("f.eid", 
+                                      ICD_baseline))
+# stack all columns vertically
+df_charlson <- data.frame(df_charlson[1], 
+                          stack(df_charlson[2:ncol(df_charlson)]))
+
+# order rows by eid
+df_charlson <- df_charlson[order(df_charlson$f.eid), ]
+
+### Calculate Charlson comorbiity index -------------------------------------------------------------------
+
+# calculate charlson comorbidity index
+charlson <- comorbidity(df_charlson, 
+                        id = "f.eid", 
+                        code = "values", 
+                        score = "charlson", 
+                        icd = "icd10", 
+                        assign0 = FALSE)
+
+# check distribution
+dfSummary(charlson$index)
+
+### Save -------------------------------------------------------------------
+
+# save baseline charlson comorbidity index results as RDS
+saveRDS(charlson, 
+        file = "/Users/austin.argentieri/OneDrive - Nexus365/DPhil Research/UKB/Datasets/5. Recoded datasets/ukb_charlson_comorbidity_index_baseline.rds") 
+
+# create df with ICD info used to create baseline charlson index
+df_charlson <- subset(dat, select = c("f.eid", 
+                                          "f.53.0.0",
+                                          ICD_baseline,
+                                          ICD10_all_date))
+```
+
