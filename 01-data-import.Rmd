@@ -1,9 +1,8 @@
+# Creating datasets by variable category. These are used to create a smaller and more manageable, final exposure dataset.
 
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = TRUE)
 ```
-
-# Creating datasets by variable category. These are used to create a smaller and more manageable, final exposure dataset.
 
 ```{r load, results='hide'}
 
