@@ -12,3 +12,6 @@ R code for each stage of our data preparation and analysis are contained in thes
 * Creating figures and plots
 * Conducting correlation analyses
 * Conducting elastic net analyses
+
+
+Files are meant to be run sequentially. Code in file #1 on data import uses a complete raw dataset from the UK Biobank with ALL baseline exposure variables avaialble. 
