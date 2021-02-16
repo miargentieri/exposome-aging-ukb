@@ -14,4 +14,4 @@ R code for each stage of our data preparation and analysis are contained in thes
 * Conducting elastic net analyses
 
 
-Files are meant to be run sequentially. Code in file #1 (data import) requires a complete raw dataset from the UK Biobank with ALL baseline exposure variables avaialble. 
+Files are meant to be run sequentially. Code in file #1 (data import) requires a complete raw dataset from the UK Biobank with ALL baseline variables avaialble. 
