@@ -27,27 +27,13 @@ Chronic disease categories (ICD-10 codes):
   + MS (G35)
 <br />  
 
-```{css, echo=FALSE}
-
-# this is supposed to be css code to make code chunks appear in scrollable boxes
-
-pre {
-  max-height: 800px;
-  overflow-y: auto;
-}
-
-pre[class] {
-  max-height: 800px;
-}
-```
-
 ### Coding ICD-10 chronic disease codes
 <br />  
 ```{r ICD, results='hide', eval=FALSE}
 
 # import list of ICD-10 codes from UKB website: https://biobank.ctsu.ox.ac.uk/crystal/coding.cgi?id=19&nl=1 
 library(readr)
-ICD10list3d <- read_delim("/Users/austin.argentieri/OneDrive - Nexus365/DPhil Research/UKB/Datasets/6. Outcome data/icd10_coding19.tsv", 
+ICD10list3d <- read_delim("icd10_coding19.tsv", 
     "\t", 
     escape_double = FALSE, 
     trim_ws = TRUE)
@@ -265,13 +251,13 @@ library(dplyr)
 ### import mortality data
 
 # date of death data
-dat_long <- read_delim("/Users/austin.argentieri/OneDrive - Nexus365/DPhil Research/UKB/Datasets/6. Outcome data/updated_mortality_july_21.txt",
+dat_long <- read_delim("updated_mortality_july_21.txt",
     "\t", 
     escape_double = FALSE, 
     trim_ws = TRUE)
 
 # cause of death (COD) data. More info here: http://biobank.ndph.ox.ac.uk/showcase/showcase/docs/DeathLinkage.pdf.
-dat_COD <- read_delim("/Users/austin.argentieri/OneDrive - Nexus365/DPhil Research/UKB/Datasets/6. Outcome data/updated_mortality_cause_july_21.txt", # cause of death table. 
+dat_COD <- read_delim("updated_mortality_cause_july_21.txt", # cause of death table. 
     "\t", 
     escape_double = FALSE, 
     trim_ws = TRUE)
@@ -366,7 +352,7 @@ long <- merge(dat_COD,
 ``` {r charlson, results='hide', include=FALSE, eval=FALSE}
 
 ### import charlson comorbidity index for exclusions
-charlson <- readRDS("/Users/austin.argentieri/OneDrive - Nexus365/DPhil Research/UKB/Datasets/5. Recoded datasets/ukb_charlson_comorbidity_index_baseline.rds")
+charlson <- readRDS("ukb_charlson_comorbidity_index_baseline.rds")
 
 # merge baseline charlson dataset (full cohort) with mortality data
 long <- merge(long, 
@@ -451,6 +437,6 @@ long$date_of_death_NCD_all <- as.Date(long$date_of_death_NCD_all,
                                       format = "%d/%m/%y")
 
 # save mortality dataset
-saveRDS(long, file = "/Users/austin.argentieri/OneDrive - Nexus365/DPhil Research/UKB/Datasets/6. Outcome data/ukb_mortality_and comorbidity.rds") # save RDS to file
+saveRDS(long, file = "ukb_mortality_and comorbidity.rds") # save RDS to file
 
 ```
