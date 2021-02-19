@@ -1,17 +1,5 @@
 ## Coding the Charlson comorbidity index
 
-```{css, echo=FALSE}
-
-pre {
-  max-height: 800px;
-  overflow-y: auto;
-}
-
-pre[class] {
-  max-height: 800px;
-}
-```
-
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = TRUE)
 knitr::opts_chunk$set(warning = FALSE)
@@ -26,7 +14,7 @@ The Charlson comorbidity index was coded using ICD-10 hospital inpatient codes. 
 ```{r load}
 
 # import UKB ICD 10 codes dataset
-dat <- readRDS("/Users/austin.argentieri/OneDrive - Nexus365/DPhil Research/UKB/Datasets/4. Categorized raw datasets/ukb_ICD10_codes_all_years.rds")
+dat <- readRDS("ukb_ICD10_codes_all_years.rds")
 
 library(comorbidity)
 library(summarytools)
@@ -95,13 +83,7 @@ dfSummary(charlson$index)
 ### Save -------------------------------------------------------------------
 
 # save baseline charlson comorbidity index results as RDS
-saveRDS(charlson, 
-        file = "/Users/austin.argentieri/OneDrive - Nexus365/DPhil Research/UKB/Datasets/5. Recoded datasets/ukb_charlson_comorbidity_index_baseline.rds") 
+saveRDS(charlson, file = "ukb_charlson_comorbidity_index_baseline.rds") 
 
-# create df with ICD info used to create baseline charlson index
-df_charlson <- subset(dat, select = c("f.eid", 
-                                          "f.53.0.0",
-                                          ICD_baseline,
-                                          ICD10_all_date))
 ```
 
