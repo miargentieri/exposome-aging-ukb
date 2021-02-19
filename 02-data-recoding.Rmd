@@ -10,19 +10,6 @@ knitr::opts_chunk$set(results = 'hide')
 
 The following sections detail the methods and code used to prepare the UK Biobank datasets for analysis. There is no output shown in any of these sections. Instead, all the code used to clean, recode, manipulate, and subset the datasets are shown here for reproducibility and transparency. If you wish to go straight to the analysis output, then skip this section and start with the missing data and imputation analyses in the [Imputation](#imputation) section or with the [Summary statistics](#summary-statistics) section.    
 
-```{css, echo=FALSE}
-
-# css code to make code chunks appear in scrollable boxes
-# 
-# pre {
-#   max-height: 800px;
-#   overflow-y: auto;
-# }
-# 
-# pre[class] {
-#   max-height: 800px;
-# }
-```
 
 ## Cleaning and recoding data
 
@@ -32,7 +19,7 @@ This section shows the code used to clean and recode all of the initial ~800 env
 
 # load raw dataset with all exposures
 
-dat <- readRDS("/Users/austin.argentieri/OneDrive - Nexus365/DPhil Research/UKB/Datasets/4. Categorized raw datasets/ukb_all_exposures_updated.rds")
+dat <- readRDS("ukb_all_exposures_updated.rds")
 
 library(Hmisc)
 library(summarytools)
@@ -4523,5 +4510,5 @@ dat$MET_mins_sum <- as.numeric(dat$MET_mins_sum)
 ```{r save, results='hide', include=FALSE}
 
 # save final dataset
-saveRDS(dat, file = "/Users/austin.argentieri/OneDrive - Nexus365/DPhil Research/UKB/Datasets/5. Recoded datasets/ukb_full_recoded_dataset.rds")
+saveRDS(dat, file = "ukb_full_recoded_dataset.rds")
 ```
