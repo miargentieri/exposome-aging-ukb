@@ -7,7 +7,7 @@ knitr::opts_chunk$set(echo = TRUE)
 ```{r load, results='hide'}
 
 # import main UKB dataset
-dat <- readRDS("/Users/austin.argentieri/OneDrive - Nexus365/DPhil Research/UKB/Datasets/2. First raw dataset from UKB/ukb42114.rds")
+dat <- readRDS("ukb42114.rds")
 
 library(Hmisc)
 ```
@@ -60,7 +60,7 @@ colnames(elf) <- c(
   )
 )
 
-saveRDS(elf, file = "/Users/austin.argentieri/OneDrive - Nexus365/DPhil Research/UKB/Datasets/4. Categorized raw datasets/ukb_elf.rds") # save RDS to file
+saveRDS(elf, file = "ukb_elf.rds")
 ```
 
 ```{r sle, results='hide'}
@@ -91,7 +91,7 @@ colnames(sle) <- c(
   )
 )
 
-saveRDS(sle, file = "/Users/austin.argentieri/OneDrive - Nexus365/DPhil Research/UKB/Datasets/4. Categorized raw datasets/ukb_sle.rds") # save RDS to file
+saveRDS(sle, file = "ukb_sle.rds")
 ```
 
 ```{r social, results='hide'}
@@ -127,7 +127,7 @@ colnames(soc) <- c(
 )
 
 
-saveRDS(soc, file = "/Users/austin.argentieri/OneDrive - Nexus365/DPhil Research/UKB/Datasets/4. Categorized raw datasets/ukb_social.rds") # save RDS to file
+saveRDS(soc, file = "ukb_social.rds")
 ```
 
 ```{r socio_dem, results='hide'}
@@ -260,7 +260,7 @@ colnames(socio_dem) <- c(
   )
 )
 
-saveRDS(socio_dem, file = "/Users/austin.argentieri/OneDrive - Nexus365/DPhil Research/UKB/Datasets/4. Categorized raw datasets/ukb_sociodemographics.rds") # save RDS to file)                     
+saveRDS(socio_dem, file = "ukb_sociodemographics.rds")          
 ```
 
 ```{r fam_health, results='hide'}
@@ -413,7 +413,7 @@ colnames(fam_health) <- c(
   )
 )
 
-saveRDS(fam_health, file = "/Users/austin.argentieri/OneDrive - Nexus365/DPhil Research/UKB/Datasets/4. Categorized raw datasets/ukb_family_health_history.rds") # save RDS to file)                     
+saveRDS(fam_health, file = "ukb_family_health_history.rds")               
 ```
 
 ```{r med_cond, results='hide'}
@@ -679,7 +679,7 @@ colnames(med_cond) <- c(
 )
 
 
-saveRDS(med_cond, file = "/Users/austin.argentieri/OneDrive - Nexus365/DPhil Research/UKB/Datasets/4. Categorized raw datasets/ukb_medical_conditions.rds") # save RDS to file                     
+saveRDS(med_cond, file = "ukb_medical_conditions.rds")              
 ```
 
 ```{r medications, results='hide'}
@@ -754,7 +754,7 @@ colnames(meds) <- c(
   )
 )
 
-saveRDS(meds, file = "/Users/austin.argentieri/OneDrive - Nexus365/DPhil Research/UKB/Datasets/4. Categorized raw datasets/ukb_medications.rds") # save RDS to file                     
+saveRDS(meds, file = "ukb_medications.rds")            
 ```
 
 ```{r male_repro, results='hide'}
@@ -775,7 +775,7 @@ colnames(male_repro) <- c(Cs(eid,
                              balding,
                              number_children))
 
-saveRDS(male_repro, file = "/Users/austin.argentieri/OneDrive - Nexus365/DPhil Research/UKB/Datasets/4. Categorized raw datasets/ukb_male_reproduction.rds") # save RDS to file                
+saveRDS(male_repro, file = "ukb_male_reproduction.rds")         
 ```                                      
 
 ```{r female_repro, results='hide'}
@@ -852,7 +852,7 @@ colnames(female_repro) <- c(
   )
 )
 
-saveRDS(female_repro, file = "/Users/austin.argentieri/OneDrive - Nexus365/DPhil Research/UKB/Datasets/4. Categorized raw datasets/ukb_female_reproduction.rds") # save RDS to file                           
+saveRDS(female_repro, file = "ukb_female_reproduction.rds")                         
 ```   
 
 ```{r mental_health, results='hide'}
@@ -947,7 +947,7 @@ colnames(mental_health) <- c(
   )
 )
 
-saveRDS(mental_health, file = "/Users/austin.argentieri/OneDrive - Nexus365/DPhil Research/UKB/Datasets/4. Categorized raw datasets/ukb_mental_health.rds") # save RDS to file                                
+saveRDS(mental_health, file = "ukb_mental_health.rds")                              
 ```
 
 
@@ -979,7 +979,7 @@ colnames(electronics) <- c(
   )
 )
 
-saveRDS(electronics, file = "/Users/austin.argentieri/OneDrive - Nexus365/DPhil Research/UKB/Datasets/4. Categorized raw datasets/ukb_electronics.rds") # save RDS to file                                    
+saveRDS(electronics, file = "ukb_electronics.rds")                           
 ```
 
 
@@ -1013,7 +1013,7 @@ colnames(sleep) <- c(
   )
 )
 
-saveRDS(sleep, file = "/Users/austin.argentieri/OneDrive - Nexus365/DPhil Research/UKB/Datasets/4. Categorized raw datasets/ukb_sleep.rds") # save RDS to file                                              
+saveRDS(sleep, file = "ukb_sleep.rds")                                        
 ```
 
 ```{r smoking, results='hide'}
@@ -1096,7 +1096,7 @@ colnames(smok) <- c(
   )
 )
 
-saveRDS(smok, file = "/Users/austin.argentieri/OneDrive - Nexus365/DPhil Research/UKB/Datasets/4. Categorized raw datasets/ukb_smoking.rds") # save RDS to file                                             
+saveRDS(smok, file = "ukb_smoking.rds")                                     
 ```
 
 ```{r alcohol, results='hide'}
@@ -1153,7 +1153,7 @@ colnames(alcohol) <- c(
   )
 )
 
-saveRDS(alcohol, file = "/Users/austin.argentieri/OneDrive - Nexus365/DPhil Research/UKB/Datasets/4. Categorized raw datasets/ukb_alcohol.rds") # save RDS to file                                                    
+saveRDS(alcohol, file = "ukb_alcohol.rds")                                                   
 ```
 
 ```{r diet, results='hide'}
@@ -1233,7 +1233,7 @@ colnames(diet) <- c(
   )
 )
 
-saveRDS(diet, file = "/Users/austin.argentieri/OneDrive - Nexus365/DPhil Research/UKB/Datasets/4. Categorized raw datasets/ukb_diet.rds") # save RDS to file  
+saveRDS(diet, file = "ukb_diet.rds")
 ```
 
 ```{r sun, results='hide'}
@@ -1270,7 +1270,7 @@ colnames(sun) <- c(
   )
 )
 
-saveRDS(sun, file = "/Users/austin.argentieri/OneDrive - Nexus365/DPhil Research/UKB/Datasets/4. Categorized raw datasets/ukb_sun.rds") # save RDS to file  
+saveRDS(sun, file = "ukb_sun.rds")
 ```
 
 ```{r sex_hist, results='hide'}
@@ -1299,7 +1299,7 @@ colnames(sex_hist) <- c(
   )
 )
 
-saveRDS(sex_hist, file = "/Users/austin.argentieri/OneDrive - Nexus365/DPhil Research/UKB/Datasets/4. Categorized raw datasets/ukb_sex_history.rds") # save RDS to file  
+saveRDS(sex_hist, file = "ukb_sex_history.rds")
 ```
 
 ```{r phys_activity, results='hide'}
@@ -1396,7 +1396,7 @@ colnames(phys_act) <- c(
   )
 )
 
-saveRDS(phys_act, file = "/Users/austin.argentieri/OneDrive - Nexus365/DPhil Research/UKB/Datasets/4. Categorized raw datasets/ukb_physical_activity.rds") # save RDS to file  
+saveRDS(phys_act, file = "ukb_physical_activity.rds")
 ```
 
 ```{r vision, results='hide'}
@@ -1419,7 +1419,7 @@ colnames(vision) <- c(
   )
 )
 
-saveRDS(vision, file = "/Users/austin.argentieri/OneDrive - Nexus365/DPhil Research/UKB/Datasets/4. Categorized raw datasets/ukb_vision.rds") # save RDS to file  
+saveRDS(vision, file = "ukb_vision.rds")
 ```
 
 ```{r hearing, results='hide'}
@@ -1442,7 +1442,7 @@ colnames(hearing) <- c(
   )
 )
 
-saveRDS(hearing, file = "/Users/austin.argentieri/OneDrive - Nexus365/DPhil Research/UKB/Datasets/4. Categorized raw datasets/ukb_hearing.rds") # save RDS to file  
+saveRDS(hearing, file = "ukb_hearing.rds")
 ```
 
 ```{r blood_pressure, results='hide'}
@@ -1473,7 +1473,7 @@ colnames(bp) <- c(
   )
 )
 
-saveRDS(bp, file = "/Users/austin.argentieri/OneDrive - Nexus365/DPhil Research/UKB/Datasets/4. Categorized raw datasets/ukb_blood_pressure.rds") # save RDS to file  
+saveRDS(bp, file = "ukb_blood_pressure.rds")
 ```
 
 ```{r art_stiff, results='hide'}
@@ -1506,7 +1506,7 @@ colnames(a_stiff) <- c(
   )
 )
 
-saveRDS(a_stiff, file = "/Users/austin.argentieri/OneDrive - Nexus365/DPhil Research/UKB/Datasets/4. Categorized raw datasets/ukb_arterial_stiffness.rds") # save RDS to file  
+saveRDS(a_stiff, file = "ukb_arterial_stiffness.rds")
 ```
 
 ```{r anthro, results='hide'}
@@ -1619,7 +1619,7 @@ colnames(anthro) <- c(
   )
 )
 
-saveRDS(anthro, file = "/Users/austin.argentieri/OneDrive - Nexus365/DPhil Research/UKB/Datasets/4. Categorized raw datasets/ukb_anthropometry.rds") # save RDS to file  
+saveRDS(anthro, file = "ukb_anthropometry.rds")
 ```
 
 ```{r spiro, results='hide'}
@@ -1706,7 +1706,7 @@ colnames(spiro) <- c(
 )
 
 
-saveRDS(spiro, file = "/Users/austin.argentieri/OneDrive - Nexus365/DPhil Research/UKB/Datasets/4. Categorized raw datasets/ukb_spirometry.rds") # save RDS to file  
+saveRDS(spiro, file = "ukb_spirometry.rds")
 ```
 
 ```{r bmd, results='hide'}
@@ -1800,7 +1800,7 @@ colnames(bmd) <- c(
 )
 
 
-saveRDS(bmd, file = "/Users/austin.argentieri/OneDrive - Nexus365/DPhil Research/UKB/Datasets/4. Categorized raw datasets/ukb_bone_mineral_density.rds") # save RDS to file  
+saveRDS(bmd, file = "ukb_bone_mineral_density.rds")
 ```
 
 ```{r imd, results='hide'}
@@ -1869,7 +1869,7 @@ colnames(imd) <- c(
   )
 )
 
-saveRDS(imd, file = "/Users/austin.argentieri/OneDrive - Nexus365/DPhil Research/UKB/Datasets/4. Categorized raw datasets/ukb_imd.rds") # save RDS to file  
+saveRDS(imd, file = "ukb_imd.rds")
 ```
 
 ```{r blood, results='hide'}
@@ -1948,8 +1948,7 @@ colnames(blood) <- c(
   )
 )
 
-
-saveRDS(blood, file = "/Users/austin.argentieri/OneDrive - Nexus365/DPhil Research/UKB/Datasets/4. Categorized raw datasets/ukb_blood_biomarkers.rds") # save RDS to file  
+saveRDS(blood, file = "ukb_blood_biomarkers.rds")
 ```
 
 ```{r blood_count, results='hide'}
@@ -2030,7 +2029,7 @@ colnames(blood_count) <- c(
   )
 )
 
-saveRDS(blood_count, file = "/Users/austin.argentieri/OneDrive - Nexus365/DPhil Research/UKB/Datasets/4. Categorized raw datasets/ukb_blood_count.rds") # save RDS to file  
+saveRDS(blood_count, file = "ukb_blood_count.rds")
 ```
 
 ```{r urine, results='hide'}
@@ -2057,7 +2056,7 @@ colnames(urine) <- c(
   )
 )
 
-saveRDS(urine, file = "/Users/austin.argentieri/OneDrive - Nexus365/DPhil Research/UKB/Datasets/4. Categorized raw datasets/ukb_urine.rds") # save RDS to file  
+saveRDS(urine, file = "ukb_urine.rds")
 ```
 
 ```{r enviro, results='hide'}
@@ -2136,7 +2135,7 @@ colnames(enviro) <- c(
   )
 )
 
-saveRDS(enviro, file = "/Users/austin.argentieri/OneDrive - Nexus365/DPhil Research/UKB/Datasets/4. Categorized raw datasets/ukb_environment.rds") # save RDS to file  
+saveRDS(enviro, file = "ukb_environment.rds")
 ```
 
 ```{r merge, results='hide'}
@@ -2181,7 +2180,7 @@ reduce <- Reduce(function(x, y) merge(x = x,
                                    by = "eid",  
                                    all = TRUE), exposures)
 
-saveRDS(reduce, file = "/Users/austin.argentieri/OneDrive - Nexus365/DPhil Research/UKB/Datasets/4. Categorized raw datasets/ukb_all_exposures.rds")
+saveRDS(reduce, file = "ukb_all_exposures.rds")
 ```
 
 ```{r new, results='hide'}
@@ -2189,7 +2188,7 @@ saveRDS(reduce, file = "/Users/austin.argentieri/OneDrive - Nexus365/DPhil Resea
 # There were variables missing in the first UKB dataset sent to us, which we had to request that they resend. These are those variables.
 
 # Load new variables
-new <- readRDS("/Users/austin.argentieri/OneDrive - Nexus365/DPhil Research/UKB/Datasets/3. Second dataset from UKB/ukb43025.rds")
+new <- readRDS("ukb43025.rds")
 
 new <- subset(new,
               select = c(
@@ -2253,7 +2252,7 @@ colnames(new) <- c(
   )
 )
 
-saveRDS(new, file = "/Users/austin.argentieri/OneDrive - Nexus365/DPhil Research/UKB/Datasets/4. Categorized raw datasets/ukb_new_vars.rds") # save RDS to file  
+saveRDS(new, file = "ukb_new_vars.rds") # save RDS to file  
 ```
 
 ```{r re-merge, results='hide'}
@@ -2264,5 +2263,5 @@ combined <- merge(reduce,
                   by = "eid", 
                   all = TRUE)
 
-saveRDS(combined, file = "/Users/austin.argentieri/OneDrive - Nexus365/DPhil Research/UKB/Datasets/4. Categorized raw datasets/ukb_all_exposures_updated.rds")
+saveRDS(combined, file = "ukb_all_exposures_updated.rds")
 ```
