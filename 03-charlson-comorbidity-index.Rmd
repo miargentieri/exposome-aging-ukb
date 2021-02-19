@@ -13,8 +13,8 @@ The Charlson comorbidity index was coded using ICD-10 hospital inpatient codes. 
 <br /> 
 ```{r load}
 
-# import UKB ICD 10 codes dataset
-dat <- readRDS("ukb_ICD10_codes_all_years.rds")
+# import raw UKB dataset with ICD 10 codes
+dat <- readRDS("ukb42114.rds")
 
 library(comorbidity)
 library(summarytools)
@@ -44,8 +44,8 @@ ICD_baseline <- paste0(prefix, suffix)
 # recruitment_date = dat$f.53.0.0
 
 # find col numbers for ICD10 code vars
-icd_first <- match("f.41270.0.0", names(dat)) # col #
-icd_last <- match("f.41270.0.212", names(dat)) # col #
+icd_first <- match("f.41270.0.0", names(dat))
+icd_last <- match("f.41270.0.212", names(dat))
 
 # need to turn ICD10 variables into characters, since ifelse converts factors to integers and messes up the responses
 dat[icd_first:icd_last] <- lapply(dat[icd_first:icd_last], as.character)
