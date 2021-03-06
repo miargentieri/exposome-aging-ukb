@@ -1,6 +1,6 @@
 # R code for an exposome-wide association study of chronic disease mortality in the UK Biobank
 
-This directory contains the code used to conduct analysis and create figures for the publication XXX, published in XXX. This repository was created on Sat Sep 20 16:39:16 BST 2014.
+This directory contains the code used for data preparation, analysis, and figure creation for the publication XXX, published in XXX. This repository was created on Sat Sep 20 16:39:16 BST 2014.
 
 R code for each stage of our data preparation and analysis are contained in these files. This includes:  
 * Importing raw data
