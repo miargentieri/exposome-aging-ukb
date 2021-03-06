@@ -1,7 +1,6 @@
 # R code for an exposome-wide association study of chronic disease mortality in the UK Biobank
 
-February 16, 2021  
-M. Austin Argentieri
+This directory contains the code used to conduct analysis and create figures for the publication XXX, published in XXX. This repository was created on Sat Sep 20 16:39:16 BST 2014.
 
 R code for each stage of our data preparation and analysis are contained in these files. This includes:  
 * Importing raw data
@@ -13,6 +12,23 @@ R code for each stage of our data preparation and analysis are contained in thes
 * Creating figures and plots
 * Conducting correlation analyses
 * Conducting elastic net analyses
+
+Manifest
+--------
+
+The following is a description of the various files and directories found within this project.
+
+|File         |Description                                                                                         |
+|:------------|:---------------------------------------------------------------------------------------------------|
+|`go`         |High-level script that will reproduce latest results from the raw data.                             |
+|`bin/`       |Contains additional programs necessary for analyzing the data.                                      |
+|`data/`      |Raw data files (or links to those files if they come from different projects).                      |
+|`lists/`     |Text lists used during the processing (e.g. file lists, gene lists, etc.).                          |
+|`results/`   |The analysis product for the raw data.  Many runs may exist in this directory.                      |
+|`reports/`   |Analyses on various results sets.                                                                   |
+|`resources/` |Files that may be useful during analysis (e.g. gene models, sample metadata, etc.).                 |
+|`scratch/`   |A space to keep temporary files that do not have a critical role in the analysis.  Safe to discard. |
+|`scripts/`   |Code to help process data at various stages of the analysis.                                        
 
 
 Files are meant to be run sequentially. Code in file #1 (data import) requires a complete raw dataset from the UK Biobank with ALL baseline variables avaialble.   
