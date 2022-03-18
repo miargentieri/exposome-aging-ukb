@@ -5,13 +5,12 @@ This directory contains the code used for data preparation, analysis, and figure
 R code for each stage of our data preparation and analysis are contained in these files. This includes:  
 * Importing raw data
 * Recoding data
-* Coding the Charlson comorbidity index
-* Coding mortality outcome data
+* Coding all-cause mortality outcome data
 * Performing participant exclusions and multiple imputation
-* Running the EWAS pipeline
+* Running the XWAS pipeline
 * Creating figures and plots
 * Conducting correlation analyses
-* Conducting elastic net analyses
+* Plot, table, and figure generation
 
 Manifest
 --------
