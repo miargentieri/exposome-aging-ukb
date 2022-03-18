@@ -1,4 +1,4 @@
-# R code for an exposome-wide association study of human aging in the UK Biobank
+# Exposome-wide analysis reveals the environmental architecture of human aging among 436,965 UK Biobank participants
 
 This directory contains the code used for data preparation, analysis, and figure creation for the publication "Exposome-wide analysis reveals the environmental architecture of human aging among 436,965 UK Biobank participants." Published in XXX. 
 
