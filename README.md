@@ -11,7 +11,7 @@ R code for each stage of our data preparation and analysis are contained in thes
 * Performing participant exclusions and multiple imputation
 * Running the XWAS pipeline
 * Conducting correlation analyses
-* Creating figures and plots
+* Creating figures, tables, and plots
 
 Manifest
 --------
