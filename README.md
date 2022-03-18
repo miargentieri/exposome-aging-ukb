@@ -2,7 +2,7 @@
 
 This directory contains the code used for data preparation, analysis, and figure creation for the publication "Exposome-wide analysis reveals the environmental architecture of human aging among 436,965 UK Biobank participants." Published in XXX. 
 
-This repository was created on Sat Mar 18 15:15:17 GMT 2022.
+This repository was created on Fri Mar 18 15:15:17 GMT 2022.
 
 R code for each stage of our data preparation and analysis are contained in these files. This includes:  
 * Importing raw data
