@@ -19,20 +19,14 @@ The following is a description of the various files and directories found within
 
 |File         |Description                                                                                         |
 |:------------|:---------------------------------------------------------------------------------------------------|
-|`go`         |High-level script that will reproduce latest results from the raw data.                             |
-|`bin/`       |Contains additional programs necessary for analyzing the data.                                      |
-|`data/`      |Raw data files (or links to those files if they come from different projects).                      |
-|`lists/`     |Text lists used during the processing (e.g. file lists, gene lists, etc.).                          |
-|`results/`   |The analysis product for the raw data.  Many runs may exist in this directory.                      |
-|`reports/`   |Analyses on various results sets.                                                                   |
-|`resources/` |Files that may be useful during analysis (e.g. gene models, sample metadata, etc.).                 |
-|`scratch/`   |A space to keep temporary files that do not have a critical role in the analysis.  Safe to discard. |
+|`dictionary/`|Data dictionary describing the entire dataset downloaded from UK Biobank and used in analyses       |
+|`figures/`   |HTML interactive versions of plots and figures in published paper                                   |
+|`results/`   |The raw analysis output from each analysis stage                                                    |
 |`scripts/`   |Code to help process data at various stages of the analysis.                                        
 
-
-Files are meant to be run sequentially. Code in file #1 (data import) requires a complete raw dataset from the UK Biobank with ALL baseline variables avaialble.   
+Files are meant to be run sequentially. Code in file #1 (data import) requires a complete raw dataset from the UK Biobank with ALL baseline variables collected in the UK Biobank cohort.   
   
-Mortality data used for analysis were current as of April 30, 2020. Using mortality data that is more current will change analysis results.
+All-cause mortality data used for analysis were  accessed from the UK Biobank data portal on June 5th, 2021. Censoring date used was February 28th, 2021. Using mortality data that is more current will change analysis results.
 
 Author
 ------
