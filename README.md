@@ -10,9 +10,8 @@ R code for each stage of our data preparation and analysis are contained in thes
 * Coding all-cause mortality outcome data
 * Performing participant exclusions and multiple imputation
 * Running the XWAS pipeline
-* Creating figures and plots
 * Conducting correlation analyses
-* Plot, table, and figure generation
+* Creating figures and plots
 
 Manifest
 --------
