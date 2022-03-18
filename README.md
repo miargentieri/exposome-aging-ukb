@@ -32,7 +32,7 @@ All-cause mortality data used for analysis were  accessed from the UK Biobank da
 Interactive HTML versions of figures in manuscript
 --------------------------------------------------
  
-<a target="_blank" rel="noopener noreferrer" href="miargentieri.github.io/figures/ACM_XWAS_HR_comparison_feb_21_2022.html">Comparison plot between female- and male-specific XWAS hazard ratios </a>
+<a target="_blank" rel="noopener noreferrer" href="miargentieri.github.io/figures/ACM_XWAS_HR_comparison_feb_21_2022.html">Comparison plot between female- and male-specific XWAS hazard ratios </a> <br>
 <a target="_blank" rel="noopener noreferrer" href="miargentieri.github.io/figures/ACM_XWAS_loghr_volc_exposome_feb_22_2022_all_sexes.html">Pooled XWAS volcano plot </a>
 
 Author
