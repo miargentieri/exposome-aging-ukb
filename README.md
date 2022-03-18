@@ -21,7 +21,6 @@ The following is a description of the various files and directories found within
 |File              |Description                                                                                         |
 |:-----------------|:---------------------------------------------------------------------------------------------------|
 |`dictionaries/`   |Data dictionaries describing the UK Biobank datasets used in imputation and XWAS analysis           |
-|`figures/`        |HTML interactive versions of plots and figures from the published paper                             |
 |`results/`        |The raw analysis output from each analysis stage                                                    |
 |`scripts/`        |Code to help process data at various stages of the analysis.                                        |
 
