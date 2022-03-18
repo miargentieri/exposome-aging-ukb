@@ -1,6 +1,6 @@
-# R code for an exposome-wide association study of all-cause mortality in the UK Biobank
+# R code for an exposome-wide association study of human aging in the UK Biobank
 
-This directory contains the code used for data preparation, analysis, and figure creation for the publication XXX, published in XXX. This repository was created on Sat Sep 20 16:39:16 BST 2014.
+This directory contains the code used for data preparation, analysis, and figure creation for the publication XXX, published in XXX. This repository was created on Sat Mar 18 15:15:17 GMT 2022.
 
 R code for each stage of our data preparation and analysis are contained in these files. This includes:  
 * Importing raw data
