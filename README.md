@@ -19,12 +19,12 @@ Manifest
 
 The following is a description of the various files and directories found within this project.
 
-|File         |Description                                                                                         |
-|:------------|:---------------------------------------------------------------------------------------------------|
-|`dictionary/`|Data dictionary describing the entire dataset downloaded from UK Biobank and used in analyses       |
-|`figures/`   |HTML interactive versions of plots and figures from the published paper                             |
-|`results/`   |The raw analysis output from each analysis stage                                                    |
-|`scripts/`   |Code to help process data at various stages of the analysis.                                        
+|File              |Description                                                                                         |
+|:-----------------|:---------------------------------------------------------------------------------------------------|
+|`dictionaries/`   |Data dictionaries describing the UK Biobank datasets used in imputation and XWAS analysis.          |
+|`figures/`        |HTML interactive versions of plots and figures from the published paper                             |
+|`results/`        |The raw analysis output from each analysis stage                                                    |
+|`scripts/`        |Code to help process data at various stages of the analysis.                                        |
 
 Files are in R Markdown format so that chunks can be run individually without running the entire script. However, scripts are not currently written or optimized to be knit and published via R Markdown without additional configuration in the code. Code in file #1 (data import) requires a complete raw dataset from the UK Biobank with ALL baseline variables collected in the UK Biobank cohort.   
   
