@@ -1,6 +1,8 @@
 # R code for an exposome-wide association study of human aging in the UK Biobank
 
-This directory contains the code used for data preparation, analysis, and figure creation for the publication XXX, published in XXX. This repository was created on Sat Mar 18 15:15:17 GMT 2022.
+This directory contains the code used for data preparation, analysis, and figure creation for the publication "Exposome-wide analysis reveals the environmental architecture of human aging among 436,965 UK Biobank participants." Published in XXX. 
+
+This repository was created on Sat Mar 18 15:15:17 GMT 2022.
 
 R code for each stage of our data preparation and analysis are contained in these files. This includes:  
 * Importing raw data
@@ -20,7 +22,7 @@ The following is a description of the various files and directories found within
 |File         |Description                                                                                         |
 |:------------|:---------------------------------------------------------------------------------------------------|
 |`dictionary/`|Data dictionary describing the entire dataset downloaded from UK Biobank and used in analyses       |
-|`figures/`   |HTML interactive versions of plots and figures in published paper                                   |
+|`figures/`   |HTML interactive versions of plots and figures from the published paper                             |
 |`results/`   |The raw analysis output from each analysis stage                                                    |
 |`scripts/`   |Code to help process data at various stages of the analysis.                                        
 
