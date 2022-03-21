@@ -1,0 +1,758 @@
+# coding  those with disease at baseline using ICD-10 codes
+
+```{r ICD, results='hide', eval=FALSE}
+
+# import list of ICD-10 codes from UKB website: https://biobank.ctsu.ox.ac.uk/crystal/coding.cgi?id=19&nl=1 
+library(readr)
+ICD10list3d <- read_delim("/path/to/file/icd10_coding19.tsv", 
+    "\t", 
+    escape_double = FALSE, 
+    trim_ws = TRUE)
+
+# make character vector with just ICD codes
+ICD10list3d <- as.vector(ICD10list3d$coding)
+
+### defining chronic diseases by ICD 10 codes. 
+### ICD groupings taken from here: 
+# https://www.cdc.gov/nchs/data/nvsr/nvsr68/nvsr68_09-508.pdf; 
+# https://www.ncbi.nlm.nih.gov/pmc/articles/PMC6843938/; 
+# https://www.nejm.org/doi/10.1056/NEJMoa1908483?url_ver=Z39.88-2003&rfr_id=ori:rid:crossref.org&rfr_dat=cr_pub%20%200pubmed; 
+# https://www.sciencedirect.com/science/article/pii/S0160412019337171?via%3Dihub
+
+
+### NCD codes -------------------------------------------------------------------
+
+# malignant neoplasms C00–C97
+prefix <- "C"
+suffix <- sprintf('%0.2d', 1:9)
+seq <- paste0(prefix, suffix)
+
+prefix <- "C"
+suffix <- seq(10,97)
+seq2 <- paste0(prefix, suffix)
+
+prefix <- "C"
+suffix <- sprintf('%0.3d', 0:9)
+seq3 <- paste0(prefix, suffix)
+
+prefix <- "C0"
+suffix <- sprintf('%0.d', 10:99)
+seq4 <- paste0(prefix, suffix)
+
+prefix <- "C"
+suffix <- seq(100,979)
+seq5 <- paste0(prefix, suffix)
+
+neoplasm <- c("C00", 
+              seq, 
+              seq2, 
+              seq3, 
+              seq4, 
+              seq5)
+neoplasm_icd <- ICD10list3d[which(ICD10list3d %in% neoplasm)]
+
+
+# diabetes mellitus E10–E14 
+prefix <- "E"
+suffix <- seq(10,14)
+seq <- paste0(prefix, suffix)
+
+prefix <- "E"
+suffix <- seq(100,149)
+seq2 <- paste0(prefix, suffix)
+
+diabetes <- c(seq, 
+              seq2)
+diabetes_icd <- ICD10list3d[which(ICD10list3d %in% diabetes)]
+
+
+# heart diseases and hypertension (I00–I15,I20–I51) # can just be coded 0 - 51 because there are no codes between 15-20
+prefix <- "I"
+suffix <- sprintf('%0.2d', 1:9)
+seq <- paste0(prefix, suffix)
+
+prefix <- "I"
+suffix <- seq(10,51)
+seq2 <- paste0(prefix, suffix)
+
+prefix <- "I"
+suffix <- sprintf('%0.3d', 0:9)
+seq3 <- paste0(prefix, suffix)
+
+prefix <- "I0"
+suffix <- sprintf('%0.d', 10:99)
+seq4 <- paste0(prefix, suffix)
+
+prefix <- "I"
+suffix <- seq(100,519)
+seq5 <- paste0(prefix, suffix)
+
+cardio <- c("I00", 
+            seq, 
+            seq2, 
+            seq3, 
+            seq4, 
+            seq5)
+cardio_icd <- ICD10list3d[which(ICD10list3d %in% cardio)]
+
+
+#cerebrovascular disease I60–I69
+prefix <- "I"
+suffix <- seq(60,69)
+seq <- paste0(prefix, suffix)
+
+prefix <- "I"
+suffix <- seq(600,699)
+seq2 <- paste0(prefix, suffix)
+
+cerebro <- c(seq, 
+             seq2)
+cerebro_icd <- ICD10list3d[which(ICD10list3d %in% cerebro)]
+
+
+#chronic lower respiratory disease (J40–J47)
+prefix <- "J"
+suffix <- seq(40,47)
+seq <- paste0(prefix, suffix)
+
+prefix <- "J"
+suffix <- seq(400,479)
+seq2 <- paste0(prefix, suffix)
+
+copd <- c(seq, 
+          seq2)
+copd_icd <- ICD10list3d[which(ICD10list3d %in% copd)]
+
+
+# chronic liver disease (K70, K73-K74)
+prefix <- "K"
+suffix <- seq(73,74)
+seq <- paste0(prefix, suffix)
+
+prefix <- "K"
+suffix <- seq(700,709)
+seq2 <- paste0(prefix, suffix)
+
+prefix <- "K"
+suffix <- seq(730,749)
+seq3 <- paste0(prefix, suffix)
+
+liver <- c("K70", 
+           seq, 
+           seq2, 
+           seq3)
+liver_icd <- ICD10list3d[which(ICD10list3d %in% liver)]
+
+
+# chronic kidney disease (N18)
+prefix <- "N"
+suffix <- seq(180,189)
+seq <- paste0(prefix, suffix)
+
+kidney <- c("N18",
+             seq)
+kidney_icd <- ICD10list3d[which(ICD10list3d %in% kidney)]
+
+
+# neurodegenerative disease [ dementia (F00-F03; G31), motor neuron disease (G12.2), Parkinson's (G20-G22), Alzheimer's (G30),  MS (G35)]
+prefix <- "F"
+suffix <- sprintf('%0.2d', 1:3)
+seq <- paste0(prefix, suffix)
+
+prefix <- "F"
+suffix <- sprintf('%0.3d', 0:9)
+seq2 <- paste0(prefix, suffix)
+
+prefix <- "F0"
+suffix <- sprintf('%0.d', 10:39)
+seq3 <- paste0(prefix, suffix)
+
+prefix <- "I"
+suffix <- seq(100,519)
+seq5 <- paste0(prefix, suffix)
+
+prefix <- "G"
+suffix <- seq(310,319)
+seq5 <- paste0(prefix, suffix)
+
+prefix <- "G"
+suffix <- seq(20,22)
+seq6 <- paste0(prefix, suffix)
+
+prefix <- "G"
+suffix <- seq(200,229)
+seq7 <- paste0(prefix, suffix)
+
+prefix <- "G"
+suffix <- seq(300,309)
+seq8 <- paste0(prefix, suffix)
+
+prefix <- "G"
+suffix <- seq(350,359)
+seq9 <- paste0(prefix, suffix)
+
+neurodegen <- c("F00", 
+                seq, 
+                seq2, 
+                seq3, 
+                "G31", 
+                seq5, 
+                "G122", 
+                seq6, 
+                seq7, 
+                "G30", 
+                seq8, 
+                "G35", 
+                seq9)
+
+neurodegen_icd <- ICD10list3d[which(ICD10list3d %in% neurodegen)]
+
+
+# rheumatoid arthritis (M05-06)
+prefix <- "M05"
+suffix <- seq(0,3)
+seq <- paste0(prefix, suffix)
+
+prefix <- "M05"
+suffix <- seq(8,9)
+seq2 <- paste0(prefix, suffix)
+
+prefix <- "M06"
+suffix <- seq(0,4)
+seq3 <- paste0(prefix, suffix)
+
+prefix <- "M06"
+suffix <- seq(8,9)
+seq4 <- paste0(prefix, suffix)
+
+rheumatoid <- c("M05",
+                seq,
+                seq2,
+                "M06",
+                seq3,
+                seq4)
+
+rheumatoid_icd <- ICD10list3d[which(ICD10list3d %in% rheumatoid)]
+
+
+# create list of all NCD codes
+icd_include <- c(neoplasm_icd,
+                 diabetes_icd,
+                 cardio_icd,
+                 cerebro_icd,
+                 copd_icd,
+                 liver_icd,
+                 kidney_icd,
+                 neurodegen_icd,
+                 rheumatoid_icd)
+
+### infectious disease codes -------------------------------------------------------------------
+
+# Tuberculosis (A15-A19)
+prefix <- "A"
+suffix <- seq(15,19)
+seq <- paste0(prefix, suffix)
+
+prefix <- "A"
+suffix <- seq(150,199)
+seq2 <- paste0(prefix, suffix)
+
+tuberculosis <- c(seq, 
+                  seq2)
+tuberculosis_icd <- ICD10list3d[which(ICD10list3d %in% tuberculosis)]
+
+
+# Human immunodeficiency virus [HIV] disease (B20-B24)
+prefix <- "B"
+suffix <- seq(20,24)
+seq <- paste0(prefix, suffix)
+
+prefix <- "B"
+suffix <- seq(200,249)
+seq2 <- paste0(prefix, suffix)
+
+hiv <- c(seq, 
+                  seq2)
+hiv_icd <- ICD10list3d[which(ICD10list3d %in% hiv)]
+
+# Chronic Viral Hepatitis (B18)
+prefix <- "B"
+suffix <- seq(180,189)
+seq <- paste0(prefix, suffix)
+
+hep <- c(seq)        
+hep_icd <- ICD10list3d[which(ICD10list3d %in% hep)]
+
+# create list of all infection codes
+infectious_icd_include <- c(tuberculosis_icd,
+                            hiv_icd,
+                            hep_icd)
+
+```
+
+```{r, eval=FALSE}
+# import raw UKB dataset
+dat <- readRDS("/path/to/file/ukb42114.rds")
+
+# subset to necessary columns
+dat <- subset(dat, select = c("f.eid",
+                              "f.53.0.0",
+                              ICD10_all,
+                              ICD10_dates
+                              ))
+
+
+# save dataset with just ICD data
+save(dat, file = "/path/to/file/ICD10_data.RData")
+```
+
+``` {r}
+# load
+load("/path/to/file/ICD10_data.RData")
+
+library(Hmisc)
+
+# ICD 10 all codes
+prefix <- "f.41270.0."
+suffix <- seq(0,212)
+ICD10_all <- paste0(prefix, suffix)
+
+# ICD 10 all dates
+prefix <- "f.41280.0."
+suffix <- seq(0,212)
+ICD10_dates <- paste0(prefix, suffix)
+
+# specifu eids that requested to be removed from study
+eid_remove <- c(
+    Cs(
+        1118928,
+        1189363,
+        1520532,
+        1926850,
+        2145109,
+        2224549,
+        2627502,
+        3007346,
+        3195734,
+        3286603,
+        3585254,
+        3777213,
+        3845241,
+        4189779,
+        4738692,
+        5133093
+    )
+)
+
+# remove
+dat <- dat[dat$f.eid %nin% eid_remove, ]
+
+### NCD event indicator -------------------------------------------------------------------
+
+# total # of NCD diagnoses per participant
+dat$NCD_number_diagnoses <- as.numeric(
+  rowSums(
+    sapply(dat[ICD10_all], "%in%", icd_include),
+    na.rm = TRUE))
+
+# indicator for any NCD diagnosis
+dat$NCD_event <- as.numeric(
+  rowSums(
+    sapply(dat[ICD10_all], "%in%", icd_include),
+    na.rm = TRUE) > 0)
+
+### Cancer event indicator -------------------------------------------------------------------
+
+dat$cancer_event <- as.numeric(
+  rowSums(
+    sapply(dat[ICD10_all], "%in%", neoplasm_icd),
+    na.rm = TRUE) > 0)
+
+### Diabetes event indicator -------------------------------------------------------------------
+
+dat$diabetes_event <- as.numeric(
+  rowSums(
+    sapply(dat[ICD10_all], "%in%", diabetes_icd),
+    na.rm = TRUE) > 0)
+
+### CVD event indicator -------------------------------------------------------------------
+
+dat$CVD_event <- as.numeric(
+  rowSums(
+    sapply(dat[ICD10_all], "%in%", cardio_icd),
+    na.rm = TRUE) > 0)
+
+### Cerebrovacsular event indicator -------------------------------------------------------------------
+
+dat$cerebro_event <- as.numeric(
+  rowSums(
+    sapply(dat[ICD10_all], "%in%", cerebro_icd),
+    na.rm = TRUE) > 0)
+
+### COPD event indicator -------------------------------------------------------------------
+
+dat$COPD_event <- as.numeric(
+  rowSums(
+    sapply(dat[ICD10_all], "%in%", copd_icd),
+    na.rm = TRUE) > 0)
+
+### Liver disease event indicator -------------------------------------------------------------------
+
+dat$liver_event <- as.numeric(
+  rowSums(
+    sapply(dat[ICD10_all], "%in%", liver_icd),
+    na.rm = TRUE) > 0)
+
+### Kidney disease event indicator -------------------------------------------------------------------
+
+dat$kidney_event <- as.numeric(
+  rowSums(
+    sapply(dat[ICD10_all], "%in%", kidney_icd),
+    na.rm = TRUE) > 0)
+
+### Neurodegenerative disease event indicator -------------------------------------------------------------------
+
+dat$neurodegen_event <- as.numeric(
+  rowSums(
+    sapply(dat[ICD10_all], "%in%", neurodegen_icd),
+    na.rm = TRUE) > 0)
+
+### Rheumatoid arthritis event indicator -------------------------------------------------------------------
+
+dat$rheumatoid_event <- as.numeric(
+  rowSums(
+    sapply(dat[ICD10_all], "%in%", rheumatoid_icd),
+    na.rm = TRUE) > 0)
+
+### NCD diagnosis dates -------------------------------------------------------------------
+
+prefix <- "NCD.dates.0."
+suffix <- seq(0,212)
+NCD_dates <- paste0(prefix, suffix)
+
+# find all diagnosis dates that match a diagnosis
+matches_ncd <- as.data.frame(sapply(dat[ICD10_all], "%in%", icd_include))
+dat[NCD_dates] <- dat[ICD10_dates]
+
+# convert all non-NCD diagnosis dates to NA
+for(k in seq_along(NCD_dates)) {
+dat[[NCD_dates[k]]][which(matches_ncd[k] == FALSE)] <- NA
+}
+
+# get earliest NCD diagnosis date if there are multiple
+dat$NCD_date <- do.call(pmin, c(dat[NCD_dates], na.rm = TRUE))
+
+### Cancer diagnosis dates -------------------------------------------------------------------
+
+prefix <- "cancer.dates.0."
+suffix <- seq(0,212)
+cancer_dates <- paste0(prefix, suffix)
+
+# find all diagnosis dates that match a diagnosis
+matches_cancer <- as.data.frame(sapply(dat[ICD10_all], "%in%", neoplasm_icd))
+dat[cancer_dates] <- dat[ICD10_dates]
+
+# convert all non-cancer diagnosis dates to NA
+for(k in seq_along(cancer_dates)) {
+dat[[cancer_dates[k]]][which(matches_cancer[k] == FALSE)] <- NA
+}
+
+# get earliest diagnosis date if there are multiple
+dat$cancer_date <- do.call(pmin, c(dat[cancer_dates], na.rm = TRUE))
+
+### Diabetes diagnosis dates -------------------------------------------------------------------
+
+prefix <- "diabetes.dates.0."
+suffix <- seq(0,212)
+diabetes_dates <- paste0(prefix, suffix)
+
+# find all diagnosis dates that match a diagnosis
+matches_diabetes <- as.data.frame(sapply(dat[ICD10_all], "%in%", diabetes_icd))
+dat[diabetes_dates] <- dat[ICD10_dates]
+
+# convert all non-diabetes diagnosis dates to NA
+for(k in seq_along(diabetes_dates)) {
+dat[[diabetes_dates[k]]][which(matches_diabetes[k] == FALSE)] <- NA
+}
+
+# get earliest diagnosis date if there are multiple
+dat$diabetes_date <- do.call(pmin, c(dat[diabetes_dates], na.rm = TRUE))
+
+### CVD diagnosis dates -------------------------------------------------------------------
+
+prefix <- "CVD.dates.0."
+suffix <- seq(0,212)
+CVD_dates <- paste0(prefix, suffix)
+
+# find all diagnosis dates that match a diagnosis
+matches_cvd <- as.data.frame(sapply(dat[ICD10_all], "%in%", cardio_icd))
+dat[CVD_dates] <- dat[ICD10_dates]
+
+# convert all non-CVD diagnosis dates to NA
+for(k in seq_along(CVD_dates)) {
+dat[[CVD_dates[k]]][which(matches_cvd[k] == FALSE)] <- NA
+}
+
+# get earliest diagnosis date if there are multiple
+dat$CVD_date <- do.call(pmin, c(dat[CVD_dates], na.rm = TRUE))
+
+### Cerebrovascular diagnosis dates -------------------------------------------------------------------
+
+prefix <- "cerebro.dates.0."
+suffix <- seq(0,212)
+cerebro_dates <- paste0(prefix, suffix)
+
+# find all diagnosis dates that match a diagnosis
+matches_cerebro <- as.data.frame(sapply(dat[ICD10_all], "%in%", cerebro_icd))
+dat[cerebro_dates] <- dat[ICD10_dates]
+
+# convert all non-cerebro diagnosis dates to NA
+for(k in seq_along(cerebro_dates)) {
+dat[[cerebro_dates[k]]][which(matches_cerebro[k] == FALSE)] <- NA
+}
+
+# get earliest diagnosis date if there are multiple
+dat$cerebro_date <- do.call(pmin, c(dat[cerebro_dates], na.rm = TRUE))
+
+### COPD diagnosis dates -------------------------------------------------------------------
+
+prefix <- "COPD.dates.0."
+suffix <- seq(0,212)
+COPD_dates <- paste0(prefix, suffix)
+
+# find all diagnosis dates that match a diagnosis
+matches_copd <- as.data.frame(sapply(dat[ICD10_all], "%in%", copd_icd))
+dat[COPD_dates] <- dat[ICD10_dates]
+
+# convert all non-cerebro diagnosis dates to NA
+for(k in seq_along(COPD_dates)) {
+dat[[COPD_dates[k]]][which(matches_copd[k] == FALSE)] <- NA
+}
+
+# get earliest diagnosis date if there are multiple
+dat$COPD_date <- do.call(pmin, c(dat[COPD_dates], na.rm = TRUE))
+
+### Liver diagnosis dates -------------------------------------------------------------------
+
+prefix <- "liver.dates.0."
+suffix <- seq(0,212)
+liver_dates <- paste0(prefix, suffix)
+
+# find all diagnosis dates that match a diagnosis
+matches_liver <- as.data.frame(sapply(dat[ICD10_all], "%in%", liver_icd))
+dat[liver_dates] <- dat[ICD10_dates]
+
+# convert all non-cerebro diagnosis dates to NA
+for(k in seq_along(liver_dates)) {
+dat[[liver_dates[k]]][which(matches_liver[k] == FALSE)] <- NA
+}
+
+# get earliest diagnosis date if there are multiple
+dat$liver_date <- do.call(pmin, c(dat[liver_dates], na.rm = TRUE))
+
+### Kidney diagnosis dates -------------------------------------------------------------------
+
+prefix <- "kidney.dates.0."
+suffix <- seq(0,212)
+kidney_dates <- paste0(prefix, suffix)
+
+# find all diagnosis dates that match a diagnosis
+matches_kidney <- as.data.frame(sapply(dat[ICD10_all], "%in%", kidney_icd))
+dat[kidney_dates] <- dat[ICD10_dates]
+
+# convert all non-cerebro diagnosis dates to NA
+for(k in seq_along(kidney_dates)) {
+dat[[kidney_dates[k]]][which(matches_kidney[k] == FALSE)] <- NA
+}
+
+# get earliest diagnosis date if there are multiple
+dat$kidney_date <- do.call(pmin, c(dat[kidney_dates], na.rm = TRUE))
+
+### Neurodegenerative diagnosis dates -------------------------------------------------------------------
+
+prefix <- "neurodegen.dates.0."
+suffix <- seq(0,212)
+neurodegen_dates <- paste0(prefix, suffix)
+
+# find all diagnosis dates that match a diagnosis
+matches_neurodegen <- as.data.frame(sapply(dat[ICD10_all], "%in%", neurodegen_icd))
+dat[neurodegen_dates] <- dat[ICD10_dates]
+
+# convert all non-cerebro diagnosis dates to NA
+for(k in seq_along(neurodegen_dates)) {
+dat[[neurodegen_dates[k]]][which(matches_neurodegen[k] == FALSE)] <- NA
+}
+
+# get earliest diagnosis date if there are multiple
+dat$neurodegen_date <- do.call(pmin, c(dat[neurodegen_dates], na.rm = TRUE))
+
+### Rheumatoid arthritis diagnosis dates ------------------------------------------------------
+
+prefix <- "rheumatoid.dates.0."
+suffix <- seq(0,212)
+rheumatoid_dates <- paste0(prefix, suffix)
+
+# find all diagnosis dates that match a diagnosis
+matches_rheumatoid <- as.data.frame(sapply(dat[ICD10_all], "%in%", rheumatoid_icd))
+dat[rheumatoid_dates] <- dat[ICD10_dates]
+
+# convert all non-cerebro diagnosis dates to NA
+for(k in seq_along(rheumatoid_dates)) {
+dat[[rheumatoid_dates[k]]][which(matches_rheumatoid[k] == FALSE)] <- NA
+}
+
+# get earliest diagnosis date if there are multiple
+dat$rheumatoid_date <- do.call(pmin, c(dat[rheumatoid_dates], na.rm = TRUE))
+
+
+### Censoring dates -------------------------------------------------------------------
+
+# NCD
+dat$NCD_censor_date <- dat$NCD_date 
+dat$NCD_censor_date[which(is.na(dat$NCD_censor_date))] <- "2020-4-30"
+
+# cancer
+dat$cancer_censor_date <- dat$cancer_date 
+dat$cancer_censor_date[which(is.na(dat$cancer_censor_date))] <- "2020-4-30"
+
+# diabetes
+dat$diabetes_censor_date <- dat$diabetes_date 
+dat$diabetes_censor_date[which(is.na(dat$diabetes_censor_date))] <- "2020-4-30"
+
+# CVD
+dat$CVD_censor_date <- dat$CVD_date 
+dat$CVD_censor_date[which(is.na(dat$CVD_censor_date))] <- "2020-4-30"
+
+# cerebrovascular
+dat$cerebro_censor_date <- dat$cerebro_date 
+dat$cerebro_censor_date[which(is.na(dat$cerebro_censor_date))] <- "2020-4-30"
+
+# COPD
+dat$COPD_censor_date <- dat$COPD_date 
+dat$COPD_censor_date[which(is.na(dat$COPD_censor_date))] <- "2020-4-30"
+
+# liver
+dat$liver_censor_date <- dat$liver_date 
+dat$liver_censor_date[which(is.na(dat$liver_censor_date))] <- "2020-4-30"
+
+# kidney
+dat$kidney_censor_date <- dat$kidney_date 
+dat$kidney_censor_date[which(is.na(dat$kidney_censor_date))] <- "2020-4-30"
+
+# neurodegenerative
+dat$neurodegen_censor_date <- dat$neurodegen_date 
+dat$neurodegen_censor_date[which(is.na(dat$neurodegen_censor_date))] <- "2020-4-30"
+
+# rheumatoid
+dat$rheumatoid_censor_date <- dat$rheumatoid_date 
+dat$rheumatoid_censor_date[which(is.na(dat$rheumatoid_censor_date))] <- "2020-4-30"
+
+### Survival time -------------------------------------------------------------------
+
+# survival time = censor date - recruitment date
+
+# NCD
+dat$NCD_survival_time <- as.numeric(dat$NCD_censor_date - dat$f.53.0.0)
+
+# cancer
+dat$cancer_survival_time <- as.numeric(dat$cancer_censor_date - dat$f.53.0.0)
+
+# CVD
+dat$CVD_survival_time <- as.numeric(dat$CVD_censor_date - dat$f.53.0.0)
+
+# diabetes
+dat$diabetes_survival_time <- as.numeric(dat$diabetes_censor_date - dat$f.53.0.0)
+
+# cerebro
+dat$cerebro_survival_time <- as.numeric(dat$cerebro_censor_date - dat$f.53.0.0)
+
+# COPD
+dat$COPD_survival_time <- as.numeric(dat$COPD_censor_date - dat$f.53.0.0)
+
+# liver
+dat$liver_survival_time <- as.numeric(dat$liver_censor_date - dat$f.53.0.0)
+
+# kidney
+dat$kidney_survival_time <- as.numeric(dat$kidney_censor_date - dat$f.53.0.0)
+
+# neurodegen
+dat$neurodegen_survival_time <- as.numeric(dat$neurodegen_censor_date - dat$f.53.0.0)
+
+# rheumatoid
+dat$rheumatoid_survival_time <- as.numeric(dat$rheumatoid_censor_date - dat$f.53.0.0)
+
+### Save -------------------------------------------------------------------
+
+# rename eid
+dat$eid <- dat$f.eid
+
+# select just summary column with any NCD diagnosis
+dat_NCD <- subset(
+    dat,
+    select = c(
+        "eid",
+        "NCD_event",
+        "NCD_date",
+        "NCD_censor_date",
+        "NCD_survival_time",
+        "NCD_number_diagnoses"
+    )
+)
+
+# save
+save(dat_NCD, file = "/path/to/file/NCD_may_15_2021.RData")
+
+# select columns for all disease-specific events and dates
+dat_NCD_all <- subset(
+    dat,
+    select = c(
+        Cs(
+            eid,
+            NCD_event,
+            NCD_date,
+            NCD_censor_date,
+            NCD_survival_time,
+            NCD_number_diagnoses,
+            cancer_event,
+            diabetes_event,
+            CVD_event,
+            cerebro_event,
+            COPD_event,
+            liver_event,
+            kidney_event,
+            neurodegen_event,
+            rheumatoid_event,
+            cancer_date,
+            diabetes_date,
+            CVD_date,
+            cerebro_date,
+            COPD_date,
+            liver_date,
+            kidney_date,
+            neurodegen_date,
+            rheumatoid_date,
+            cancer_censor_date,
+            diabetes_censor_date,
+            CVD_censor_date,
+            cerebro_censor_date,
+            COPD_censor_date,
+            liver_censor_date,
+            kidney_censor_date,
+            neurodegen_censor_date,
+            rheumatoid_censor_date,
+            cancer_survival_time,
+            diabetes_survival_time,
+            CVD_survival_time,
+            cerebro_survival_time,
+            COPD_survival_time,
+            liver_survival_time,
+            kidney_survival_time,
+            neurodegen_survival_time,
+            rheumatoid_survival_time
+        )
+    )
+)
+
+# save
+save(dat_NCD_all, file = "/path/to/file/NCD_all_subsets_may_15_2021.RData")
+```
