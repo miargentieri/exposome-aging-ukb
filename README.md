@@ -24,7 +24,7 @@ The following is a description of the various files and directories found within
 |`results/`        |The raw analysis output from each analysis stage                                                    |
 |`scripts/`        |Code used for all stages of analysis                                                                |
 
-Files are in R Markdown format so that chunks can be run individually without running the entire script. However, scripts are not currently written or optimized to be knit and published via R Markdown without additional configuration in the code. Code in file #1 (data import) requires a complete raw dataset from the UK Biobank with ALL baseline variables collected in the UK Biobank cohort.   
+Files are in R Markdown format so that chunks can be run individually without running the entire script. However, scripts are not currently written or optimized to be knit and published via R Markdown without additional configuration in the code. Code in script file #1 (data import) requires a complete raw dataset from the UK Biobank with ALL baseline variables collected in the UK Biobank cohort.   
   
 All-cause mortality data used for analysis were  accessed from the UK Biobank data portal on June 5th, 2021. Censoring date used was February 28th, 2021. Using mortality data that is more current will change analysis results.
 
