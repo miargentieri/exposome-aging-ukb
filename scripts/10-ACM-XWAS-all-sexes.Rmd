@@ -1,0 +1,1250 @@
+# XWAS of All-Cause Mortality - Results in full UK Biobank cohort (all sexes)
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = FALSE)
+knitr::opts_chunk$set(warning = FALSE)
+knitr::opts_chunk$set(message = FALSE)
+knitr::opts_chunk$set(results = 'asis')
+```
+
+```{r path}
+path <- "/Users/austin.argentieri/OneDrive - Nexus365/DPhil Research/UKB/Analysis projects/ACM EWAS 2021"
+```
+
+```{r load}
+# load analysis datasets
+load(paste0(path, "/datasets/ACM_final_analysis_datasets_feb_16_2022.RData"))
+
+# load data dictionary to assign variable categories
+categories <- read.csv("/Users/austin.argentieri/OneDrive - Nexus365/DPhil Research/UKB/Data dictionaries/Argentieri UKB dataset data dictionary.csv")
+
+# set date for saving
+date <- "feb_22_2022"
+```
+
+```{r combining_sex_datasets}
+
+# get vector of common columns (vars) between men and women
+common_cols <- intersect(colnames(mult_disc[[1]]), colnames(fmult_disc[[1]]))
+
+# function to subset datasets to common columns
+common_col_subset <- function(x) {
+    x <- x[common_cols]
+    return(x)
+}
+
+# run in datasets
+mult_disc_common <- lapply(mult_disc, common_col_subset)
+mult_rep_common <- lapply(mult_rep, common_col_subset)
+fmult_disc_common <- lapply(fmult_disc, common_col_subset)
+fmult_rep_common <- lapply(fmult_rep, common_col_subset)
+
+# rbind male and female discovery datasets
+discovery_combined <- as.list(seq_along(mult_disc))
+for (k in seq_along(discovery_combined)) {
+    discovery_combined[[k]] <- rbind(mult_disc_common[[k]],
+                                     fmult_disc_common[[k]])
+}
+
+# rbind male and female replication datasets
+replication_combined <- as.list(seq_along(mult_rep))
+for (k in seq_along(replication_combined)) {
+    replication_combined[[k]] <- rbind(mult_rep_common[[k]],
+                                       fmult_rep_common[[k]])
+}
+
+```
+
+```{r XWAS, eval=FALSE}
+
+######### Exposome-wide association study (XWAS) pipeline
+######### Austin Argentieri (austin.argentieri@anthro.ox.ac.uk)
+
+
+### FILE REQUIREMENT 1: Datasets split into discovery (mult_disc) and replication (mult_rep) sets
+### FILE REQUIREMENT 2: Data dictionary csv file with column headers "Variable" and "Category"
+
+### XWAS pipeline assumes the use of multiple imputed datasets stored as a list (# of imputed datasets does not influence the program)
+### XWAS analysis below uses an age-at-risk survival formula with minimal covariates and some stratification. Modify the formula as desired.
+### Linear and logistic regression formulas can also be specified if survival analysis is not desired
+### To change covariates or regression type, edit the formula in the model_disc and model_rep functions
+
+### NOTES ON VARIABLE PREPARATION: 
+### All data classification (e.g., setting factors, numeric) must be performed before running pipeline
+### XWAS pipeline by default will scale (set average to 0) and standardize (set SD to 1) all numeric exposures in the supplied dataset
+### Check the list of variables excluded from scaling in the scale_numeric function. Add or delete variables manually as desired
+### If including age as a covariate in your model, it is advised to remove age from the exclusion list in the scale_numeric function
+### If standardization is not desired, then comment out the Scale section
+
+library(survival)
+library(mice)
+library(Hmisc)
+library(pbapply)
+library(data.table)
+
+# set global R options
+options(scipen = 999) # turn off scientific notation
+pboptions(type = "timer", char = "=") # initialize progress bar
+
+### Setting exposures -------------------------------------------------------------------
+
+# create vector of exposure names
+exposures <- as.vector(colnames(discovery_combined[[1]]))
+
+# make list of variables in dataset to exclude from analysis as exposures (including covariates in model)
+exclude <- c(
+  Cs(
+    eid, # participant ID
+    hazard, # outcome
+    ACM_event_indicator, # outcome
+    ACM_survival_time, # outcome
+    birth_year, # used for creation of birth cohort strata
+    recruitment_date, # recruitment metric only
+    recruitment_age, # covariate/outcome
+    recruitment_centre, # covariate
+    education_years, # covariate
+    hshld_income, # covariate
+    ethnicity, # covariate
+    sex, # no variance
+    alcohol_status, # only used to create NA for alcohol_freq
+    hand_grip_strength_right, # old var before normalization
+    hand_grip_strength_left, # old var before normalization
+    FEV1_best, # old var before normalization
+    FVC_best, # old var before normalization
+    sleep_hours, # old var before normalization
+    education_college, # redundant to covariate
+    education_A_levels, # redundant to covariate
+    education_O_levels, # redundant to covariate
+    education_CSEs, # redundant to covariate
+    education_NVQ, # redundant to covariate
+    education_other_professional, # redundant to covariate
+    education_none, # redundant to covariate
+    cochlear_implant, # remove after crosstab QC
+    portable_gas_heat, # remove after crosstab QC
+    solid_fuel_heat, # remove after crosstab QC
+    open_fire_no_central_heat, # remove after crosstab QC
+    hshld_grandparent, # remove after crosstab QC
+    hshld_other_related, # remove after crosstab QC
+    student, # remove after crosstab QC
+    trauma_vision_loss, # remove after crosstab QC
+    pregnant, # remove after crosstab QC
+    other_diagnosis, # not interpretable
+    other_eye_problems, # not interpretable
+    other_meds, # not interpretable
+    other_group_activity, # not interpretable
+    other_serious_eye_condition, # not interpretable
+    tobacco_exposure_outside, # nested
+    tobacco_exposure_home, # nested
+    hshld_smokers, # nested
+    heel_sound_speed_right, # nested
+    
+    employment_distance, # nested
+    employment_years, # nested
+    employment_hours, # nested
+    employment_travel_freq, # nested
+    car_commute, # nested
+    walk_commute, # nested
+    public_transport_commute, # nested
+    cycle_commute, # nested
+    employment_standing, # nested
+    employment_heavy_manual, # nested
+    shift_work, # nested
+    night_shift_work, # nested
+    noisy_workplace # nested
+  )
+)
+
+# remove variables I don't want to test in XWAS as exposures
+exposures <- exposures[exposures %nin% exclude]
+
+# add in categories to sort
+exposures <- as.data.frame(exposures) # create df from exposure list
+summary <- merge(exposures,
+                 categories,
+                 by.x = "exposures",
+                 by.y = "Variable",
+                 all = F) # merge with categories
+summary <- summary[order(summary$Category), ] # order exposures by category
+
+## separate out non-exposome variables
+
+# get row positions for non-exposome
+non_exposome <- which(
+    # categories of non-exposome vars
+    summary$Category %in% 
+        c("Blood biomarkers",
+          "Blood count",
+          "Cognitive function",
+          "General health",
+          "Medical conditions",
+          "Physical measures",
+          "Urine biomarkers",
+          "Medications",
+          "Family medical history") |
+        # individual disability or illness vars and response levels
+        summary$exposures %in% 
+        c("blue_badge",
+          "attendance_allowance",
+          "usual_walking_pace",
+          "disability_allowance",
+          "unemployed_disability",
+          "self_illness_injury_assault",
+          "MDD",
+          "bipolar",
+          "narcolepsy")
+    )
+
+# remove non-exposome variables
+summary <- summary[-non_exposome, ]
+
+# make final vector of exposures ordered by category
+exposures <- as.vector(summary$exposures) 
+
+### Survival variables -------------------------------------------------------------------
+
+# create age at censoring variables for age-at-risk analysis - discovery
+for(j in seq_along(discovery_combined)) {
+    # divide survival time (days) by 365.25 to get time in years
+    discovery_combined[[j]]$time <- 
+        # change to numeric because survival time is a difftime object
+        as.numeric(discovery_combined[[j]]$ACM_survival_time / 365.25) 
+    
+    # add time (years) to recruitment age to get censor age
+    discovery_combined[[j]]$censor_age <-
+        discovery_combined[[j]]$recruitment_age + discovery_combined[[j]]$time 
+}
+
+# create age at censoring variables for age-at-risk analysis - discovery
+for(j in seq_along(replication_combined)) {
+    # divide survival time (days) by 365.25 to get time in years
+    replication_combined[[j]]$time <- 
+        # change to numeric because survival time is a difftime object
+        as.numeric(replication_combined[[j]]$ACM_survival_time / 365.25) 
+    
+    # add time (years) to recruitment age to get censor age
+    replication_combined[[j]]$censor_age <-
+        replication_combined[[j]]$recruitment_age + replication_combined[[j]]$time 
+}
+
+### Create 5-year birth cohorts -------------------------------------------------------------------
+
+# function to calculate birth cohorts
+split_birth_year <- function(x){
+  x$birth_cohort <- ifelse(
+    x$birth_year >= 1935 & x$birth_year < 1940,
+    "1935-1940",
+    ifelse(
+      x$birth_year >= 1940 & x$birth_year < 1945,
+      "1940-1945",
+      ifelse(
+        x$birth_year >= 1945 & x$birth_year < 1950,
+        "1945-1950",
+        ifelse(
+          x$birth_year >= 1950 & x$birth_year < 1955,
+          "1950-1955",
+          ifelse(
+            x$birth_year >= 1955 & x$birth_year < 1960,
+            "1955-1960",
+            ifelse(
+              x$birth_year >= 1960 & x$birth_year < 1965,
+              "1960-1965",
+              ifelse(
+                x$birth_year >= 1965 & x$birth_year <= 1970, 
+                "1965-1970", 
+                NA
+              )
+            )
+          )
+        )
+      )
+    )
+  )
+  
+  x$birth_cohort <- as.factor(x$birth_cohort)
+  return(x)
+}
+
+# execute function across imputed datasets to create 5-year age bands
+discovery_combined <- lapply(discovery_combined, split_birth_year)
+replication_combined <- lapply(replication_combined, split_birth_year)
+
+### Scale -------------------------------------------------------------------
+
+# scale function
+scale_numeric <- function(x) { 
+  # create logical vector of numeric columns
+  nums <- sapply(x, is.numeric)
+  
+  # list of numeric variables to exclude from scaling
+  scale_exclude <- c(
+    Cs(
+      recruitment_age,
+      censor_age,
+      ACM_event_indicator,
+      eid,
+      time,
+      ACM_survival_time,
+      hazard,
+      birth_year
+    )
+  )
+  
+  # exclude those columns I don't want to scale
+  nums[names(nums) %in% scale_exclude] <- FALSE # don't want to scale these
+  
+  # perform scale
+  x[nums] <- scale(x[nums],
+                   scale = TRUE)
+  
+  # return entire dataset
+  return(x)
+}
+
+# scale desired numeric columns
+discovery_combined <- lapply(discovery_combined, scale_numeric)
+replication_combined <- lapply(replication_combined, scale_numeric)
+
+### Ordinal contrasts -------------------------------------------------------------------
+
+# overriding default polynomial contrasts to only return linear contrasts
+set_contrasts <- function(x) {
+
+  # find ordered variables
+  ord <- sapply(x, is.ordered)
+
+  # set contrasts to only linear
+  for (k in seq(ncol(x[ord]))) {
+    contrasts(x[ord][[k]], how.many = 1) <- contr.poly(nlevels(x[ord][[k]]))
+  }
+
+  return(x)
+
+}
+
+# run in datasets
+discovery_combined <- lapply(discovery_combined, set_contrasts)
+replication_combined <- lapply(replication_combined, set_contrasts)
+
+### XWAS -------------------------------------------------------------------
+
+## functions
+
+# discovery
+model_disc <- function(x) {
+  lapply(discovery_combined, function(y)
+    coxph(as.formula(
+      paste0(
+          "Surv(recruitment_age, censor_age, ACM_event_indicator) ~
+             strata(birth_cohort, sex) + 
+             recruitment_centre + education_years + hshld_income + ethnicity + ",
+        x
+      )
+    ), data = y)
+  )
+}
+
+# replication
+model_rep <- function(x) {
+  lapply(replication_combined, function(y)
+    coxph(as.formula(
+      paste0(
+          "Surv(recruitment_age, censor_age, ACM_event_indicator) ~
+             strata(birth_cohort, sex) + 
+             recruitment_centre + education_years + hshld_income + ethnicity + ",
+        x
+      )
+    ), data = y)
+  )
+}
+
+
+## discovery XWAS
+models_disc <- as.list(seq(1,length(exposures))) # create list to store model results
+models_disc <- pblapply(exposures, model_disc)
+
+## replication XWAS
+models_rep <- as.list(seq(1,length(exposures))) # create list to store model results
+models_rep <- pblapply(exposures, model_rep)
+
+### Pool -------------------------------------------------------------------
+
+## pool discovery XWAS
+pool_disc <- as.list(seq(1,length(exposures))) # create list to store pool results
+
+for(j in seq_along(exposures)) {
+  pool_disc[[j]] <- pool(models_disc[[j]])
+}
+
+## pool replication XWAS
+pool_rep <- as.list(seq(1,length(exposures))) # create list to store pool results
+
+for(j in seq_along(exposures)) {
+  pool_rep[[j]] <- pool(models_rep[[j]])
+}
+
+### C-indices -------------------------------------------------------------------
+
+library(boot)
+
+## discovery dataset
+
+# get c-index for model in each imputed dataset
+indices_disc <- as.list(seq(1,length(exposures)))
+for (k in seq_along(indices_disc)) {
+    indices_disc[[k]] <- c(summary(models_disc[[k]][[1]])$concordance[1], 
+                           summary(models_disc[[k]][[2]])$concordance[1],
+                           summary(models_disc[[k]][[3]])$concordance[1],
+                           summary(models_disc[[k]][[4]])$concordance[1],
+                           summary(models_disc[[k]][[5]])$concordance[1])
+}
+
+# logit transform c-indices, average, then return back to c-index scale
+pool_index_disc <- as.list(seq(1,length(exposures)))
+for (k in seq_along(indices_disc)) {
+    logs <- sapply(indices_disc[[k]], logit)
+    avg_logs <- mean(logs)
+    pool_index_disc[[k]] <- inv.logit(avg_logs)
+}
+
+## replication dataset
+
+indices_rep <- as.list(seq(1,length(exposures)))
+for (k in seq_along(indices_rep)) {
+    indices_rep[[k]] <- c(summary(models_rep[[k]][[1]])$concordance[1], 
+                          summary(models_rep[[k]][[2]])$concordance[1],
+                          summary(models_rep[[k]][[3]])$concordance[1],
+                          summary(models_rep[[k]][[4]])$concordance[1],
+                          summary(models_rep[[k]][[5]])$concordance[1])
+}
+
+# logit transform c-indices, average, then return back to c-index scale
+pool_index_rep <- as.list(seq(1,length(exposures)))
+for (k in seq_along(indices_rep)) {
+    logs <- sapply(indices_rep[[k]], logit)
+    avg_logs <- mean(logs)
+    pool_index_rep[[k]] <- inv.logit(avg_logs)
+}
+
+### R squared -------------------------------------------------------------------
+
+library(CoxR2)
+library(DescTools)
+
+## discovery dataset
+
+# get r squared ER metric for model in each imputed dataset
+rsq_disc <- as.list(seq(1,length(exposures)))
+for (k in seq_along(rsq_disc)) {
+    rsq_disc[[k]] <- c(coxr2(models_disc[[k]][[1]])$rsq, 
+                       coxr2(models_disc[[k]][[2]])$rsq,
+                       coxr2(models_disc[[k]][[3]])$rsq,
+                       coxr2(models_disc[[k]][[4]])$rsq,
+                       coxr2(models_disc[[k]][[5]])$rsq)
+}
+
+# transform to correlation scale (sqrt)
+for (k in seq_along(rsq_disc)) {
+    rsq_disc[[k]] <- lapply(rsq_disc[[k]], sqrt)
+}
+
+# transform using Fischer's Z
+for (k in seq_along(rsq_disc)) {
+    rsq_disc[[k]] <- lapply(rsq_disc[[k]], FisherZ)
+}
+
+# pool coefficients (which is just the average)
+rsq_disc_pool <- as.list(seq(1,length(exposures)))
+for (k in seq_along(rsq_disc)) {
+    tmp <- Reduce('+', rsq_disc[[k]])
+    rsq_disc_pool[[k]] <- tmp / length(rsq_disc[[k]])
+}
+
+# transform coefficients back to r scale
+for (k in seq_along(rsq_disc)) {
+    rsq_disc_pool[[k]] <- FisherZInv(rsq_disc_pool[[k]])
+}
+
+# transform r squared scale
+for (k in seq_along(rsq_disc)) {
+    rsq_disc_pool[[k]] <- (rsq_disc_pool[[k]])^2
+}
+
+## replication dataset
+
+# get r squared ER metric for model in each imputed dataset
+rsq_rep <- as.list(seq(1,length(exposures)))
+for (k in seq_along(rsq_rep)) {
+    rsq_rep[[k]] <- c(coxr2(models_disc[[k]][[1]])$rsq, 
+                      coxr2(models_disc[[k]][[2]])$rsq,
+                      coxr2(models_disc[[k]][[3]])$rsq,
+                      coxr2(models_disc[[k]][[4]])$rsq,
+                      coxr2(models_disc[[k]][[5]])$rsq)
+}
+
+# transform to correlation scale (sqrt)
+for (k in seq_along(rsq_rep)) {
+    rsq_rep[[k]] <- lapply(rsq_rep[[k]], sqrt)
+}
+
+# transform using Fischer's Z
+for (k in seq_along(rsq_rep)) {
+    rsq_rep[[k]] <- lapply(rsq_rep[[k]], FisherZ)
+}
+
+# pool coefficients (which is just the average)
+rsq_rep_pool <- as.list(seq(1,length(exposures)))
+for (k in seq_along(rsq_rep)) {
+    tmp <- Reduce('+', rsq_rep[[k]])
+    rsq_rep_pool[[k]] <- tmp / length(rsq_rep[[k]])
+}
+
+# transform coefficients back to r scale
+for (k in seq_along(rsq_rep_pool)) {
+    rsq_rep_pool[[k]] <- FisherZInv(rsq_rep_pool[[k]])
+}
+
+# transform r squared scale
+for (k in seq_along(rsq_rep_pool)) {
+    rsq_rep_pool[[k]] <- (rsq_rep_pool[[k]])^2
+}
+
+### Summaries -------------------------------------------------------------------
+
+# get list of summaries for all pooled models (with beta)
+smry_disc <-lapply(pool_disc,
+                   summary,
+                   conf.int = TRUE,
+                   conf.level = 0.95)
+
+smry_rep <- lapply(pool_rep,
+                   summary,
+                   conf.int = TRUE,
+                   conf.level = 0.95)
+
+# extract all model summaries from the lists and convert to single data frame of estimates
+allvars_disc <- rbindlist(smry_disc)
+allvars_rep <- rbindlist(smry_rep)
+
+# rename column for exposure
+names(allvars_disc)[names(allvars_disc) == "term"] <- "Exposure"
+names(allvars_rep)[names(allvars_rep) == "term"] <- "Exposure"
+
+# calculate Hazard Ratio
+allvars_disc$Hazard.Ratio <- exp(allvars_disc$estimate)
+allvars_rep$Hazard.Ratio <- exp(allvars_rep$estimate)
+
+# exponentiate beta 95% CIs for HR 95% CIs
+allvars_disc$"HR_2.5%" <- exp(allvars_disc$`2.5 %`)
+allvars_disc$"HR_97.5%" <- exp(allvars_disc$`97.5 %`)
+
+allvars_rep$"HR_2.5%" <- exp(allvars_rep$`2.5 %`)
+allvars_rep$"HR_97.5%" <- exp(allvars_rep$`97.5 %`)
+
+# rename column for betas
+names(allvars_disc)[names(allvars_disc) == "estimate"] <- "Beta"
+names(allvars_rep)[names(allvars_rep) == "estimate"] <- "Beta"
+
+# rename column for beta 95% CIs
+names(allvars_disc)[names(allvars_disc) == "2.5 %"] <- "Beta_2.5%"
+names(allvars_disc)[names(allvars_disc) == "97.5 %"] <- "Beta_97.5%"
+
+names(allvars_rep)[names(allvars_rep) == "2.5 %"] <- "Beta_2.5%"
+names(allvars_rep)[names(allvars_rep) == "97.5 %"] <- "Beta_97.5%"
+
+### Getting accurate p-values  -------------------------------------------------------------------
+
+### using summary on a mipo object (output from the pool function) rounds very small p-values to 0
+### even when we set the # of digits to the max in R (22)
+### so we have to hard code the math to get the p-values manually from the mipo object
+
+## discovery 
+tstat <- as.list(seq(1,length(pool_disc))) # create list to store t stats
+p.val <- as.list(seq(1,length(pool_disc))) # create list to store p-values
+p_table <- as.list(seq(1,length(pool_disc))) # create list to p table dfs
+  
+# loop to calculate p-values and create table of results
+for (j in seq_along(pool_disc)) {
+  # t statistic test using pooled estimate and pooled variance (t)
+  tstat[[j]] <- pool_disc[[j]]$pooled$estimate / sqrt(pool_disc[[j]]$pooled$t)
+  # calculate p-values
+  p.val[[j]] <- as.data.frame(2 * pt(-abs(tstat[[j]]), df = pool_disc[[j]]$pooled$df))
+  # create df in p table
+  p_table[[j]] <- data.frame(matrix(NA, nrow = nrow(p.val[[j]]), ncol = 2))
+  # fill in p table
+  p_table[[j]]$X2 <- p.val[[j]][[1]]
+  # add in variable names
+  p_table[[j]]$X1 <- pool_disc[[j]]$pooled$term
+}
+
+# extract list into a single df
+p_table <- rbindlist(p_table)
+
+# change column names
+colnames(p_table) <- c("Exposure.p.table",
+                       "p.value.full")
+
+# merge p table with XWAS results
+allvars_disc <- cbind(allvars_disc, p_table)
+
+# test to make sure the rows didn't get mixed up
+all.equal(allvars_disc$Exposure, allvars_disc$Exposure.p.table)
+
+# replace all 0 p-values from pooling with actual value
+allvars_disc$p.value <- ifelse(allvars_disc$p.value == 0, 
+                            allvars_disc$p.value.full,
+                            allvars_disc$p.value)
+
+# test to see if any 0 p-values remain
+paste("number of p-values rounded to 0:", 
+      nrow(allvars_disc[which(allvars_disc$p.value == 0), ]))
+      
+## replication 
+tstat <- as.list(seq(1,length(pool_rep))) # create list to store t stats
+p.val <- as.list(seq(1,length(pool_rep))) # create list to store p-values
+p_table <- as.list(seq(1,length(pool_rep))) # create list to p table dfs
+  
+# loop to calculate p-values and create table of results
+for (j in seq_along(pool_rep)) {
+  # t statistic test using pooled estimate and pooled variance (t)
+  tstat[[j]] <- pool_rep[[j]]$pooled$estimate / sqrt(pool_rep[[j]]$pooled$t)
+  # calculate p-values
+  p.val[[j]] <- as.data.frame(2 * pt(-abs(tstat[[j]]), df = pool_rep[[j]]$pooled$df))
+  # create df in p table
+  p_table[[j]] <- data.frame(matrix(NA, nrow = nrow(p.val[[j]]), ncol = 2))
+  # fill in p table
+  p_table[[j]]$X2 <- p.val[[j]][[1]]
+  # add in variable names
+  p_table[[j]]$X1 <- pool_rep[[j]]$pooled$term
+}
+
+# extract list into a single df
+p_table <- rbindlist(p_table)
+
+# change column names
+colnames(p_table) <- c("Exposure.p.table",
+                       "p.value.full")
+
+# merge p table with XWAS results
+allvars_rep <- cbind(allvars_rep, p_table)
+
+# test to make sure the rows didn't get mixed up
+all.equal(allvars_rep$Exposure, allvars_rep$Exposure.p.table)
+
+# replace all 0 p-values with actual value
+allvars_rep$p.value <- ifelse(allvars_rep$p.value == 0, 
+                           allvars_rep$p.value.full,
+                           allvars_rep$p.value)
+
+# test to see if any 0 p-values remain
+paste("number of p-values rounded to 0:", 
+      nrow(allvars_rep[which(allvars_rep$p.value == 0), ]))
+
+### Remove covariate estimates ------------------------------------------------
+
+# remove the unwanted rows with coefficients for the covariates from each model
+# will need to add more lines if more covariates are used
+# strata terms (birth_cohort) are not listed in output and don't need removing
+
+allvars_disc <- allvars_disc[!grepl("recruitment_centre", allvars_disc$Exposure), ]
+allvars_rep <- allvars_rep[!grepl("recruitment_centre", allvars_rep$Exposure), ]
+
+allvars_disc <- allvars_disc[!grepl("hshld_income", allvars_disc$Exposure), ]
+allvars_rep <- allvars_rep[!grepl("hshld_income", allvars_rep$Exposure), ]
+
+allvars_disc <- allvars_disc[!grepl("education_years", allvars_disc$Exposure), ]
+allvars_rep <- allvars_rep[!grepl("education_years", allvars_rep$Exposure), ]
+
+allvars_disc <- allvars_disc[!grepl("ethnicity", allvars_disc$Exposure), ]
+allvars_rep <- allvars_rep[!grepl("ethnicity", allvars_rep$Exposure), ]
+
+# remove ".L" from exposure names for ordinal variables - need to do after p-value step above
+allvars_disc$Exposure <- gsub(".L", "", allvars_disc$Exposure, fixed = TRUE)
+allvars_rep$Exposure <- gsub(".L", "", allvars_rep$Exposure, fixed = TRUE)
+
+### Categories -------------------------------------------------------------------
+
+# get p-value column from replication set to merge
+rep <- subset(allvars_rep, select = c("Exposure", 
+                                   "p.value")) # subset replication results to just p-values
+names(rep)[names(rep) == "p.value"] <- "p.value.rep" # re-name p-values to differentiate from discovery
+
+## merge disc and rep, keeping estimates just from discovery
+allvars_total <- merge(allvars_disc, 
+                       rep, 
+                       by = "Exposure", 
+                       all = T, 
+                       sort = F)
+
+## map variable names to results
+allvars_total$Variable <- NA
+# create vector of variable names
+variables <- sort(as.vector(summary$exposures)) 
+
+# add variable names based on partial match with XWAS output exposure column with variable response level 
+# (e.g., match "alcohol_freq" to "alcohol_freqDaily or almost daily")
+for(j in seq_along(variables)) {
+  allvars_total$Variable[allvars_total$Exposure %in% allvars_total$Exposure[substring(
+    allvars_total$Exposure,
+    1,
+    nchar(variables[[j]])) == variables[[j]]]] <- variables[[j]]
+}
+
+## add in categories according to match with variable name
+allvars_total <- merge(allvars_total,  
+                       subset(categories, select = c("Variable", "Category")), 
+                       by = "Variable", 
+                       all = F, 
+                       sort = F)
+
+# add in C-index and R squared
+allvars_total$c.index.disc <- NA
+allvars_total$c.index.rep <- NA
+allvars_total$rsq.disc <- NA
+allvars_total$rsq.rep <- NA
+
+# function to round metrics to precise # of decimals
+specify_decimal <- function(x, k) trimws(format(round(x, k), nsmall=k))
+
+# add in C-index and r squared via match with variable name
+for (k in seq(exposures)) {
+        allvars_total$c.index.disc[which(
+            allvars_total$Variable == exposures[k])] <- specify_decimal(pool_index_disc[[k]], 4)
+}
+
+for (k in seq(exposures)) {
+        allvars_total$c.index.rep[which(
+            allvars_total$Variable == exposures[k])] <- specify_decimal(pool_index_rep[[k]], 4)
+}
+
+for (k in seq(exposures)) {
+        allvars_total$rsq.disc[which(
+            allvars_total$Variable == exposures[k])] <- specify_decimal(rsq_disc_pool[[k]], 4)
+}
+
+for (k in seq(exposures)) {
+        allvars_total$rsq.rep[which(
+            allvars_total$Variable == exposures[k])] <- specify_decimal(rsq_rep_pool[[k]], 4)
+}
+
+### Separate exposome and disease/aging phenotype results -------------------------------------------------------------
+
+## get row positions for non-exposome
+non_exposome_levels <- which(
+        # individual response categories for categorical vars
+        allvars_total$Exposure %in% 
+        c("accommodation_typeSheltered accommodation",
+          "diet_change_5yrsYes, because of illness") 
+)
+
+## subset results to exposome
+XWAS_total <- allvars_total[-non_exposome_levels]
+
+### Exposome FDR -------------------------------------------------------------------
+
+## calculate FDR in the discovery analyses using benjamini-hochberg method
+XWAS_total$FDR.disc <- p.adjust(XWAS_total$p.value, 
+                                method = "BH")
+
+## calculate FDR in the replication analyses only among those from the discovery with FDR p-value < 0.05
+exposome_rep <- subset(XWAS_total, select = c("Exposure", 
+                                              "FDR.disc",
+                                              "p.value.rep"))
+
+# subset to associations that were significant after FDR in discovery
+sig <- exposome_rep[which(exposome_rep$FDR.disc < 0.05), ] 
+
+# calculate FDR on replication p-values only for significant variables in discovery
+sig$FDR.rep <- p.adjust(sig$p.value.rep, 
+                        method = "BH") 
+
+# subset replication results to just FDR p-values
+sig <- subset(sig, select = c("Exposure", 
+                              "FDR.rep")) 
+
+## recombine FDR p-values from replication with discovery results
+XWAS_total <- merge(XWAS_total, 
+                    sig, 
+                    by = "Exposure", 
+                    all = T, 
+                    sort = F)
+
+
+### Save -------------------------------------------------------------------
+
+# Re-order columns
+XWAS_total <- subset(XWAS_total,
+                     select = c("Exposure",
+                                "Beta",
+                                "Beta_2.5%",
+                                "Beta_97.5%",
+                                "Hazard.Ratio",
+                                "HR_2.5%",
+                                "HR_97.5%",
+                                "p.value",
+                                "FDR.disc",
+                                "FDR.rep",
+                                "c.index.disc",
+                                "c.index.rep",
+                                "rsq.disc",
+                                "rsq.rep",
+                                "std.error",
+                                "statistic",
+                                "df",
+                                "Variable",
+                                "Category"
+                     ))
+
+
+# save
+save(pool_disc,
+     pool_rep,
+     pool_index_disc,
+     pool_index_rep,
+     rsq_disc_pool,
+     rsq_rep_pool,
+     allvars_disc, 
+     allvars_rep,
+     allvars_total,
+     XWAS_total,
+     model_disc,
+     model_rep,
+     exposures,
+     file = 
+         paste0(paste0(paste0(path, "/results/full cohort/ACM_XWAS_results_"), date), "_all_sexes.RData")
+)
+
+```
+
+### Manhattan plot
+
+```{r plot_prep, out.width="100%"}
+
+### Manhattan plot
+
+# load
+load(paste0(path,"/results/full cohort/ACM_XWAS_results_feb_22_2022_all_sexes.RData"))
+load(paste0(path,"/results/color_palette.RData"))
+
+library(randomcoloR)
+library(ggplot2)
+library(plotly)
+library(htmlwidgets)
+
+# set options
+options(digits = 2)
+
+### Create plots df -------------------------------------------------------------------
+
+# create new df for plots
+plots_df <- XWAS_total
+plots_df <- plots_df[!is.na(plots_df$Beta), ] # remove any tests that failed 
+
+### Generate colors -------------------------------------------------------------------
+
+# generate color for each category of variable
+# try different random seeds until you like the results
+# then save the color pallette and color map with results
+
+# set.seed(789)
+# pal <- c(distinctColorPalette(k = length(unique(plots_df$Category)), altCol = FALSE, runTsne = FALSE))
+# color_map <- data.frame(sequence = unique(sort(plots_df$Category)), color = pal)
+# # 
+# save(pool_disc,
+#      pool_rep,
+#      allvars_disc,
+#      allvars_rep,
+#      XWAS_total,
+#      pal,
+#      color_map,
+#      file = "/Users/austin.argentieri/OneDrive - Nexus365/DPhil Research/UKB/Code/ACM XWAS 2021/results/ACM_XWAS_results_march_11_2021_men.RData")
+
+color_map$color[which(color_map$sequence == "Stressful life events")] <- 
+    color_map$color[which(color_map$sequence == "General health")]
+
+color_map$sequence[which(color_map$sequence == "Medications")] <- "Supplements"
+color_map$color[which(color_map$sequence == "Supplements")] <- 
+    color_map$color[which(color_map$sequence == "Urine biomarkers")]
+
+# merge color map with plots df
+plots_df <- merge(plots_df, 
+                  color_map, 
+                  by.x = "Category",
+                  by.y = "sequence", 
+                  all = T)
+
+plots_df <- plots_df[!is.na(plots_df$Beta), ] # remove any empty categories that got added in
+
+# create binary significant yes/no column for plot
+plots_df$Significant <- ifelse(plots_df$FDR.disc < 0.05 & plots_df$FDR.rep < 0.05, 
+                               "Yes", 
+                               "No")
+
+# recode as factor with no first so that the colors layer correctly in plot
+plots_df$Significant <- factor(plots_df$Significant, 
+                               levels = c("No", 
+                                          "Yes"))
+
+### Log transformation -------------------------------------------------------------------
+
+# log transform p values
+plots_df$log10.p <- -log10(plots_df$p.value) 
+
+# round log p values to 2 decimal places
+plots_df$log10.p <- format(round(plots_df$log10.p, 2), nsmall = 2)
+
+# re-class to numeric after rounding (format function converts to integer)
+plots_df$log10.p <- as.numeric(plots_df$log10.p)
+
+# find largest p-value (smallest log p value) that passes FDR for plot
+FDR <- plots_df[which(plots_df$FDR.disc < 0.05), ] # subset df to only those results that are FDR sig
+log_min <- min(FDR$log10.p) # find lowest log p value as line for FDR significance
+
+```
+
+```{r manhattan}
+
+### Manhattan plot -------------------------------------------------------------------
+
+# ggplot
+manhattan <- 
+  ggplot(
+      plots_df, 
+      aes(x = Category, 
+          y = log10.p, 
+          label = Exposure,
+          text = paste("Hazard Ratio:", 
+                       format(round(Hazard.Ratio, 2), nsmall = 2))
+      )) + 
+  geom_point(
+      aes(color = Category), 
+      size = 3, 
+      # jitter points so they are spaced horizontally
+      position = position_jitter(width = 0.4, 
+                                        height = 0)) + 
+    # increase point size in legend
+    guides(colour = guide_legend(override.aes = list(size = 5))) + 
+    scale_color_manual(values = unique(plots_df$color)) +
+    ggtitle("XWAS of All-Cause Mortality among UK Biobank Participants") +
+    labs(x = "Exposure",
+         y = "-log10 p-value") +
+    geom_hline(yintercept = log_min, 
+               color = "blue", 
+               linetype = "dashed") + # FDR line
+    theme_classic(base_size = 18) + 
+    theme(
+        legend.position = "right",
+        panel.border = element_blank(),
+        panel.grid.major.x = element_blank(),
+        panel.grid.minor.x = element_blank(),
+        axis.text.x = element_blank(),
+        axis.ticks = element_blank()
+    )
+
+# save
+ggsave(manhattan, 
+       filename = 
+           paste0(paste0(paste0(path, "/output/full cohort/ACM_XWAS_manhattan_"), date), "_all_sexes.png"),
+       height = 7, width = 15)
+
+### Plotly -------------------------------------------------------------------
+
+# text styling for plotly
+t <- list(family = "sans-serif",
+          size = 18,
+          color = 'black')
+
+# plotly interactive plot
+fig <- ggplotly(manhattan, 
+                tooltip = c("x", 
+                            "y", 
+                            "label", 
+                            "text")) %>% 
+  layout(title = "XWAS of All-Cause Mortality among UK Biobank Participants", 
+         font = t)
+
+# show plotly figure
+hide_legend(fig) # hide legend, since you can already hover on points to see all information
+
+# save
+saveWidget(
+    fig,
+    file = paste0(paste0(paste0(path, "/output/full cohort/html/ACM_XWAS_manhattan_"), date), "_all_sexes.html")
+)
+
+```
+
+
+## Volcano plots 
+
+```{r volcano_prep, out.width="100%"}
+
+### Prepare data for volcano plots
+
+library(ggplot2)
+library(ggrepel)
+library(ggforce)
+library(plotly)
+library(plyr)
+library(htmlwidgets)
+
+# round beta estimates for easier reading in plot
+plots_df$Beta  <- format(round(plots_df$Beta, 2), nsmall = 2)
+plots_df$Beta <- as.numeric(plots_df$Beta) # re-class to numeric because round produces an integer
+
+# add in grey/black color for non-significant points
+plots_df$color <- ifelse(plots_df$FDR.rep > 0.05 |
+                           is.na(plots_df$FDR.rep),
+                         "#4c4c4c",
+                         plots_df$color)
+
+# add in "non-significant" category for plots
+plots_df$Category <- ifelse(plots_df$color == "#4c4c4c",
+                            "* Non-significant",
+                            plots_df$Category)
+
+# re-order so that strongest hits are on top
+plots_df <- plots_df[order(plots_df$p.value), ]
+
+# labels for top 25 hits by p-value
+plots_df$labels <- plots_df$Variable
+plots_df$labels[20:nrow(plots_df)] <- ""
+
+### Pretty labels -------------------------------------------------------------------
+
+# make pretty labels for plot
+# this section will need to be tweaked for each new set of results
+plots_df$pretty_labels <- plots_df$labels
+plots_df$pretty_labels <- gsub("_England", "", plots_df$pretty_labels, fixed=TRUE)
+plots_df$pretty_labels <- gsub("_", " ", plots_df$pretty_labels, fixed=TRUE)
+plots_df$pretty_labels <- gsub("hshld", "household", plots_df$pretty_labels, fixed=TRUE)
+plots_df$pretty_labels <- gsub("freq", "frequency", plots_df$pretty_labels, fixed=TRUE)
+plots_df$pretty_labels <- gsub("prop", "proportion", plots_df$pretty_labels, fixed=TRUE)
+plots_df$pretty_labels <- gsub("pack", "smoking pack", plots_df$pretty_labels, fixed=TRUE)
+plots_df$pretty_labels <- gsub("tobacco", "tobacco use", plots_df$pretty_labels, fixed=TRUE)
+plots_df$pretty_labels[plots_df$Exposure == "accommodation_typeA flat, maisonette or apartment"] <- "living in flat or apartment"
+plots_df$pretty_labels[plots_df$Exposure == "own_or_rentRent - from local authority, local council, housing association"] <- "rent housing from local council"
+plots_df$pretty_labels[plots_df$Exposure == "other_exercise_4wksYes"] <- "other exercise in last 4wks (e.g., swim, cycle)"
+plots_df$pretty_labels[plots_df$Exposure == "days_activity_sum"] <- "summed days of physical activity"
+plots_df$pretty_labels[plots_df$Exposure == "smoking_statusCurrent"] <- "current smoker"
+plots_df$pretty_labels[plots_df$Exposure == "smoking_statusPrevious"] <- "previous smoker"
+plots_df$pretty_labels[plots_df$Exposure == "pack_years_prop"] <- "pack years as proportion of lifespan exposed to smoking"
+plots_df$pretty_labels[plots_df$Variable == "pleasure_walks_4wks"] <- "taken pleasure walks in past 4 wks"
+plots_df$pretty_labels[plots_df$Exposure == "hshld_vehicles"] <- "number of household vehicles"
+plots_df$pretty_labels[plots_df$Exposure == "sleep_hours_categorical>9 hours"] <- ">9 hrs sleep per day"
+plots_df$pretty_labels[plots_df$Variable == "health_satisfaction"] <- "health satisfaction"
+plots_df$pretty_labels[plots_df$Exposure == "above_activity_recommendation_incl_walkYes"] <- "meets UK physical activity guidelines"
+plots_df$pretty_labels[plots_df$Variable == "cereal"] <- "cereal intake"
+plots_df$pretty_labels[plots_df$Exposure == "walked_over_10mins_days"] <- "number of days/week walked 10+ minutes"
+
+# make sure I didn't create any erroneous pretty labels
+plots_df$pretty_labels <- ifelse(plots_df$labels != "",
+                                 plots_df$pretty_labels,
+                                 "")
+# re-order so that black dots are behind colored dots
+plots_df <- plots_df[order(plots_df$Category), ]
+```
+
+```{r volcano_loghr, out.width="100%"}
+
+### Volcano plot -------------------------------------------------------------------
+
+volc_loghr <- 
+    ggplot(
+        plots_df %>%
+            # arrange the df by color so that black is on the bottom
+            arrange(color), 
+        aes(x = log2(Hazard.Ratio), 
+            y = log10.p, 
+            label = Exposure,
+            label2 = Category,
+            text = paste("Log2(HR):", 
+                         format(round(log2(Hazard.Ratio), 2), nsmall = 2))
+        )
+    ) +
+    geom_point(
+        aes(color = Category),
+        size = 5) +
+    geom_text_repel(
+        aes(label = pretty_labels),
+        box.padding = unit(.7, 'lines'),
+        # Add extra padding around each data point.
+        point.padding = unit(1.6, 'lines'),
+        max.overlaps = Inf,
+        force = 10,
+        seed = 2345
+        # min.segment.length = 0,
+        # point.size = 2
+    ) +
+    # manually set the grey non-significant color to be first to match the legend
+    scale_color_manual(values = unique(plots_df$color)) +
+    ggtitle("XWAS of All-Cause Mortality among UK Biobank Participants") +
+    guides(colour = guide_legend(override.aes = list(size = 5))) + # increase point size in legend
+    theme_classic(base_size = 18) +   
+    theme(
+        legend.position = "right",
+        # legend.title = element_text(size = 18)
+        legend.title = element_blank()
+    ) +
+    labs(
+        x = "log2 Hazard Ratio (fold change)", 
+        y = "-log10 p-value") +
+    scale_x_continuous(limits = c(-3,3.3)) 
+
+# save
+ggsave(volc_loghr, 
+       filename = paste0(paste0(paste0(path, "/output/full cohort/ACM_XWAS_loghr_volc_exposome_"), date), "_all_sexes.png"), width = 15, height = 10)
+
+
+### Plotly -------------------------------------------------------------------
+
+# text styling for plotly
+t <- list(family = "sans-serif",
+          size = 18,
+          color = 'black')
+
+# make plotly
+volc3 <- ggplotly(volc_loghr, 
+                  tooltip = c("text",
+                              "y", 
+                              "label",
+                              "label2")) %>% 
+  layout(title = "XWAS of All-Cause Mortality among UK Biobank Participants", font = t ) %>% 
+  layout(font=t)
+
+# show plot
+hide_legend(volc3)
+
+# save
+saveWidget(volc3, 
+           file = paste0(paste0(paste0(path, "/output/full cohort/html/ACM_XWAS_loghr_volc_exposome_"), date), "_all_sexes.html"))
+
+```
+
+## Summary tables
+
+```{r tally}
+
+load(paste0(path,"/results/full cohort/ACM_XWAS_results_feb_22_2022_all_sexes.RData"))
+
+library(DT)
+
+# number of replicated exposures
+hits <- nrow(XWAS_total[!is.na(XWAS_total$FDR.rep) & 
+                        XWAS_total$FDR.rep < 0.05, ])
+
+disc <- length(unique(XWAS_total$Variable[which(XWAS_total$FDR.disc < 0.05)]))
+rep <- length(unique(XWAS_total$Variable[which(XWAS_total$FDR.rep < 0.05)]))
+vars <- length(unique(XWAS_total$Variable))
+
+# create dataframe of replicated vs. non-replicated
+numbers <- c(nrow(XWAS_total), vars, disc, rep, hits, rep/vars)
+labels <- c("Number of tests",
+            "Number of unique variables tested",
+            "Number of variables significant in discovery",
+            "Number of variables significant after replication",
+            "Number of significant replicated associations",
+            "Percent of variables that were significant after replication")
+
+tab <- data.frame(numbers)
+rownames(tab) <- labels
+colnames(tab) <- " "
+
+# interactive html table
+datatable(tab, 
+          options = list(dom = 't'))
+
+```
+
+```{r output table}
+
+options(scipen = 999)
+
+# subset results to columns for table
+rep_table <- 
+    subset(XWAS_total, 
+           select = c("Exposure",
+                      "Variable",
+                      "Category",
+                      "Hazard.Ratio",
+                      "HR_2.5%",
+                      "HR_97.5%",
+                      "p.value",
+                      "FDR.disc",
+                      "FDR.rep",
+                      "c.index.disc",
+                      "rsq.disc"))
+
+# make column for replicated yes/no
+rep_table$Replicated <- 
+    ifelse(rep_table$FDR.disc < 0.05 & 
+               rep_table$FDR.rep < 0.05,
+           "Yes",
+           "No")
+
+# make nicer column names
+colnames(rep_table) <-
+    c("Exposure",
+      "Variable",
+      "Category",
+      "Hazard Ratio",
+      "HR 2.5% CI",
+      "HR 97.5% CI",
+      "P-value",
+      "FDR p-value discovery",
+      "FDR p-value replication",
+      "C-index",
+      "R squared",
+      "Replicated"
+    )
+
+datatable(rep_table, 
+          rownames = FALSE,
+          options = list(
+            columnDefs = list(list(className = 'dt-right', targets = 2:5,
+                                   className = 'dt-left', targets = 0:1))
+))
+
+write.csv(rep_table, file = paste0(paste0(paste0(path, "/output/full cohort/ACM_XWAS_output_"), date), "_all_sexes.csv"))
+
+```
+
+```{r save_data_dictionary}
+
+# load female results
+load(paste0(path,"/results/full cohort/ACM_XWAS_results_feb_21_2022_women.RData"))
+
+# rename
+female_XWAS_total <- XWAS_total
+
+#load male results
+load(paste0(path,"/results/full cohort/ACM_XWAS_results_feb_16_2022_men.RData"))
+
+# get variables in datasets used for imputation
+mcols <- unique(XWAS_total$Variable)
+fcols <- unique(female_XWAS_total$Variable)
+
+# add cols together and keep only unique
+total_cols <- c(mcols, fcols)
+total_cols <- unique(total_cols)
+
+# add in covariates
+total_cols <- c(
+    total_cols,
+    Cs(
+        hshld_income,
+        recruitment_centre,
+        education_years,
+        ethnicity
+    )
+)
+
+# load data dictionary
+dict <- read.csv("/file/to/path/Argentieri UKB dataset data dictionary.csv")
+
+# subset data dictionary to just variables used in imputation
+dict <- dict[which(dict$Variable %in% total_cols), ]
+
+# save 
+write.csv(dict, "/file/to/path/XWAS_data_dictionary_mar_18_2022.csv")
+
+```
