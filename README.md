@@ -22,7 +22,7 @@ The following is a description of the various files and directories found within
 |:-----------------|:---------------------------------------------------------------------------------------------------|
 |`dictionaries/`   |Data dictionaries describing the UK Biobank data used in imputation and XWAS analyses               |
 |`results/`        |The raw analysis output from each analysis stage                                                    |
-|`scripts/`        |Code to help process data at various stages of the analysis.                                        |
+|`scripts/`        |Code used for all stages of analysis                                                                |
 
 Files are in R Markdown format so that chunks can be run individually without running the entire script. However, scripts are not currently written or optimized to be knit and published via R Markdown without additional configuration in the code. Code in file #1 (data import) requires a complete raw dataset from the UK Biobank with ALL baseline variables collected in the UK Biobank cohort.   
   
