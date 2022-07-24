@@ -1,6 +1,6 @@
-# Exposome-wide analysis reveals the environmental architecture of human aging among 436,965 UK Biobank participants
+# Exposome-wide analysis reveals the environmental architecture of human aging among 492,569 UK Biobank participants
 
-This directory contains the code used for data preparation, analysis, and figure creation for the publication "Exposome-wide analysis reveals the environmental architecture of human aging among 436,965 UK Biobank participants." Published in XXX. 
+This directory contains the code used for data preparation, analysis, and figure creation for the publication "Exposome-wide analysis reveals the environmental architecture of human aging among 492,569 UK Biobank participants." Published in XXX. 
 
 This repository was created on Fri Mar 18 15:15:17 GMT 2022.
 
