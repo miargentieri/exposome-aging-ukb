@@ -20,11 +20,11 @@ The following is a description of the various files and directories found within
 
 |Directory            |Description                                                                                         |
 |:--------------------|:---------------------------------------------------------------------------------------------------|
-|`dictionaries/`      |Data dictionaries describing the UK Biobank data used in imputation and XWAS analyses               |
-|`results/`           |The raw analysis output from each analysis stage                                                    |
+|`dictionaries/`      |Data dictionaries describing the UK Biobank data used in imputation and XWAS analyses.              |
+|`results/`           |Raw analysis output from each analysis stage. Single excel file with multiple tabs                  |
 |`scripts/`           |Code used for all stages of analysis.                                                               |
-|`scripts/functions`  |Custom function files that are called in scripts                                                    |
-|`scripts/palette`    |Custom color palette that is called in scripts                                                      |
+|`scripts/functions`  |Custom function files that are called in scripts.                                                   |
+|`scripts/palette`    |Custom color palette that is called in scripts.                                                     |
 
 
 Files are in R Markdown format so that chunks can be run individually without running the entire script. However, scripts are not currently written or optimized to be knit and published via R Markdown without additional configuration in the code. Code in script file #1 (data import) requires a complete raw dataset from the UK Biobank with ALL baseline variables collected in the UK Biobank cohort.   
