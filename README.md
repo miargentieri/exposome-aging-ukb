@@ -38,7 +38,7 @@ Interactive HTML versions of figures in manuscript
 <br>
 <a target="_blank" rel="noopener noreferrer" href="http://miargentieri.github.io/exposome-aging-UK-Biobank-2022/figures/ACM_XWAS_beta_sex_comparison_sept_08_2022.html"> Comparison plot between female- and male-specific XWAS betas (Fig. S1) </a> 
 <br>
-<a target="_blank" rel="noopener noreferrer" href="http://miargentieri.github.io/exposome-aging-UK-Biobank-2022/figures/comparing_betas_non_sig_sept_08_2022_intermediates_no_blood_all_data.html"> Comparison plot between mortality betas in pooled XWAS and subset of participants with no prevalent disease (Fig. S2) </a>
+<a target="_blank" rel="noopener noreferrer" href="http://miargentieri.github.io/exposome-aging-UK-Biobank-2022/figures/comparing_betas_non_sig_sept_08_2022_intermediates_no_blood_all_data.html"> Comparison plot between mortality betas in pooled XWAS vs. participants with no prevalent disease (Fig. S2) </a>
 
 
 Author
