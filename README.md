@@ -6,11 +6,11 @@ This repository was created on Fri Mar 18 15:15:17 GMT 2022.
 
 R code for each stage of our data preparation and analysis are contained in these files. This includes:  
 * Importing raw data
-* Recoding data
-* Coding all-cause mortality outcome data
+* Recoding exposure data
+* Coding all-cause mortality and incident chronic disease outcome data
 * Performing participant exclusions and multiple imputation
 * Running the XWAS pipeline
-* Conducting correlation analyses
+* Conducting correlation and multivariable exposome analyses
 * Creating figures, tables, and plots
 
 Manifest
