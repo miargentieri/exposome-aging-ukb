@@ -15,7 +15,7 @@ All files are contained within a single excel document as separate tabs.
 |`SF3`                |Female XWAS output.                                                                                 |                                           
 |`SF4`                |Male XWAS output.                                                                                   |
 |`SF5`                |Pooled XWAS output.                                                                                 |
-|`SF6`                |Disease sensitivity output.                                                                         |
+|`SF6`                |Disease interaction sensitivity output.                                                             |
 |`SF7-SF31`           |Aging biomarker analysis output.                                                                    |
 |`SF32-SF59`          |Incident disease and cardiometabolic risk factor analysis output.                                   |
 
