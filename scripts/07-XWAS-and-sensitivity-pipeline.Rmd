@@ -1,0 +1,2031 @@
+
+### Running mortality XWAS and sensitivity analyses
+
+## Data prep
+
+```{r path}
+path <- "/path/to/file"
+```
+
+```{r load}
+# load analysis datasets
+load(paste0(path, "/datasets/ACM_final_analysis_datasets_aug_20_2022_disc_rep_data.RData"))
+load(paste0(path, "/datasets/ACM_final_analysis_datasets_aug_20_2022_all_data.RData"))
+
+# load NCD diagnosis data
+load("/path/to/file/NCD_all_subsets_aug_04_2022.RData")
+
+# load interview baseline diagnosis data
+load("/path/to/file/baseline_dx_data_july_07_2022.RData")
+
+# load variable categories
+categories <- read.csv("/path/to/file/Argentieri UKB dataset data dictionary.csv")
+
+# load XWAS function
+source(paste0(path, "/code/XWAS_function.R")) 
+
+# set date for saving
+date <- "nov_04_2022"
+```
+
+```{r merge_disease_data}
+
+# merge ICD-10 data with ACM datasets
+all_data <- lapply(all_data, function(x)
+    as.data.frame(
+        merge(x, 
+              dat_NCD_all,
+              by = "eid",
+              all = FALSE,
+              sort = FALSE)
+    )
+)
+
+all_data <- lapply(all_data, function(x)
+    as.data.frame(
+        merge(x, 
+              dat_dx,
+              by = "eid",
+              all = FALSE,
+              sort = FALSE)
+    )
+)
+
+```
+
+## Sex-specific mortality XWAS
+
+# Set exposures for men
+
+```{r exposures_men}
+
+# set exposures for male XWAS to include male-specific variables
+load(paste0(path, "/datasets/ACM_final_analysis_datasets_aug_20_2022_sex_data.RData"))
+
+# create vector of exposure names
+exposures <- as.vector(colnames(mult_disc[[1]]))
+
+# make list of variables in dataset to exclude from analysis as exposures (including covariates in model)
+exclude <- c(
+  Cs(
+      eid, # participant ID
+      hazard, # outcome
+      ACM_event_indicator, # outcome
+      ACM_survival_time, # outcome
+      birth_year, # used for creation of birth cohort strata
+      recruitment_date, # recruitment metric only
+      recruitment_age, # covariate/outcome
+      recruitment_centre, # covariate
+      education_years, # covariate
+      ethnicity, # covariate
+      sex, # covariate
+      alcohol_freq_old, # only used to create NA for alcohol_freq
+      alcohol_status_old, # only used to create NA for alcohol_freq
+      alcohol_status, # only used to create NA for alcohol_freq
+      sleep_hours, # old var before normalization
+      education_college, # redundant to covariate
+      education_A_levels, # redundant to covariate
+      education_O_levels, # redundant to covariate
+      education_CSEs, # redundant to covariate
+      education_NVQ, # redundant to covariate
+      education_other_professional, # redundant to covariate
+      education_none, # redundant to covariate
+    
+      hot_drink_temp, # not interpretable
+      cereal_type, # only used for determining fiber
+      bread_type, # only used for determining fiber
+      milk_type, # only used to code dairy milk intake
+      coffee_type, # only used for determining fiber
+      spread_type, # only used for determining fiber
+      beef, # component of total red meat
+      lamb, # component of total red meat
+      pork, # component of total red meat
+      cooked_veg, # component of total veg
+      salad_or_raw_veg, # component of total veg
+      fresh_fruit, # component of total fruit
+      dried_fruit, # component of total fruit
+      beer_monthly,
+      beer_weekly,
+      fortified_wine_monthly,
+      fortified_wine_weekly,
+      other_alcohol_monthly, 
+      other_alcohol_weekly,
+      red_wine_monthly,
+      red_wine_weekly,
+      spirits_monthly,
+      spirits_weekly,
+      white_wine_monthly,
+      white_wine_weekly,
+      
+      LTPA_raw, # numeric version of LTPA variable
+      OPA_raw, # numeric version of OPA variable
+      sedentary_raw, # numeric version of sedentary variable
+      TV_time, # component of sedentary variable
+      computer_time, # component of sedentary variable
+      driving_time, # component of sedentary variable
+      heavy_DIY_4wks, # component of LTPA
+      light_DIY_4wks, # component of LTPA
+      other_exercise_4wks, # component of LTPA
+      pleasure_walks_4wks, # component of LTPA
+      strenuous_sports_4wks, # component of LTPA
+      above_activity_recommendation, # non-summary
+      above_activity_recommendation_incl_walk, # non-summary
+      
+      MET_mins_moderate_activty, # components of IPAQ
+      MET_mins_vigorous_activty, # components of IPAQ
+      MET_mins_walking, # components of IPAQ
+      MET_mins_sum, # components of IPAQ
+      days_activity_sum, # components of IPAQ
+      mins_activity_sum, # components of IPAQ
+      moderate_activity_over_10mins_days, # components of IPAQ
+      vigorous_activity_over_10mins_days, # components of IPAQ
+      walked_over_10mins_days, # components of IPAQ
+      
+      portable_gas_heat, # remove after crosstab QC
+      solid_fuel_heat, # remove after crosstab QC
+      open_fire_no_central_heat, # remove after crosstab QC
+      hshld_grandparent, # remove after crosstab QC
+      hshld_other_related, # not interpretable
+      hshld_other_unrelated, # not interpretable
+      pregnant # remove after crosstab QC
+  )
+)
+
+# remove variables I don't want to test in XWAS as exposures
+exposures <- exposures[exposures %nin% exclude]
+
+# add in categories to sort
+exposures <- as.data.frame(exposures) # create df from exposure list
+summary <- merge(exposures,
+                 categories,
+                 by.x = "exposures",
+                 by.y = "Variable",
+                 all = F) # merge with categories
+summary <- summary[order(summary$Category), ] # order exposures by category
+
+## separate out non-exposome variables
+
+# get row positions for non-exposome
+non_exposome <- which(
+  # categories of non-exposome vars
+  summary$Category %in% 
+    c("Blood biomarkers",
+      "Blood count",
+      "Cognitive function",
+      "General health",
+      "Medical conditions",
+      "Physical measures",
+      "Urine biomarkers",
+      "Medications",
+      "Family medical history") |
+    # individual disability or illness vars
+    summary$exposures %in% 
+    c("blue_badge",
+      "attendance_allowance",
+      "usual_walking_pace",
+      "disability_allowance",
+      "unemployed_disability",
+      "self_illness_injury_assault",
+      "MDD",
+      "bipolar",
+      "narcolepsy")
+)
+
+# remove non-exposome variables
+summary <- summary[-non_exposome, ]
+
+# female variables
+female_vars <- which(summary$Category == "Female reproductive factors")
+
+# remove female variables
+summary <- summary[-female_vars, ]
+
+# make final vector of exposures ordered by category
+exposures <- as.vector(summary$exposures) 
+```
+
+# Data prep men
+
+```{r data_prep_men}
+
+# create age at censoring variables for age-at-risk analysis - discovery
+for(j in seq_along(mult_disc)) {
+  # divide survival time (days) by 365.25 to get time in years
+  mult_disc[[j]]$time <- 
+    as.numeric(mult_disc[[j]]$ACM_survival_time / 365.25) # change to numeric 
+  
+  # add time (years) to recruitment age to get censor age
+  mult_disc[[j]]$censor_age <-
+    mult_disc[[j]]$recruitment_age + mult_disc[[j]]$time 
+}
+
+# create age at censoring variables for age-at-risk analysis - replication
+for(j in seq_along(mult_rep)) {
+  # divide survival time (days) by 365.25 to get time in years
+  mult_rep[[j]]$time <- 
+    as.numeric(mult_rep[[j]]$ACM_survival_time / 365.25) # change to numeric 
+  
+  # add time (years) to recruitment age to get censor age
+  mult_rep[[j]]$censor_age <- 
+    mult_rep[[j]]$recruitment_age + mult_rep[[j]]$time 
+}
+
+# function to calculate birth cohorts
+split_birth_year <- function(x){
+  x$birth_cohort <- ifelse(
+    x$birth_year >= 1935 & x$birth_year < 1940,
+    "1935-1940",
+    ifelse(
+      x$birth_year >= 1940 & x$birth_year < 1945,
+      "1940-1945",
+      ifelse(
+        x$birth_year >= 1945 & x$birth_year < 1950,
+        "1945-1950",
+        ifelse(
+          x$birth_year >= 1950 & x$birth_year < 1955,
+          "1950-1955",
+          ifelse(
+            x$birth_year >= 1955 & x$birth_year < 1960,
+            "1955-1960",
+            ifelse(
+              x$birth_year >= 1960 & x$birth_year < 1965,
+              "1960-1965",
+              ifelse(
+                x$birth_year >= 1965 & x$birth_year <= 1970, 
+                "1965-1970", 
+                NA
+              )
+            )
+          )
+        )
+      )
+    )
+  )
+  
+  x$birth_cohort <- as.factor(x$birth_cohort)
+  return(x)
+}
+
+# execute function across imputed datasets to create 5-year age bands
+mult_disc <- lapply(mult_disc, split_birth_year)
+mult_rep <- lapply(mult_rep, split_birth_year)
+
+# overriding default polynomial contrasts to only return linear contrasts
+set_contrasts <- function(x) {
+  
+  # find ordered variables
+  ord <- sapply(x, is.ordered)
+  
+  # set contrasts to only linear
+  for (k in seq(ncol(x[ord]))) {
+    contrasts(x[ord][[k]], how.many = 1) <- contr.poly(nlevels(x[ord][[k]]))
+  }
+  
+  return(x)
+  
+}
+
+# run in datasets
+mult_disc <- lapply(mult_disc, set_contrasts)
+mult_rep <- lapply(mult_rep, set_contrasts)
+```
+
+# Male XWAS
+
+```{r XWAS_men}
+
+## Run mortality XWAS in men with discovery and replication
+
+# set parameters
+outcome <- "Surv(recruitment_age, censor_age, ACM_event_indicator)"
+strata <- c(Cs(birth_cohort, sex))
+covariates <- c(Cs(recruitment_centre, education_years, ethnicity))
+cores <- 2
+
+# run XWAS
+XWAS_model_men <- XWAS(
+  disc_data = mult_disc,
+  rep_data = mult_rep,
+  model_type = "coxph",
+  outcome = outcome,
+  strata = strata,
+  covariates = covariates,
+  exposures = exposures,
+  extra.covar = "overall_health",
+  extra.var = "alcohol_freq",
+  categories = categories,
+  replication = TRUE,
+  multi_imputation = TRUE,
+  scale = TRUE,
+  p_adjust = "BH",
+  cores = cores,
+  interaction = FALSE
+)
+
+# df of results
+XWAS_total <- XWAS_model_men$summary
+
+# remove ".L" from exposure names for ordinal variables
+XWAS_total$Exposure <- gsub(".L", "", XWAS_total$Exposure, fixed = TRUE)
+
+# save
+save(
+  XWAS_model_men,
+  XWAS_total,
+  file = paste0(paste0(paste0(path, "/results/full cohort/sex-specific results/ACM_XWAS_results_"), date), "_men.RData")
+)
+
+save(
+  XWAS_total,
+  file = paste0(paste0(paste0(path, "/results/full cohort/sex-specific results/ACM_XWAS_results_"), date), "_men_summary.RData")
+)
+
+```
+
+# Set exposures for women
+
+```{r exposures_women}
+
+# set exposures for male XWAS to include male-specific variables
+exposures <- as.vector(colnames(fmult_disc[[1]]))
+
+# make list of variables in dataset to exclude from analysis as exposures (including covariates in model)
+exclude <- c(
+  Cs(
+      eid, # participant ID
+      hazard, # outcome
+      ACM_event_indicator, # outcome
+      ACM_survival_time, # outcome
+      birth_year, # used for creation of birth cohort strata
+      recruitment_date, # recruitment metric only
+      recruitment_age, # covariate/outcome
+      recruitment_centre, # covariate
+      education_years, # covariate
+      ethnicity, # covariate
+      sex, # covariate
+      alcohol_freq_old, # only used to create NA for alcohol_freq
+      alcohol_status_old, # only used to create NA for alcohol_freq
+      alcohol_status, # only used to create NA for alcohol_freq
+      sleep_hours, # old var before normalization
+      education_college, # redundant to covariate
+      education_A_levels, # redundant to covariate
+      education_O_levels, # redundant to covariate
+      education_CSEs, # redundant to covariate
+      education_NVQ, # redundant to covariate
+      education_other_professional, # redundant to covariate
+      education_none, # redundant to covariate
+      
+      hot_drink_temp, # not interpretable
+      cereal_type, # only used for determining fiber
+      bread_type, # only used for determining fiber
+      milk_type, # only used to code dairy milk intake
+      coffee_type, # only used for determining fiber
+      spread_type, # only used for determining fiber
+      beef, # component of total red meat
+      lamb, # component of total red meat
+      pork, # component of total red meat
+      cooked_veg, # component of total veg
+      salad_or_raw_veg, # component of total veg
+      fresh_fruit, # component of total fruit
+      dried_fruit, # component of total fruit
+      beer_monthly,
+      beer_weekly,
+      fortified_wine_monthly,
+      fortified_wine_weekly,
+      other_alcohol_monthly, 
+      other_alcohol_weekly,
+      red_wine_monthly,
+      red_wine_weekly,
+      spirits_monthly,
+      spirits_weekly,
+      white_wine_monthly,
+      white_wine_weekly,
+      
+      LTPA_raw, # numeric version of LTPA variable
+      OPA_raw, # numeric version of OPA variable
+      sedentary_raw, # numeric version of sedentary variable
+      TV_time, # component of sedentary variable
+      computer_time, # component of sedentary variable
+      driving_time, # component of sedentary variable
+      heavy_DIY_4wks, # component of LTPA
+      light_DIY_4wks, # component of LTPA
+      other_exercise_4wks, # component of LTPA
+      pleasure_walks_4wks, # component of LTPA
+      strenuous_sports_4wks, # component of LTPA
+      above_activity_recommendation, # non-summary
+      above_activity_recommendation_incl_walk, # non-summary
+      
+      MET_mins_moderate_activty, # components of IPAQ
+      MET_mins_vigorous_activty, # components of IPAQ
+      MET_mins_walking, # components of IPAQ
+      MET_mins_sum, # components of IPAQ
+      days_activity_sum, # components of IPAQ
+      mins_activity_sum, # components of IPAQ
+      moderate_activity_over_10mins_days, # components of IPAQ
+      vigorous_activity_over_10mins_days, # components of IPAQ
+      walked_over_10mins_days, # components of IPAQ
+      
+      portable_gas_heat, # remove after crosstab QC
+      solid_fuel_heat, # remove after crosstab QC
+      open_fire_no_central_heat, # remove after crosstab QC
+      hshld_grandparent, # remove after crosstab QC
+      hshld_other_related, # not interpretable
+      hshld_other_unrelated, # not interpretable
+      pregnant, # remove after crosstab QC
+      
+      menopause_age, # only subset of dataset - nested
+      birth_age, # only subset of dataset - nested
+      first_birth_age, # only subset of dataset - nested
+      last_birth_age # only subset of dataset - nested
+  )
+)
+
+# remove variables I don't want to test in XWAS as exposures
+exposures <- exposures[exposures %nin% exclude]
+
+# add in categories to sort
+exposures <- as.data.frame(exposures) # create df from exposure list
+summary <- merge(exposures,
+                 categories,
+                 by.x = "exposures",
+                 by.y = "Variable",
+                 all = F) # merge with categories
+summary <- summary[order(summary$Category), ] # order exposures by category
+
+## separate out non-exposome variables
+
+# get row positions for non-exposome
+non_exposome <- which(
+  # categories of non-exposome vars
+  summary$Category %in% 
+    c("Blood biomarkers",
+      "Blood count",
+      "Cognitive function",
+      "General health",
+      "Medical conditions",
+      "Physical measures",
+      "Urine biomarkers",
+      "Medications",
+      "Family medical history") |
+    # individual disability or illness vars and response levels
+    summary$exposures %in% 
+    c("blue_badge",
+      "attendance_allowance",
+      "usual_walking_pace",
+      "disability_allowance",
+      "unemployed_disability",
+      "self_illness_injury_assault",
+      "MDD",
+      "bipolar",
+      "narcolepsy")
+)
+
+# remove non-exposome variables
+summary <- summary[-non_exposome, ]
+
+# male variables
+male_vars <- which(summary$Category == "Male reproductive factors")
+
+# remove male variables
+summary <- summary[-male_vars, ]
+
+# make final vector of exposures ordered by category
+exposures <- as.vector(summary$exposures) 
+
+```
+
+# Data prep women
+
+```{r data_prep_women}
+
+# create age at censoring variables for age-at-risk analysis - discovery
+for(j in seq_along(fmult_disc)) {
+  # divide survival time (days) by 365.25 to get time in years
+  fmult_disc[[j]]$time <- 
+    as.numeric(fmult_disc[[j]]$ACM_survival_time / 365.25) # change to numeric 
+  
+  # add time (years) to recruitment age to get censor age
+  fmult_disc[[j]]$censor_age <-
+    fmult_disc[[j]]$recruitment_age + fmult_disc[[j]]$time 
+}
+
+# create age at censoring variables for age-at-risk analysis - replication
+for(j in seq_along(fmult_rep)) {
+  # divide survival time (days) by 365.25 to get time in years
+  fmult_rep[[j]]$time <- 
+    as.numeric(fmult_rep[[j]]$ACM_survival_time / 365.25) # change to numeric 
+  
+  # add time (years) to recruitment age to get censor age
+  fmult_rep[[j]]$censor_age <- 
+    fmult_rep[[j]]$recruitment_age + fmult_rep[[j]]$time 
+}
+
+# function to calculate birth cohorts
+split_birth_year <- function(x){
+  x$birth_cohort <- ifelse(
+    x$birth_year >= 1935 & x$birth_year < 1940,
+    "1935-1940",
+    ifelse(
+      x$birth_year >= 1940 & x$birth_year < 1945,
+      "1940-1945",
+      ifelse(
+        x$birth_year >= 1945 & x$birth_year < 1950,
+        "1945-1950",
+        ifelse(
+          x$birth_year >= 1950 & x$birth_year < 1955,
+          "1950-1955",
+          ifelse(
+            x$birth_year >= 1955 & x$birth_year < 1960,
+            "1955-1960",
+            ifelse(
+              x$birth_year >= 1960 & x$birth_year < 1965,
+              "1960-1965",
+              ifelse(
+                x$birth_year >= 1965 & x$birth_year <= 1970, 
+                "1965-1970", 
+                NA
+              )
+            )
+          )
+        )
+      )
+    )
+  )
+  
+  x$birth_cohort <- as.factor(x$birth_cohort)
+  return(x)
+}
+
+# execute function across imputed datasets to create 5-year age bands
+fmult_disc <- lapply(fmult_disc, split_birth_year)
+fmult_rep <- lapply(fmult_rep, split_birth_year)
+
+# overriding default polynomial contrasts to only return linear contrasts
+set_contrasts <- function(x) {
+  
+  # find ordered variables
+  ord <- sapply(x, is.ordered)
+  
+  # set contrasts to only linear
+  for (k in seq(ncol(x[ord]))) {
+    contrasts(x[ord][[k]], how.many = 1) <- contr.poly(nlevels(x[ord][[k]]))
+  }
+  
+  return(x)
+  
+}
+
+# run in datasets
+fmult_disc <- lapply(fmult_disc, set_contrasts)
+fmult_rep <- lapply(fmult_rep, set_contrasts)
+
+```
+
+# Female XWAS
+
+```{r XWAS_women}
+
+## Run mortality XWAS in men with discovery and replication
+
+# set parameters
+outcome <- "Surv(recruitment_age, censor_age, ACM_event_indicator)"
+strata <- c(Cs(birth_cohort, sex))
+covariates <- c(Cs(recruitment_centre, education_years, ethnicity))
+cores <- 2
+
+# run XWAS
+XWAS_model_women <- XWAS(
+  disc_data = fmult_disc,
+  rep_data = fmult_rep,
+  model_type = "coxph",
+  outcome = outcome,
+  strata = strata,
+  covariates = covariates,
+  exposures = exposures,
+  extra.covar = "overall_health",
+  extra.var = "alcohol_freq",
+  categories = categories,
+  replication = TRUE,
+  multi_imputation = TRUE,
+  scale = TRUE,
+  p_adjust = "BH",
+  cores = cores,
+  interaction = FALSE
+)
+
+# df of results
+XWAS_total <- XWAS_model_women$summary
+
+# remove ".L" from exposure names for ordinal variables
+XWAS_total$Exposure <- gsub(".L", "", XWAS_total$Exposure, fixed = TRUE)
+
+# save
+save(
+  XWAS_model_women,
+  XWAS_total,
+  file = paste0(paste0(paste0(path, "/results/full cohort/sex-specific results/ACM_XWAS_results_"), date), "_women.RData")
+)
+
+save(
+  XWAS_total,
+  file = paste0(paste0(paste0(path, "/results/full cohort/sex-specific results/ACM_XWAS_results_"), date), "_women_summary.RData")
+)
+```
+
+## Pooled mortality XWAS
+
+# Set exposures
+
+```{r exposures}
+
+library(survival)
+library(mice)
+library(Hmisc)
+library(pbapply)
+library(data.table)
+
+### Setting exposures for pooled XWAS
+
+# create vector of exposure names
+exposures <- as.vector(colnames(all_data[[1]]))
+
+# make list of variables in dataset to exclude from analysis as exposures (including covariates in model)
+exclude <- c(
+  Cs(
+    eid, # participant ID
+    hazard, # outcome
+    ACM_event_indicator, # outcome
+    ACM_survival_time, # outcome
+    birth_year, # used for creation of birth cohort strata
+    recruitment_date, # recruitment metric only
+    recruitment_age, # covariate/outcome
+    recruitment_centre, # covariate
+    education_years, # covariate
+    ethnicity, # covariate
+    sex, # covariate
+    alcohol_freq_old, # only used to create NA for alcohol_freq
+    alcohol_status_old, # only used to create NA for alcohol_freq
+    alcohol_status, # only used to create NA for alcohol_freq
+    sleep_hours, # old var before normalization
+    education_college, # redundant to covariate
+    education_A_levels, # redundant to covariate
+    education_O_levels, # redundant to covariate
+    education_CSEs, # redundant to covariate
+    education_NVQ, # redundant to covariate
+    education_other_professional, # redundant to covariate
+    education_none, # redundant to covariate
+    
+    hot_drink_temp, # not interpretable
+    cereal_type, # only used for determining fiber
+    bread_type, # only used for determining fiber
+    milk_type, # only used to code dairy milk intake
+    coffee_type, # only used for determining fiber
+    spread_type, # only used for determining fiber
+    beef, # component of total red meat
+    lamb, # component of total red meat
+    pork, # component of total red meat
+    cooked_veg, # component of total veg
+    salad_or_raw_veg, # component of total veg
+    fresh_fruit, # component of total fruit
+    dried_fruit, # component of total fruit
+    beer_monthly,
+    beer_weekly,
+    fortified_wine_monthly,
+    fortified_wine_weekly,
+    other_alcohol_monthly, 
+    other_alcohol_weekly,
+    red_wine_monthly,
+    red_wine_weekly,
+    spirits_monthly,
+    spirits_weekly,
+    white_wine_monthly,
+    white_wine_weekly,
+    
+    LTPA_raw, # numeric version of LTPA variable
+    OPA_raw, # numeric version of OPA variable
+    sedentary_raw, # numeric version of sedentary variable
+    TV_time, # component of sedentary variable
+    computer_time, # component of sedentary variable
+    driving_time, # component of sedentary variable
+    heavy_DIY_4wks, # component of LTPA
+    light_DIY_4wks, # component of LTPA
+    other_exercise_4wks, # component of LTPA
+    pleasure_walks_4wks, # component of LTPA
+    strenuous_sports_4wks, # component of LTPA
+    above_activity_recommendation, # non-summary
+    above_activity_recommendation_incl_walk, # non-summary
+
+    MET_mins_moderate_activty, # components of IPAQ
+    MET_mins_vigorous_activty, # components of IPAQ
+    MET_mins_walking, # components of IPAQ
+    MET_mins_sum, # components of IPAQ
+    days_activity_sum, # components of IPAQ
+    mins_activity_sum, # components of IPAQ
+    moderate_activity_over_10mins_days, # components of IPAQ
+    vigorous_activity_over_10mins_days, # components of IPAQ
+    walked_over_10mins_days, # components of IPAQ
+    
+    portable_gas_heat, # remove after crosstab QC
+    solid_fuel_heat, # remove after crosstab QC
+    open_fire_no_central_heat, # remove after crosstab QC
+    hshld_grandparent, # remove after crosstab QC
+    hshld_other_related, # not interpretable
+    hshld_other_unrelated, # not interpretable
+    pregnant # remove after crosstab QC
+  )
+)
+
+# remove variables I don't want to test in XWAS as exposures
+exposures <- exposures[exposures %nin% exclude]
+
+# add in categories to sort
+exposures <- as.data.frame(exposures) # create df from exposure list
+summary <- merge(exposures,
+                 categories,
+                 by.x = "exposures",
+                 by.y = "Variable",
+                 all = F) # merge with categories
+summary <- summary[order(summary$Category), ] # order exposures by category
+
+## separate out non-exposome variables
+
+# get row positions for non-exposome
+non_exposome <- which(
+    # categories of non-exposome vars
+    summary$Category %in% 
+        c("Blood biomarkers",
+          "Blood count",
+          "Cognitive function",
+          "General health",
+          "Medical conditions",
+          "Physical measures",
+          "Urine biomarkers",
+          "Medications",
+          "Family medical history") |
+        # individual disability or illness vars and response levels
+        summary$exposures %in% 
+        c("blue_badge",
+          "attendance_allowance",
+          "usual_walking_pace",
+          "disability_allowance",
+          "unemployed_disability",
+          "self_illness_injury_assault",
+          "MDD",
+          "bipolar",
+          "narcolepsy")
+    )
+
+# remove non-exposome variables
+summary <- summary[-non_exposome, ]
+
+# sex variables
+sex_vars <- which(summary$Category %in% c("Female reproductive factors", "Male reproductive factors"))
+
+# remove female variables
+summary <- summary[-sex_vars, ]
+
+# make final vector of exposures ordered by category
+exposures <- as.vector(summary$exposures) 
+```
+
+# Data prep
+
+```{r data_prep}
+
+### Survival variables -------------------------------------------------------------------
+
+# create age at censoring variables for age-at-risk analysis - discovery
+for(j in seq_along(disc)) {
+    # divide survival time (days) by 365.25 to get time in years
+    disc[[j]]$time <-
+        as.numeric(disc[[j]]$ACM_survival_time / 365.25) # change to numeric
+
+    # add time (years) to recruitment age to get censor age
+    disc[[j]]$censor_age <-
+        disc[[j]]$recruitment_age + disc[[j]]$time
+}
+
+# create age at censoring variables for age-at-risk analysis - replication
+for(j in seq_along(rep)) {
+    # divide survival time (days) by 365.25 to get time in years
+    rep[[j]]$time <-
+        as.numeric(rep[[j]]$ACM_survival_time / 365.25) # change to numeric
+
+    # add time (years) to recruitment age to get censor age
+    rep[[j]]$censor_age <-
+        rep[[j]]$recruitment_age + rep[[j]]$time
+}
+
+# create age at censoring variables for age-at-risk analysis - all_datalication
+for(j in seq_along(all_data)) {
+    # divide survival time (days) by 365.25 to get time in years
+    all_data[[j]]$time <- 
+        as.numeric(all_data[[j]]$ACM_survival_time / 365.25) # change to numeric 
+    
+    # add time (years) to recruitment age to get censor age
+    all_data[[j]]$censor_age <- 
+        all_data[[j]]$recruitment_age + all_data[[j]]$time 
+}
+
+### Create 5-year birth cohorts -------------------------------------------------------------------
+
+# function to calculate birth cohorts
+split_birth_year <- function(x){
+  x$birth_cohort <- ifelse(
+    x$birth_year >= 1935 & x$birth_year < 1940,
+    "1935-1940",
+    ifelse(
+      x$birth_year >= 1940 & x$birth_year < 1945,
+      "1940-1945",
+      ifelse(
+        x$birth_year >= 1945 & x$birth_year < 1950,
+        "1945-1950",
+        ifelse(
+          x$birth_year >= 1950 & x$birth_year < 1955,
+          "1950-1955",
+          ifelse(
+            x$birth_year >= 1955 & x$birth_year < 1960,
+            "1955-1960",
+            ifelse(
+              x$birth_year >= 1960 & x$birth_year < 1965,
+              "1960-1965",
+              ifelse(
+                x$birth_year >= 1965 & x$birth_year <= 1970, 
+                "1965-1970", 
+                NA
+              )
+            )
+          )
+        )
+      )
+    )
+  )
+  
+  x$birth_cohort <- as.factor(x$birth_cohort)
+  return(x)
+}
+
+# execute function across imputed datasets to create 5-year age bands
+disc <- lapply(disc, split_birth_year)
+rep <- lapply(rep, split_birth_year)
+all_data <- lapply(all_data, split_birth_year)
+
+### Ordinal contrasts -------------------------------------------------------------------
+
+# overriding default polynomial contrasts to only return linear contrasts
+set_contrasts <- function(x) {
+
+  # find ordered variables
+  ord <- sapply(x, is.ordered)
+
+  # set contrasts to only linear
+  for (k in seq(ncol(x[ord]))) {
+    contrasts(x[ord][[k]], how.many = 1) <- contr.poly(nlevels(x[ord][[k]]))
+  }
+
+  return(x)
+
+}
+
+# run in datasets
+disc <- lapply(disc, set_contrasts)
+rep <- lapply(rep, set_contrasts)
+all_data <- lapply(all_data, set_contrasts)
+
+```
+
+# Make prevalent baseline poor health indicator
+
+``` {r prev_disease}
+
+# function to code baseline disease indicator
+identify_prev_disease <- function(x) {
+  
+    # identify hospital inpatient ICD-10 diagnosis dates <= to recruitment date
+    baseline_colon <- which(x$colon_cancer_censor_date <= x$recruitment_date)
+    baseline_lung <- which(x$lung_cancer_censor_date <= x$recruitment_date)
+    baseline_eso <- which(x$eso_cancer_censor_date <= x$recruitment_date)
+    baseline_liver <- which(x$liver_cancer_censor_date <= x$recruitment_date)
+    baseline_pancreatic <- which(x$pancreatic_cancer_censor_date <= x$recruitment_date)
+    baseline_brain <- which(x$brain_cancer_censor_date <= x$recruitment_date)
+    baseline_leukemia <- which(x$leukemia_censor_date <= x$recruitment_date)
+    baseline_lymphoma <- which(x$lymphoma_censor_date <= x$recruitment_date)
+    baseline_breast <- which(x$breast_cancer_censor_date <= x$recruitment_date)
+    baseline_ovarian <- which(x$ovarian_cancer_censor_date <= x$recruitment_date)
+    baseline_prostate <- which(x$prostate_cancer_censor_date <= x$recruitment_date)
+    baseline_diabetes <- which(x$diabetes_censor_date <= x$recruitment_date)
+    baseline_CVD <- which(x$CVD_censor_date <= x$recruitment_date)
+    baseline_cerebro <- which(x$cerebro_cancer_censor_date <= x$recruitment_date)
+    baseline_COPD <- which(x$COPD_censor_date <= x$recruitment_date)
+    baseline_liver <- which(x$liver_censor_date <= x$recruitment_date)
+    baseline_kidney <- which(x$kidney_censor_date <= x$recruitment_date)
+    baseline_all_dementia <- which(x$all_dementia_censor_date <= x$recruitment_date)
+    baseline_vasc_dementia <- which(x$vasc_dementia_censor_date <= x$recruitment_date)
+    baseline_alzheimers <- which(x$alzheimers_censor_date <= x$recruitment_date)
+    baseline_parkinsons <- which(x$parkinsons_censor_date <= x$recruitment_date)
+    baseline_rheumatoid <- which(x$rheumatoid_censor_date <= x$recruitment_date)
+    baseline_macular <- which(x$macular_censor_date <= x$recruitment_date)
+    baseline_osteoporosis <- which(x$osteoporosis_censor_date <= x$recruitment_date)
+    baseline_osteoarthritis <- which(x$osteoarthritis_censor_date <= x$recruitment_date)
+    
+    # creating empty health indicator for baseline disease
+    x$baseline_disease_indicator <- NA
+    
+    # hospital inpatient ICD-10 code exclusions
+    x$baseline_disease_indicator[baseline_colon] <- 1
+    x$baseline_disease_indicator[baseline_lung] <- 1
+    x$baseline_disease_indicator[baseline_eso] <- 1
+    x$baseline_disease_indicator[baseline_liver] <- 1
+    x$baseline_disease_indicator[baseline_pancreatic] <- 1
+    x$baseline_disease_indicator[baseline_brain] <- 1
+    x$baseline_disease_indicator[baseline_leukemia] <- 1
+    x$baseline_disease_indicator[baseline_lymphoma] <- 1
+    x$baseline_disease_indicator[baseline_breast] <- 1
+    x$baseline_disease_indicator[baseline_ovarian] <- 1
+    x$baseline_disease_indicator[baseline_prostate] <- 1
+    x$baseline_disease_indicator[baseline_diabetes] <- 1
+    x$baseline_disease_indicator[baseline_CVD] <- 1
+    x$baseline_disease_indicator[baseline_cerebro] <- 1
+    x$baseline_disease_indicator[baseline_COPD] <- 1
+    x$baseline_disease_indicator[baseline_liver] <- 1
+    x$baseline_disease_indicator[baseline_kidney] <- 1
+    x$baseline_disease_indicator[baseline_all_dementia] <- 1
+    x$baseline_disease_indicator[baseline_vasc_dementia] <- 1
+    x$baseline_disease_indicator[baseline_alzheimers] <- 1
+    x$baseline_disease_indicator[baseline_parkinsons] <- 1
+    x$baseline_disease_indicator[baseline_rheumatoid] <- 1
+    x$baseline_disease_indicator[baseline_macular] <- 1
+    x$baseline_disease_indicator[baseline_osteoporosis] <- 1
+    x$baseline_disease_indicator[baseline_osteoarthritis] <- 1
+    
+    # baseline verbal interview dx exclusions
+    x$baseline_disease_indicator[which(x$colon_cancer_baseline_dx == 1)] <- 1
+    x$baseline_disease_indicator[which(x$lung_cancer_baseline_dx == 1)] <- 1
+    x$baseline_disease_indicator[which(x$eso_cancer_baseline_dx == 1)] <- 1
+    x$baseline_disease_indicator[which(x$liver_cancer_baseline_dx == 1)] <- 1
+    x$baseline_disease_indicator[which(x$pancreatic_cancer_baseline_dx == 1)] <- 1
+    x$baseline_disease_indicator[which(x$brain_cancer_baseline_dx == 1)] <- 1
+    x$baseline_disease_indicator[which(x$leukemia_baseline_dx == 1)] <- 1
+    x$baseline_disease_indicator[which(x$lymphoma_baseline_dx == 1)] <- 1
+    x$baseline_disease_indicator[which(x$breast_cancer_baseline_dx == 1)] <- 1
+    x$baseline_disease_indicator[which(x$ovarian_cancer_baseline_dx == 1)] <- 1
+    x$baseline_disease_indicator[which(x$prostate_cancer_baseline_dx == 1)] <- 1
+    x$baseline_disease_indicator[which(x$diabetes_baseline_dx == 1)] <- 1
+    x$baseline_disease_indicator[which(x$CVD_baseline_dx == 1)] <- 1
+    x$baseline_disease_indicator[which(x$cerebro_baseline_dx == 1)] <- 1
+    x$baseline_disease_indicator[which(x$COPD_baseline_dx == 1)] <- 1
+    x$baseline_disease_indicator[which(x$liver_baseline_dx == 1)] <- 1
+    x$baseline_disease_indicator[which(x$kidney_baseline_dx == 1)] <- 1
+    x$baseline_disease_indicator[which(x$all_dementia_baseline_dx == 1)] <- 1
+    x$baseline_disease_indicator[which(x$vasc_dementia_baseline_dx == 1)] <- 1
+    x$baseline_disease_indicator[which(x$alzheimers_baseline_dx == 1)] <- 1
+    x$baseline_disease_indicator[which(x$parkinsons_baseline_dx == 1)] <- 1
+    x$baseline_disease_indicator[which(x$rheumatoid_baseline_dx == 1)] <- 1
+    x$baseline_disease_indicator[which(x$macular_baseline_dx == 1)] <- 1
+    x$baseline_disease_indicator[which(x$osteoporosis_baseline_dx == 1)] <- 1
+    x$baseline_disease_indicator[which(x$osteoarthritis_baseline_dx == 1)] <- 1
+    
+    # baseline self-report questionnaire exclusions
+    x$baseline_disease_indicator[which(x$heart_attack_diagnosis == "Yes")] <- 1
+    x$baseline_disease_indicator[which(x$angina_diagnosis == "Yes")] <- 1
+    x$baseline_disease_indicator[which(x$stroke_diagnosis == "Yes")] <- 1
+    x$baseline_disease_indicator[which(x$bronchitis_emphysema_diagnosis == "Yes")] <- 1
+    x$baseline_disease_indicator[which(x$cancer_diagnosis == "Yes")] <- 1
+    x$baseline_disease_indicator[which(x$number_cancers >= 1)] <- 1
+    x$baseline_disease_indicator[which(x$diabetes_diagnosis == "Yes")] <- 1
+    x$baseline_disease_indicator[which(x$insulin == "Yes")] <- 1
+    x$baseline_disease_indicator[which(x$overall_health == "Poor")] <- 1
+    
+    ### risk factors / intermediates
+    x$baseline_disease_indicator[which(x$blood_pressure_meds == "Yes")] <- 1
+    x$baseline_disease_indicator[which(x$high_blood_pressure_diagnosis == "Yes")] <- 1
+    x$baseline_disease_indicator[which(x$cholesterol_meds == "Yes")] <- 1
+
+    baseline_hypertension <- which(x$hypertension_censor_date <= x$recruitment_date)
+    baseline_dyslipidemia <- which(x$dyslipidemia_censor_date <= x$recruitment_date)
+    baseline_obesity <- which(x$obesity_censor_date <= x$recruitment_date)
+
+    x$baseline_disease_indicator[baseline_hypertension] <- 1
+    x$baseline_disease_indicator[baseline_dyslipidemia] <- 1
+    x$baseline_disease_indicator[baseline_obesity] <- 1
+
+    x$baseline_disease_indicator[which(x$hypertension_baseline_dx == 1)] <- 1
+
+    # code rest as 0
+    x$baseline_disease_indicator[which(is.na(x$baseline_disease_indicator))] <- 0
+    
+    # make factor
+    x$baseline_disease_indicator <- factor(x$baseline_disease_indicator)
+    
+    return(x)
+}
+
+# run function in each dataset
+all_data <- lapply(all_data, identify_prev_disease)
+
+# remove large objects to save memory
+rm(
+    dat_NCD_all,
+    dat_dx
+)
+gc()
+```
+
+# Run pooled mortality XWAS
+
+``` {r XWAS}
+
+## run pooled XWAS combining both women and men, using discovery and replication sets
+
+# set parameters
+outcome <- "Surv(recruitment_age, censor_age, ACM_event_indicator)"
+strata <- c(Cs(birth_cohort, sex))
+covariates <- c(Cs(recruitment_centre, education_years, ethnicity))
+
+library(parallel)
+# set cores for parallel computation
+cores <- 2
+
+source(paste0(path, "/code/XWAS_function.R")) 
+XWAS_model <- XWAS(
+    disc_data = disc,
+    rep_data = rep,
+    model_type = "coxph",
+    outcome = outcome,
+    strata = strata,
+    covariates = covariates,
+    exposures = exposures,
+    extra.covar = "overall_health",
+    extra.var = "alcohol_freq",
+    categories = categories,
+    replication = TRUE,
+    multi_imputation = TRUE,
+    scale = TRUE,
+    p_adjust = "BH",
+    cores = cores,
+    interaction = FALSE
+)
+
+# df of results
+XWAS_total <- XWAS_model$summary
+
+# remove ".L" from exposure names for ordinal variables
+XWAS_total$Exposure <- gsub(".L", "", XWAS_total$Exposure, fixed = TRUE)
+
+# save
+save(
+    XWAS_model,
+    XWAS_total,
+    file = paste0(paste0(paste0(path, "/results/full cohort/ACM_XWAS_results_"), date), "_all_sexes.RData")
+)
+
+save(
+    XWAS_total,
+    file = paste0(paste0(paste0(path, "/results/full cohort/ACM_XWAS_results_"), date), "_all_sexes_summary.RData")
+)
+
+```
+
+## XWAS sensitivity analyses
+
+``` {r sensitivity_prep} 
+
+# set exposures for XWAS sensitivity analyses
+
+# load XWAS results
+load(paste0(path, "/results/full cohort/ACM_XWAS_results_sept_07_2022_all_sexes_summary.RData"))
+
+# create vector of exposures (only variables replicated in the main XWAS)
+exposures <- XWAS_total[which(XWAS_total$FDR.rep < 0.05), ]
+exposures <- unique(exposures$Variable)
+
+# add in categories to sort
+exposures <- as.data.frame(exposures) # create df from exposure list
+summary <- merge(exposures,
+                 categories,
+                 by.x = "exposures",
+                 by.y = "Variable",
+                 all = F) # merge with categories
+summary <- summary[order(summary$Category), ] # order exposures by category
+
+# get vector of just exposure names
+exposures <- as.vector(summary$exposures) # make final vector of exposures ordered by category
+
+```
+
+# XWAS with baseline poor health interaction
+
+``` {r XWAS_interaction}
+
+### Run XWAS without discovery/replication, but adding in an interaction term for baseline indicator with each exposure
+## exposures are only those significant in XWAS
+
+# set parameters
+outcome <- "Surv(recruitment_age, censor_age, ACM_event_indicator)"
+strata <- c(Cs(birth_cohort, sex))
+covariates <- c(Cs(recruitment_centre, education_years, ethnicity))
+int.var <- "baseline_disease_indicator"
+cores <- 2
+
+## interactions with baseline indicator - intermediates but no undiagnosed blood diabetes
+# run XWAS
+XWAS_model9 <- XWAS(
+    data = all_data,
+    model_type = "coxph",
+    outcome = outcome,
+    strata = strata,
+    covariates = covariates,
+    exposures = exposures,
+    categories = categories,
+    replication = FALSE, 
+    multi_imputation = TRUE,
+    scale = TRUE,
+    p_adjust = "BH",
+    cores = cores,
+    interaction = TRUE,
+    int.var = int.var,
+    int.type = "*",
+    int.option = "both"
+    )
+
+# df of results
+XWAS_total <- XWAS_model9$summary
+
+# remove ".L" from exposure names for ordinal variables
+XWAS_total$Exposure <- gsub(".L", "", XWAS_total$Exposure, fixed = TRUE)
+
+# save
+save(
+    XWAS_model9,
+    XWAS_total,
+    file = paste0(paste0(paste0(path, "/results/healthy subset/ACM_XWAS_sensitivity_results_"), date), "_interactions_intermediates_no_blood_all_data.RData")
+)
+
+save(
+    XWAS_total,
+    file = paste0(paste0(paste0(path, "/results/healthy subset/ACM_XWAS_sensitivity_results_"), date), "_interactions_intermediates_no_blood_all_data_summary.RData")
+)
+
+```
+
+# XWAS excluding participants with baseline poor health
+
+``` {r XWAS_exclusion}
+
+### Run XWAS without discovery/replication, but exclude participants with baseline indicator == 1
+## exposures are only those significant in XWAS
+
+# subset to those without disease at baseline
+all_data_excl <- lapply(all_data, function(x) {
+    x <- x[which(x$baseline_disease_indicator == 0), ]
+    return(x)
+}
+)
+
+# set parameters
+outcome <- "Surv(recruitment_age, censor_age, ACM_event_indicator)"
+strata <- c(Cs(birth_cohort, sex))
+covariates <- c(Cs(recruitment_centre, education_years, ethnicity))
+
+# run XWAS
+XWAS_model10 <- XWAS(
+    data = all_data_excl,
+    model_type = "coxph",
+    outcome = outcome,
+    strata = strata,
+    covariates = covariates,
+    exposures = exposures,
+    categories = categories,
+    replication = FALSE,
+    multi_imputation = TRUE,
+    scale = TRUE,
+    p_adjust = "BH",
+    cores = cores,
+    interaction = FALSE
+)
+
+# df of results
+XWAS_total <- XWAS_model10$summary
+
+# remove ".L" from exposure names for ordinal variables
+XWAS_total$Exposure <- gsub(".L", "", XWAS_total$Exposure, fixed = TRUE)
+
+save(
+    XWAS_model10,
+    XWAS_total,
+    file = paste0(paste0(paste0(path, "/results/healthy subset/ACM_XWAS_sensitivity_results_"), date), "_exclusions_intermediates_nb_all_data.RData")
+)
+
+save(
+    XWAS_total,
+    file = paste0(paste0(paste0(path, "/results/healthy subset/ACM_XWAS_sensitivity_results_"), date), "_exclusions_intermediates_nb_all_data_summary.RData")
+)
+
+
+```
+
+# XWAS excluding participants with survival time < 4 years
+
+``` {r XWAS_exclusion_time}
+
+### Run XWAS without discovery/replication, but exclude participants with survival time < 4 years 
+## exposures are only those significant in XWAS
+
+time <- 365.25*4
+
+# subset to those without disease at baseline
+all_data_excl <- lapply(all_data, function(x) {
+    x <- x[which(x$ACM_survival_time >= time), ]
+    return(x)
+}
+)
+
+# set exposures
+load(paste0(path, "/results/full cohort/ACM_XWAS_results_sept_07_2022_all_sexes_summary.RData"))
+exposures <- XWAS_total[which(XWAS_total$FDR.rep < 0.05), ]
+exposures <- unique(exposures$Variable)
+
+# set parameters
+outcome <- "Surv(recruitment_age, censor_age, ACM_event_indicator)"
+strata <- c(Cs(birth_cohort, sex))
+covariates <- c(Cs(recruitment_centre, education_years, ethnicity))
+cores <- 2
+
+# run XWAS
+XWAS_model12 <- XWAS(
+    data = all_data_excl,
+    model_type = "coxph",
+    outcome = outcome,
+    strata = strata,
+    covariates = covariates,
+    exposures = exposures,
+    categories = categories,
+    replication = FALSE,
+    multi_imputation = TRUE,
+    scale = TRUE,
+    p_adjust = "BH",
+    cores = cores,
+    interaction = FALSE
+)
+
+# df of results
+XWAS_total <- XWAS_model12$summary
+
+# remove ".L" from exposure names for ordinal variables
+XWAS_total$Exposure <- gsub(".L", "", XWAS_total$Exposure, fixed = TRUE)
+
+save(
+    XWAS_model12,
+    XWAS_total,
+    file = paste0(paste0(paste0(path, "/results/full cohort/time sensitivity/ACM_XWAS_sensitivity_results_"), date), "_exclusions_time_all_data_4yrs.RData")
+)
+
+save(
+    XWAS_total,
+    file = paste0(paste0(paste0(path, "/results/full cohort/time sensitivity/ACM_XWAS_sensitivity_results_"), date), "_exclusions_time_all_data_summary_4yrs.RData")
+)
+
+
+# check for any vars that may have lost significance
+sig_vars <- unique(XWAS_total$Variable[which(XWAS_total$p.value < 0.05)])
+non_sig_vars <- unique(XWAS_total$Variable[which(XWAS_total$p.value > 0.05)])
+
+non_sig_vars <- non_sig_vars[non_sig_vars %nin% sig_vars]
+non_sig_vars
+
+```
+
+## Rename XWAS result tables
+
+```{r load_results}
+
+# full XWAS
+XWAS_total <- XWAS_model$summary
+# XWAS with health indicator interaction
+XWAS_total9 <- XWAS_model9$summary
+# XWAS with health indicator exclusion
+XWAS_total10 <- XWAS_model10$summary
+```
+
+## Find variables that fail poor health interaction test
+
+```{r interaction_sig_compare}
+
+### flag biased variables from disease sensitivity analysis
+
+# index of where the interaction terms are
+terms <- grep("baseline_disease_indicator", XWAS_total9$Exposure)
+
+# find interaction terms that are significant
+int_sig_term <- XWAS_total9[terms, ]
+int_sig_term <- unique(int_sig_term$Variable[which(int_sig_term$p.value < 0.05)])
+
+# find exposures that are significant
+int_sig_exp <- XWAS_total9[-terms, ]
+int_sig_exp <- unique(int_sig_exp$Variable[which(int_sig_exp$p.value < 0.05)])
+
+# find interaction terms that are not significant
+int_non_sig_term <- XWAS_total9[terms, ]
+int_non_sig_term <- unique(int_non_sig_term$Variable[which(int_non_sig_term$p.value > 0.05)])
+int_non_sig_term <- int_non_sig_term[int_non_sig_term %nin% int_sig_term]
+
+# find exposures that are not significant
+int_non_sig_exp <- XWAS_total9[-terms, ]
+int_non_sig_exp <- unique(int_non_sig_exp$Variable[which(int_non_sig_exp$p.value > 0.05)])
+int_non_sig_exp <- int_non_sig_exp[int_non_sig_exp %nin% int_sig_exp]
+
+
+# exposures where the interaction term is significant and the exposure is not
+int_sig_term[int_sig_term %in% int_non_sig_exp]
+
+# exposures where the interaction term is significant and the exposure is
+int_sig_term[int_sig_term %in% int_sig_exp]
+
+# exposures where the interaction term is not significant and the exposure is not
+int_non_sig_term[int_non_sig_term %in% int_non_sig_exp]
+
+# exposures where the interaction term is not significant and the exposure is
+int_non_sig_term[int_non_sig_term %in% int_sig_exp]
+
+
+# create list of exposures where the interaction term is significant and the exposure is not
+int_list <- int_sig_term[int_sig_term %in% int_non_sig_exp]
+combined <- unique(c(int_list))
+
+# save to file
+write.csv(combined, file = paste0(path, "/output/healthy subset/ACM_XWAS_sensitivity_non_sig_vars_list_sept_07_2022_all_sexes.csv"))
+
+```
+
+## Sensitivity plots
+
+# Poor health exclusion plot
+
+```{r comparison_plot_non_sig, eval=FALSE}
+
+## create plot comparing betas from pooled XWAS and subset of those without disease at baseline
+library(plotly)
+library(ggplot2)
+library(htmlwidgets)
+library(ggpubr)
+library(ggrepel)
+
+options(scipen = 999)
+
+# load color palette
+load(paste0(path,"/results/color_palette.RData"))
+
+# load full results
+load(paste0(path,"/results/full cohort/ACM_XWAS_results_aug_12_2022_all_sexes_summary.RData"))
+
+# rename
+full_XWAS_total <- XWAS_total[which(XWAS_total$Variable %in% XWAS_total10$Variable), ]
+
+# load healthy subset results
+load(paste0(path, "/results/healthy subset/ACM_XWAS_sensitivity_results_aug_17_2022_exclusions_int_nb_all_data_summary.RData"))
+
+# load list of vars flagged in sensitivity analysis
+combined <- read.csv(paste0(path, "/output/healthy subset/ACM_XWAS_sensitivity_non_sig_vars_list_aug_18_2022_all_sexes.csv"))
+combined <- as.vector(combined[[2]])
+
+# merge
+plots_df <- merge(full_XWAS_total, 
+                  XWAS_total10,
+                  by = "Exposure",
+                  all = TRUE,
+                  sort = FALSE)
+
+# only set labels for flagged variables
+plots_df$label <- plots_df$Variable.x
+plots_df$label[which(plots_df$label %nin% combined)] <- ""
+
+# merge categories for plot
+plots_df$Category <- ifelse(!is.na(plots_df$Category.x),
+                            plots_df$Category.x,
+                            plots_df$Category.y)
+
+color_map$color[which(color_map$sequence == "Stressful life events")] <- 
+    color_map$color[which(color_map$sequence == "General health")]
+
+color_map$sequence[which(color_map$sequence == "Medications")] <- "Supplements"
+color_map$color[which(color_map$sequence == "Supplements")] <- 
+    color_map$color[which(color_map$sequence == "Urine biomarkers")]
+
+# merge color map with plots df
+plots_df <- merge(plots_df, 
+                  color_map, 
+                  by.x = "Category",
+                  by.y = "sequence", 
+                  all = F)
+
+# set beta colnames
+names(plots_df)[names(plots_df) == "Beta.x"] <- "Beta.Full.Cohort"
+names(plots_df)[names(plots_df) == "Beta.y"] <- "Beta.Healthy.Subset"
+
+# re-order so that black dots are behind colored dots
+plots_df <- plots_df[order(plots_df$Category), ]
+
+# correlation coefficient between men and women
+beta_corr <- cor(plots_df$Beta.Full.Cohort, 
+               plots_df$Beta.Healthy.Subset)
+
+# regression line for plot
+beta.lm <- lm(Beta.Healthy.Subset ~ Beta.Full.Cohort, plots_df)
+
+# ggplot
+comp_plot <- 
+    ggplot(
+        plots_df,
+        aes(x = Beta.Full.Cohort, 
+            y = Beta.Healthy.Subset, 
+            label = Exposure
+        )) + 
+    geom_point(
+        aes(color = Category),
+        size = 3) + 
+    scale_color_manual(values = unique(plots_df$color)) +
+    labs(x = "Mortality XWAS beta - full sample",
+         y = "Mortality beta - no disease at baseline") +
+    theme_classic(base_size = 18) +
+    geom_hline(yintercept = 0, 
+               color = "gray", 
+               linetype = "dashed") + 
+    geom_vline(xintercept = 0, 
+               color = "gray", 
+               linetype = "dashed") +
+    # breaks have function to only use integers and no decimals for axis values
+    scale_x_continuous(breaks = function(x) seq(ceiling(x[1]), floor(x[2]), by = 1)) +
+    scale_y_continuous(breaks = function(x) seq(ceiling(x[1]), floor(x[2]), by = 1)) +
+    # show correlation coefficient between hazard ratios and p-value for correlation
+    stat_cor(method = "pearson",
+             label.x.npc = "center",
+             label.y.npc = "bottom",
+             p.digits = 5,
+             size = 6) +
+    # show regression line between hazard ratios
+    geom_abline(slope = coef(beta.lm)[[2]], 
+                intercept = coef(beta.lm)[[1]],
+                color = "red") +
+    geom_text_repel(
+        aes(label = label),
+        box.padding = unit(.6, 'lines'),
+        # always draw lines
+        min.segment.length = 0,
+        # Add extra padding around each data point.
+        point.padding = unit(1, 'lines'),
+        max.overlaps = Inf,
+        force = 10,
+        seed = 5678
+    )
+
+# save
+ggsave(comp_plot, 
+       filename = paste0(path, "/output/healthy subset/comparing_betas_non_sig_sept_08_2022_intermediates_no_blood_all_data.png"), width = 15, height = 10)
+
+# text styling for plotly
+t <- list(family = "sans-serif",
+          size = 18,
+          color = 'black')
+
+# plotly interactive plot
+fig <- ggplotly(comp_plot, 
+                tooltip = c("x", 
+                            "y", 
+                            "label")) %>% 
+  layout(title = "Comparison of Mortality XWAS Hazard Ratios in the Biobank - Full Cohort vs. Healthy Subset", 
+         font = t)
+
+# show
+hide_legend(fig) 
+
+# save
+saveWidget(fig, 
+           file = paste0(path, "/output/healthy subset/html/comparing_betas_non_sig_sept_08_2022_intermediates_no_blood_all_data.html"))
+```
+
+# Survival time < 4 years exclusion plot
+
+```{r comparison_plot_time_excl, eval=FALSE}
+
+### create plot comparing betas from pooled mortality XWAS and 4 year survival time exclusion analysis
+
+library(plotly)
+library(ggplot2)
+library(htmlwidgets)
+library(ggpubr)
+library(ggrepel)
+
+options(scipen = 999)
+
+# load color palette
+load(paste0(path,"/results/color_palette.RData"))
+
+# load full results
+load(paste0(path, "/results/full cohort/ACM_XWAS_results_sept_07_2022_all_sexes_summary.RData"))
+
+# rename
+full_XWAS_total <- XWAS_total
+
+# load exclusion results
+load(paste0(path, "/results/full cohort/time sensitivity/ACM_XWAS_sensitivity_results_nov_04_2022_exclusions_time_all_data_summary_4yrs.RData"))
+
+# limit to sig_vars
+full_XWAS_total <- full_XWAS_total[which(full_XWAS_total$Variable %in% XWAS_total$Variable), ]
+
+# merge
+plots_df <- merge(full_XWAS_total, 
+                  XWAS_total,
+                  by = "Exposure",
+                  all = TRUE,
+                  sort = FALSE)
+
+plots_df$label <- plots_df$Variable.x
+
+# merge categories for plot
+plots_df$Category <- ifelse(!is.na(plots_df$Category.x),
+                            plots_df$Category.x,
+                            plots_df$Category.y)
+
+color_map$color[which(color_map$sequence == "Stressful life events")] <- 
+    color_map$color[which(color_map$sequence == "General health")]
+
+color_map$sequence[which(color_map$sequence == "Medications")] <- "Supplements"
+color_map$color[which(color_map$sequence == "Supplements")] <- 
+    color_map$color[which(color_map$sequence == "Urine biomarkers")]
+
+# merge color map with plots df
+plots_df <- merge(plots_df, 
+                  color_map, 
+                  by.x = "Category",
+                  by.y = "sequence", 
+                  all = F)
+
+# rename beta colnames
+names(plots_df)[names(plots_df) == "Beta.x"] <- "Beta.Full.Cohort"
+names(plots_df)[names(plots_df) == "Beta.y"] <- "Beta.Time.Subset"
+
+# re-order so that black dots are behind colored dots
+plots_df <- plots_df[order(plots_df$Category), ]
+
+# correlation coefficient between men and women
+beta_corr <- cor(plots_df$Beta.Full.Cohort, 
+               plots_df$Beta.Time.Subset)
+
+# regression line for plot
+beta.lm <- lm(Beta.Time.Subset ~ Beta.Full.Cohort, plots_df)
+
+# ggplot
+comp_plot <- 
+    ggplot(
+        plots_df,
+        aes(x = Beta.Full.Cohort, 
+            y = Beta.Time.Subset, 
+            label = Exposure
+        )) + 
+    geom_point(
+        aes(color = Category),
+        size = 3) + 
+    scale_color_manual(values = unique(plots_df$color)) +
+    labs(x = "Mortality XWAS beta - full sample",
+         y = "Mortality beta - participants with survival time \u2265 4 years") +
+    theme_classic(base_size = 18) +
+    geom_hline(yintercept = 0, 
+               color = "gray", 
+               linetype = "dashed") + 
+    geom_vline(xintercept = 0, 
+               color = "gray", 
+               linetype = "dashed") +
+    # breaks have function to only use integers and no decimals for axis values
+    scale_x_continuous(breaks = function(x) seq(ceiling(x[1]), floor(x[2]), by = 1)) +
+    scale_y_continuous(breaks = function(x) seq(ceiling(x[1]), floor(x[2]), by = 1)) +
+    # show correlation coefficient between hazard ratios and p-value for correlation
+    stat_cor(method = "pearson",
+             label.x.npc = "center",
+             label.y.npc = "bottom",
+             p.digits = 5,
+             size = 6) +
+    # show regression line between hazard ratios
+    geom_abline(slope = coef(beta.lm)[[2]], 
+                intercept = coef(beta.lm)[[1]],
+                color = "red")
+
+# save 
+ggsave(comp_plot, 
+       filename = paste0(path, "/output/full cohort/time sensitivity/comparing_betas_time_excl_nov_04_2022_all_data_4yrs.png"), width = 15, height = 10)
+
+# text styling for plotly
+t <- list(family = "sans-serif",
+          size = 18,
+          color = 'black')
+
+# plotly interactive plot
+fig <- ggplotly(comp_plot, 
+                tooltip = c("x", 
+                            "y", 
+                            "label")) %>% 
+  layout(title = "Comparison of Mortality XWAS Hazard Ratios in the Biobank - Full Cohort vs. Those with Survival Time \u2265 4 Years", 
+         font = t)
+
+# show
+hide_legend(fig) 
+
+# save
+saveWidget(fig, 
+           file = paste0(path, "/output/full cohort/time sensitivity/comparing_betas_time_excl_nov_04_2022_all_data_4yrs.html"))
+```
+
+# Plot comparing women and men XWAS
+
+```{r sex_comparison_plot}
+
+library(plotly)
+library(ggplot2)
+library(htmlwidgets)
+library(ggpubr)
+
+options(scipen = 999)
+
+# load color palette
+load(paste0(path,"/results/color_palette.RData"))
+
+# load female results
+load(paste0(path,"/results/full cohort/sex-specific results/ACM_XWAS_results_sept_07_2022_women_summary.RData"))
+
+# rename
+female_XWAS_total <- XWAS_total
+
+#load male results
+load(paste0(path,"/results/full cohort/sex-specific results/ACM_XWAS_results_sept_07_2022_men_summary.RData"))
+
+# get common exposures
+common_exposures <- intersect(XWAS_total$Exposure, female_XWAS_total$Exposure)
+
+# merge
+plots_df <- merge(XWAS_total[which(XWAS_total$Exposure %in% common_exposures), ], 
+                  female_XWAS_total[which(female_XWAS_total$Exposure %in% common_exposures), ],
+                  by = "Exposure",
+                  all = TRUE,
+                  sort = FALSE)
+
+# merge categories for plot
+plots_df$Category <- ifelse(!is.na(plots_df$Category.x),
+                            plots_df$Category.x,
+                            plots_df$Category.y)
+
+# add in row for female reproductive factors to color_map
+rep_factors <- data.frame("Female reproductive factors", "#678F63")
+names(rep_factors) <- names(color_map)
+color_map <- rbind(color_map, rep_factors)
+color_map <- color_map[order(color_map$sequence), ]
+
+color_map$color[which(color_map$sequence == "Stressful life events")] <- 
+    color_map$color[which(color_map$sequence == "General health")]
+
+color_map$sequence[which(color_map$sequence == "Medications")] <- "Supplements"
+color_map$color[which(color_map$sequence == "Supplements")] <- 
+    color_map$color[which(color_map$sequence == "Urine biomarkers")]
+
+# merge color map with plots df
+plots_df <- merge(plots_df, 
+                  color_map, 
+                  by.x = "Category",
+                  by.y = "sequence", 
+                  all = F)
+
+# rename beta colnames
+names(plots_df)[names(plots_df) == "Beta.x"] <- "Beta.Men"
+names(plots_df)[names(plots_df) == "Beta.y"] <- "Beta.Women"
+
+# re-order so that black dots are behind colored dots
+plots_df <- plots_df[order(plots_df$Category), ]
+
+# correlation coefficient between men and women
+hr_corr <- cor(plots_df$Beta.Men, 
+               plots_df$Beta.Women)
+
+beta_corr <- cor(plots_df$Beta.Men, 
+                 plots_df$Beta.Women)
+
+# regression line for plot
+beta.lm <- lm(Beta.Women ~ Beta.Men, plots_df)
+
+# ggplot
+comp_plot <- 
+    ggplot(
+        plots_df,
+        aes(x = Beta.Men, 
+            y = Beta.Women, 
+            label = Exposure
+        )) + 
+    geom_point(
+        aes(color = Category),
+        size = 3) + 
+    scale_color_manual(values = unique(plots_df$color)) +
+    labs(x = "Mortality XWAS beta - men",
+         y = "Mortality XWAS beta - women") +
+    theme_classic(base_size = 18) +
+    geom_hline(yintercept = 0, 
+               color = "gray", 
+               linetype = "dashed") + 
+    geom_vline(xintercept = 0, 
+               color = "gray", 
+               linetype = "dashed") +
+    scale_x_continuous(limits = c(-1.8,1.8), breaks = seq(-1, 2, by = 1)) +
+    scale_y_continuous(limits = c(-1.8,1.8), breaks = seq(-1, 2, by = 1)) + 
+    stat_cor(method = "pearson",
+             label.x.npc = "center",
+             label.y.npc = "bottom",
+             p.digits = 5,
+             size = 6) +
+    # show regression line between betas
+    geom_abline(slope = coef(beta.lm)[[2]], 
+                intercept = coef(beta.lm)[[1]],
+                color = "red")
+
+# save 
+ggsave(comp_plot, 
+       filename = paste0(path, "/output/full cohort/ACM_XWAS_beta_sex_comparison_sept_08_2022.png"), width = 15, height = 10)
+
+# text styling for plotly
+t <- list(family = "sans-serif",
+          size = 18,
+          color = 'black')
+
+# plotly interactive plot
+fig <- ggplotly(comp_plot, 
+                tooltip = c("x", 
+                            "y", 
+                            "label")) %>% 
+  layout(title = "Comparison of Mortality XWAS Betas - Men vs. Women", 
+         font = t)
+
+# show
+hide_legend(fig) 
+
+# save
+saveWidget(fig, 
+           file = paste0(path, "/output/full cohort/html/ACM_XWAS_beta_sex_comparison_sept_08_2022.html"))
+```
+
+## Pooled XWAS volcano plot
+
+```{r plot_prep, out.width="100%"}
+
+# load
+load(paste0(path,"/results/full cohort/ACM_XWAS_results_sept_07_2022_all_sexes_summary.RData"))
+load(paste0(path,"/results/color_palette.RData"))
+
+library(randomcoloR)
+library(ggplot2)
+library(plotly)
+library(htmlwidgets)
+
+# set options
+options(digits = 2)
+
+### Create plots df -------------------------------------------------------------------
+
+# create new df for plots
+plots_df <- XWAS_total
+plots_df <- plots_df[!is.na(plots_df$Beta), ] # remove any tests that failed 
+plots_df$Category[which(plots_df$Variable == "gym")] <- "Physical activity" # change category
+
+### Generate colors -------------------------------------------------------------------
+
+color_map$color[which(color_map$sequence == "Stressful life events")] <- 
+    color_map$color[which(color_map$sequence == "General health")]
+
+color_map$sequence[which(color_map$sequence == "Medications")] <- "Supplements"
+color_map$color[which(color_map$sequence == "Supplements")] <- 
+    color_map$color[which(color_map$sequence == "Urine biomarkers")]
+
+# merge color map with plots df
+plots_df <- merge(plots_df, 
+                  color_map, 
+                  by.x = "Category",
+                  by.y = "sequence", 
+                  all = T)
+
+plots_df <- plots_df[!is.na(plots_df$Beta), ] # remove any empty categories that got added in
+
+# create binary significant yes/no column for plot
+plots_df$Significant <- ifelse(plots_df$FDR.disc < 0.05 & plots_df$FDR.rep < 0.05, 
+                               "Yes", 
+                               "No")
+
+# recode as factor with no first so that the colors layer correctly in plot
+plots_df$Significant <- factor(plots_df$Significant, 
+                               levels = c("No", 
+                                          "Yes"))
+
+### Log transformation -------------------------------------------------------------------
+
+# log transform p values
+plots_df$log10.p <- -log10(plots_df$p.value) 
+
+# round log p values to 2 decimal places
+plots_df$log10.p <- format(round(plots_df$log10.p, 2), nsmall = 2)
+
+# re-class to numeric after rounding (format function converts to integer)
+plots_df$log10.p <- as.numeric(plots_df$log10.p)
+
+# set arbitraty value is logp value is inf because p-value is 0
+plots_df$log10.p[which(is.infinite(plots_df$log10.p))] <- max(plots_df$log10.p[which(!is.infinite((plots_df$log10.p)))]) + 5
+
+
+# find largest p-value (smallest log p value) that passes FDR for plot
+FDR <- plots_df[which(plots_df$FDR.disc < 0.05), ] # subset df to only those results that are FDR sig
+log_min <- min(FDR$log10.p) # find lowest log p value as line for FDR significance
+
+```
+
+```{r volcano_prep, out.width="100%"}
+
+### Prepare data for volcano plots
+
+library(ggplot2)
+library(ggrepel)
+library(ggforce)
+library(plotly)
+library(plyr)
+library(htmlwidgets)
+
+
+# make log2(hr)
+plots_df$log2.HR <- log2(plots_df$Hazard.Ratio)
+
+# round beta estimates for easier reading in plot
+plots_df$Beta  <- format(round(plots_df$Beta, 2), nsmall = 2)
+plots_df$Beta <- as.numeric(plots_df$Beta) # re-class to numeric because round produces an integer
+
+# add in grey/black color for non-significant points
+plots_df$color <- ifelse(plots_df$FDR.rep > 0.05 |
+                           is.na(plots_df$FDR.rep),
+                         "#4c4c4c",
+                         plots_df$color)
+
+# add in "non-significant" category for plots
+plots_df$Category <- ifelse(plots_df$color == "#4c4c4c",
+                            "* Non-replicated",
+                            plots_df$Category)
+
+# re-order so that strongest hits are on top
+plots_df <- plots_df[order(plots_df$p.value), ]
+
+# labels for top 20 hits by p-value
+plots_df$labels <- plots_df$Variable
+plots_df$labels[21:nrow(plots_df)] <- ""
+
+### Pretty labels -------------------------------------------------------------------
+
+# make pretty labels for plot
+# this section will need to be tweaked for each new set of results
+plots_df$pretty_labels <- plots_df$labels
+plots_df$pretty_labels <- gsub("_England", "", plots_df$pretty_labels, fixed=TRUE)
+plots_df$pretty_labels <- gsub("_", " ", plots_df$pretty_labels, fixed=TRUE)
+plots_df$pretty_labels <- gsub("hshld", "household", plots_df$pretty_labels, fixed=TRUE)
+plots_df$pretty_labels <- gsub("freq", "frequency", plots_df$pretty_labels, fixed=TRUE)
+plots_df$pretty_labels <- gsub("prop", "proportion", plots_df$pretty_labels, fixed=TRUE)
+plots_df$pretty_labels <- gsub("pack", "smoking pack", plots_df$pretty_labels, fixed=TRUE)
+plots_df$pretty_labels <- gsub("tobacco", "tobacco use", plots_df$pretty_labels, fixed=TRUE)
+plots_df$pretty_labels[plots_df$Exposure == "accommodation_typeA flat, maisonette or apartment"] <- "living in flat or apartment"
+plots_df$pretty_labels[plots_df$Exposure == "own_or_rentRent - from local authority, local council, housing association"] <- "renting public housing"
+plots_df$pretty_labels[plots_df$Exposure == "other_exercise_4wksYes"] <- "other exercise in last 4wks (e.g., swim, cycle)"
+plots_df$pretty_labels[plots_df$Exposure == "days_activity_sum"] <- "summed days of physical activity"
+plots_df$pretty_labels[plots_df$Exposure == "smoking_statusCurrent"] <- "current smoker"
+plots_df$pretty_labels[plots_df$Exposure == "smoking_statusPrevious"] <- "previous smoker"
+plots_df$pretty_labels[plots_df$Exposure == "pack_years_prop"] <- "pack years as proportion of lifespan exposed to smoking"
+plots_df$pretty_labels[plots_df$Variable == "pleasure_walks_4wks"] <- "taken pleasure walks in past 4 wks"
+plots_df$pretty_labels[plots_df$Exposure == "hshld_vehicles"] <- "number of household vehicles"
+plots_df$pretty_labels[plots_df$Exposure == "sleep_hours_categorical>9 hours"] <- ">9 hrs sleep per day"
+plots_df$pretty_labels[plots_df$Variable == "health_satisfaction"] <- "health satisfaction"
+plots_df$pretty_labels[plots_df$Exposure == "above_activity_recommendation_incl_walkYes"] <- "meets UK physical activity guidelines"
+plots_df$pretty_labels[plots_df$Variable == "cereal"] <- "cereal intake"
+plots_df$pretty_labels[plots_df$Exposure == "walked_over_10mins_days"] <- "number of days/week walked 10+ minutes"
+plots_df$pretty_labels[plots_df$Variable == "hshld_partner"] <- "living with partner"
+plots_df$pretty_labels[plots_df$Variable == "NO2_2010"] <- "NO2 pollution"
+
+
+# make sure I didn't create any erroneous pretty labels
+plots_df$pretty_labels <- ifelse(plots_df$labels != "",
+                                 plots_df$pretty_labels,
+                                 "")
+# re-order so that black dots are behind colored dots
+plots_df <- plots_df[order(plots_df$Category), ]
+```
+
+```{r volcano}
+
+# load XWAS volcano function
+source(paste0(path, "/code/XWAS_volcano.R"))
+
+vc_plot <- volcano(
+    data = plots_df,
+    x = "log2.HR",
+    y = "log10.p",
+    point.size = 5,
+    interactive = FALSE,
+    estimate.label = "log2(HR)",
+    estimate.label.col = "log2.HR",
+    exposure.label.col = "Exposure",
+    category = "Category",
+    color = plots_df$color,
+    # title = "XWAS of All-Cause Mortality among UK Biobank Participants",
+    x.lab = "log\u2082 Hazard Ratio (fold change)",
+    y.lab = "-log\u2081\u2080 p-value",
+    theme = "classic",
+    theme.size = 18,
+    legend.title = element_blank(),
+    x.lim = c(-3, 3.3)
+    # generate.colors = TRUE,
+    # color.seed = 789
+)
+
+# vc_plot
+volc_loghr <- vc_plot +
+    geom_text_repel(
+        aes(label = pretty_labels),
+        box.padding = unit(.6, 'lines'),
+        # Add extra padding around each data point.
+        point.padding = unit(1, 'lines'),
+        max.overlaps = Inf,
+        force = 10,
+        seed = 5678
+        # min.segment.length = 0,
+        # point.size = 2
+    )
+
+# save
+ggsave(volc_loghr, 
+       filename = paste0(paste0(paste0(path, "/output/full cohort/ACM_XWAS_loghr_volc_exposome_"), date), "_all_sexes.png"), width = 15, height = 10)
+
+```
+
+## Create interactive volcano plot
+
+``` {r plotly_volcano}
+
+volc3 <- volcano(
+    data = plots_df,
+    x = "log2.HR",
+    y = "log10.p",
+    point.size = 5,
+    interactive = TRUE,
+    estimate.label = "log2(HR)",
+    estimate.label.col = "log2.HR",
+    exposure.label.col = "Exposure",
+    category = "Category",
+    color = plots_df$color,
+    title = "XWAS of All-Cause Mortality among UK Biobank Participants (n=436,891)",
+    x.lab = "log\u2082 Hazard Ratio (fold change)",
+    y.lab = "-log\u2081\u2080 p-value",
+    theme = "classic",
+    theme.size = 18,
+    legend.title = "Categories",
+    x.lim = c(-3, 3.3)
+)
+
+# show plot
+hide_legend(volc3)
+
+
+# save
+saveWidget(volc3, 
+           file = paste0(paste0(paste0(path, "/output/full cohort/html/ACM_XWAS_loghr_volc_exposome_"), date), "_all_sexes.html"))
+
+```
+
+## Pooled XWAS summary tables
+
+```{r}
+# load XWAS results
+load(paste0(path,"/results/full cohort/ACM_XWAS_results_sept_07_2022_all_sexes_summary.RData"))
+
+library(DT)
+
+# number of replicated exposures
+hits <- nrow(XWAS_total[!is.na(XWAS_total$FDR.rep) & 
+                        XWAS_total$FDR.rep < 0.05, ])
+
+disc_vars <- length(unique(XWAS_total$Variable[which(XWAS_total$FDR.disc < 0.05)]))
+rep_vars <- length(unique(XWAS_total$Variable[which(XWAS_total$FDR.rep < 0.05)]))
+vars <- length(unique(XWAS_total$Variable))
+
+# create dataframe of replicated vs. non-replicated
+numbers <- c(nrow(XWAS_total), vars, disc_vars, rep_vars, hits, rep_vars/vars)
+labels <- c("Number of tests",
+            "Number of unique variables tested",
+            "Number of variables significant in discovery",
+            "Number of variables significant after replication",
+            "Number of significant replicated associations",
+            "Percent of variables that were significant after replication")
+
+tab <- data.frame(numbers)
+rownames(tab) <- labels
+colnames(tab) <- " "
+
+# interactive html table
+datatable(tab, 
+          options = list(dom = 't'))
+
+```

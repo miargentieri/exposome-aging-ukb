@@ -1,0 +1,1250 @@
+
+### Fig. 6 - Environmental architecture circos plot
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = FALSE)
+knitr::opts_chunk$set(warning = FALSE)
+knitr::opts_chunk$set(message = FALSE)
+knitr::opts_chunk$set(results = 'asis')
+```
+
+```{r packages, echo=FALSE}
+library(Hmisc)
+library(data.table)
+library(circlize)
+library(ComplexHeatmap)
+library(randomcoloR)
+library(mice)
+```
+
+```{r load}
+# set path
+path <- "/path/to/file"
+
+# load variable categories
+categories <- read.csv("/path/to/file/Argentieri UKB dataset data dictionary.csv")
+```
+
+## Set list of covariates in XWAS
+
+```{r covar list}
+
+covars <- c(
+    Cs(
+        recruitment_centre,
+        education_years,
+        ethnicity
+    )
+)
+```
+
+## Set list of variables found to be collinear in cluster multivariable models
+
+```{r collinear_var_list}
+
+# list of variables ruled out of cluster multivariate due to collinearity or forward selection
+corr_var_list <- c(
+    Cs(
+        ever_smoked,
+        pack_years,
+        tobacco,
+        neuroticism,
+        irritability,
+        worry_embarassment
+    )
+)
+```
+
+## Create correlation dendrogram
+
+```{r make_dendrogram}
+
+# load XWAS results
+load(paste0(path,"/ACM_XWAS_results_sept_07_2022_all_sexes_summary.RData"))
+# load pooled correlation results
+load(paste0(path, "/pooled_correlation_sept_08_2022_all_data.RData"))
+# load list of vars not significant in disease sensitivity
+combined <- read.csv(paste0(path, "/ACM_XWAS_sensitivity_non_sig_vars_list_sept_07_2022_all_sexes.csv"))
+combined <- as.vector(combined[[2]])
+
+# get vector of variables significant in XWAS + covariates
+exposures <- XWAS_total[which(XWAS_total$FDR.rep < 0.05), ]
+exposures <- unique(exposures$Variable)
+exposures <- c(
+  exposures,
+  Cs(
+    education_years,
+    ethnicity
+  )
+)
+
+# remove vars not sig in disease sensitivity
+exposures <- exposures[exposures %nin% combined]
+
+# copy
+sig_vars <- exposures
+
+# subset correlation matrix to variables significant in XWAS
+corr_pool <- as.data.frame(corr_pool)
+corr_pool_sig <- corr_pool[ ,colnames(corr_pool) %in% exposures]
+corr_pool_sig <- corr_pool_sig[rownames(corr_pool_sig) %in% exposures, ]
+
+# convert to matrix
+corr_pool_sig <- as.matrix(corr_pool_sig)
+
+# only 2 significant digits
+corr_pool_sig <- round(corr_pool_sig, digits = 2)
+
+# set number of clusters
+nclus <- 8
+
+# generate color for each category of variable
+# taken from: https://personal.sron.nl/~pault/#fig:scheme_muted
+pal4 <- c('#CC6677', '#332288', '#DDCC77', '#117733', '#88CCEE', '#882255', '#44AA99', '#999933')
+pal4 <- pal4[c(8,1:7)]
+
+# run hierarchical clustering
+set.seed(6789)
+hr <- dist(corr_pool_sig, method = "euclidean")
+fit <- hclust(hr, method = "complete")
+
+# convert to hclust object
+hc <- as.hclust(fit)
+
+# cut tree into 36 clusters
+ct <- cutree(hc, nclus)  
+
+# make dendroram
+dend <- as.dendrogram(hc)
+
+# names of vars
+labels <- labels(dend)  
+
+# number of vars
+n <- length(labels)  
+```
+
+## Matrix of XWAS results
+
+```{r XWAS_matrix}
+
+# load XWAS results
+load(paste0(path,"/ACM_XWAS_results_sept_07_2022_all_sexes_summary.RData"))
+
+exposures <- unique(XWAS_total$Variable)
+exposures <- c(
+  exposures,
+  Cs(
+    education_years,
+    ethnicity
+  )
+)
+
+## add in XWAS covars, using most significant p-values across models
+
+# get list of summaries for all pooled models (with beta)
+smry <- lapply(XWAS_model$pooled_models_discovery,
+               summary,
+               conf.int = TRUE,
+               conf.level = 0.95)
+
+# extract all model summaries from the lists and convert to single data frame of estimates
+covar_df <- rbindlist(lapply(smry, as.data.table))
+
+# rename column for exposure
+names(covar_df)[names(covar_df) == "term"] <- "Exposure"
+
+# calculate Hazard Ratio
+covar_df$Hazard.Ratio <- exp(covar_df$estimate)
+
+# exponentiate beta 95% CIs for HR 95% CIs
+covar_df$"HR_2.5%" <- exp(covar_df$`2.5 %`)
+covar_df$"HR_97.5%" <- exp(covar_df$`97.5 %`)
+
+# rename column for betas
+names(covar_df)[names(covar_df) == "estimate"] <- "Beta"
+
+# rename column for beta 95% CIs
+names(covar_df)[names(covar_df) == "2.5 %"] <- "Beta_2.5%"
+names(covar_df)[names(covar_df) == "97.5 %"] <- "Beta_97.5%"
+
+### Getting accurate p-values 
+
+### using summary on a mipo object (output from the pool function) rounds very small p-values to 0
+### even when we set the # of digits to the max in R (22)
+### so we have to hard code the math to get the p-values manually from the mipo object
+
+## discovery 
+tstat <- as.list(seq(1,length(XWAS_model$pooled_models_discovery))) # create list to store t stats
+p.val <- as.list(seq(1,length(XWAS_model$pooled_models_discovery))) # create list to store p-values
+p_table <- as.list(seq(1,length(XWAS_model$pooled_models_discovery))) # create list to p table dfs
+  
+# loop to calculate p-values and create table of results
+for (j in seq_along(XWAS_model$pooled_models_discovery)) {
+  # t statistic test using pooled estimate and pooled variance (t)
+  tstat[[j]] <- XWAS_model$pooled_models_discovery[[j]]$pooled$estimate / sqrt(XWAS_model$pooled_models_discovery[[j]]$pooled$t)
+  # calculate p-values
+  p.val[[j]] <- as.data.frame(2 * pt(-abs(tstat[[j]]), df = XWAS_model$pooled_models_discovery[[j]]$pooled$df))
+  # create df in p table
+  p_table[[j]] <- data.frame(matrix(NA, nrow = nrow(p.val[[j]]), ncol = 2))
+  # fill in p table
+  p_table[[j]]$X2 <- p.val[[j]][[1]]
+  # add in variable names
+  p_table[[j]]$X1 <- XWAS_model$pooled_models_discovery[[j]]$pooled$term
+}
+
+# extract list into a single df
+p_table <- rbindlist(p_table)
+
+# change column names
+colnames(p_table) <- c("Exposure.p.table",
+                       "p.value.full")
+
+# merge p table with XWAS results
+covar_df <- cbind(covar_df, p_table)
+
+# test to make sure the rows didn't get mixed up
+all.equal(covar_df$Exposure, covar_df$Exposure.p.table)
+
+# replace all 0 p-values from pooling with actual value
+covar_df$p.value <- ifelse(covar_df$p.value == 0, 
+                            covar_df$p.value.full,
+                            covar_df$p.value)
+
+# test to see if any 0 p-values remain
+paste("number of p-values rounded to 0:", 
+      nrow(covar_df[which(covar_df$p.value == 0), ]))
+      
+### Remove covariate estimates 
+
+# remove ".L" from exposure names for ordinal variables 
+covar_df$Exposure <- gsub(".L", "", covar_df$Exposure, fixed = TRUE)
+
+## map variable names to results
+covar_df$Variable <- NA
+# create vector of variable names
+variables <- exposures
+# add variable names based on partial match with XWAS exposures
+for(j in seq_along(variables)) {
+  covar_df$Variable[covar_df$Exposure %in% covar_df$Exposure[substring(
+    covar_df$Exposure,
+    1,
+    nchar(variables[[j]])) == variables[[j]]]] <- variables[[j]]
+}
+
+
+# sort so that most significant p-value is on top for each variable (if multiple)
+covar_df <- covar_df[order(covar_df$Variable, abs(covar_df$p.value)), ]
+
+# keep only first (top) row for each variable with most significant p-value
+covar_df <- covar_df[!duplicated(covar_df$Variable),]
+
+# subset to covars 
+covar_df <- covar_df[which(covar_df$Variable %in% covars),]
+
+# Re-order columns
+covar_df <- subset(covar_df,
+                     select = c("Exposure",
+                                "Beta",
+                                "Beta_2.5%",
+                                "Beta_97.5%",
+                                "Hazard.Ratio",
+                                "HR_2.5%",
+                                "HR_97.5%",
+                                "p.value",
+                                "std.error",
+                                "statistic",
+                                "df",
+                                "Variable"
+                     ))
+
+
+## XWAS exposure estimates 
+
+# get all rows significantly replicated
+XWAS_mat <- XWAS_total[which(XWAS_total$FDR.rep < 0.05), ]
+
+# remove vars not sig in disease sensitivity
+XWAS_mat <- XWAS_mat[which(XWAS_mat$Variable %nin% combined), ]
+
+# keep only public housing
+hindex <- which(XWAS_mat$Variable == "own_or_rent" & XWAS_mat$Exposure != "own_or_rentRent - from local authority, local council, housing association")
+XWAS_mat <- XWAS_mat[-hindex, ]
+
+# sort so that most significant p-value is on top for each variable (if multiple)
+XWAS_mat <- XWAS_mat[order(XWAS_mat$Variable, abs(XWAS_mat$p.value)), ]
+
+# keep only first (top) row for each variable with most significant p-value
+XWAS_mat <- XWAS_mat[!duplicated(XWAS_mat$Variable),]
+
+# remove extra cols for rbind
+XWAS_mat <- subset(XWAS_mat, select = -c(FDR.disc, FDR.rep, Category, p.value.rep))
+
+## combine exposure + covariate estimates
+
+# rbind covars to XWAS results
+XWAS_mat <- as.data.frame(rbind(XWAS_mat, covar_df))
+
+# re-order to match dendrogram label order
+XWAS_mat <- XWAS_mat[match(labels, XWAS_mat$Variable),]
+
+# make log-transformed p-values to plot in histogram
+XWAS_mat$plot.val <- 
+    ifelse(XWAS_mat$Beta >= 0,
+           -log10(XWAS_mat$p.value),
+           log10(XWAS_mat$p.value))
+
+# set rownames
+rownames(XWAS_mat) <- XWAS_mat$Variable
+
+# reduce to just plot.val column
+XWAS_mat <- XWAS_mat[13]
+
+# convert to matrix
+XWAS_mat <- as.matrix(XWAS_mat)
+
+```
+
+## Matrix of cluster multivariable model results
+
+```{r cluster_multivar_matrix}
+
+# load results
+load(paste0(path, "/final_cluster_model_output_nov_07_2022_all_sexes.RData"))
+
+exposures <- c(labels, "air_pollution_PC1", "greenspace_PC1")
+exposures <- as.data.frame(exposures) # create df from exposure list
+summary <- merge(exposures,
+                 categories,
+                 by.x = "exposures",
+                 by.y = names(categories[1]),
+                 all = F) # merge with categories
+summary <- summary[order(summary$Category), ]
+
+# subset to just two final models
+cluster_pool <- cluster_pool[1:2]
+
+# get list of summaries for all pooled models (with beta)
+smry <- lapply(cluster_pool,
+               summary,
+               conf.int = TRUE,
+               conf.level = 0.95)
+
+# loop across each to subset to just cluster exposures
+for (k in seq_along(smry)) {
+    
+    ## map variable names to results
+    smry[[k]]$Variable <- NA
+    # create vector of variable names
+    variables <- sort(as.vector(summary$exposures))
+    # add variable names based on partial match with XWAS exposures
+    for(j in seq_along(variables)) {
+        smry[[k]]$Variable[smry[[k]]$term %in% smry[[k]]$term[substring(
+            smry[[k]]$term,
+            1,
+            nchar(variables[[j]])) == variables[[j]]]] <- variables[[j]]
+    }
+    
+    ### Getting accurate p-values  
+    # t statistic test using pooled estimate and pooled variance (t)
+    tstat <- cluster_pool[[k]]$pooled$estimate / sqrt(cluster_pool[[k]]$pooled$t)
+    # calculate p-values
+    p.val <- as.data.frame(2 * pt(-abs(tstat), df = cluster_pool[[k]]$pooled$df))
+    # create df in p table
+    p_table <- data.frame(matrix(NA, nrow = nrow(p.val), ncol = 2))
+    # fill in p table
+    p_table$X2 <- p.val[[1]]
+    # add in variable names
+    p_table$X1 <- cluster_pool[[k]]$pooled$term
+    
+    # # extract list into a single df
+    # p_table <- rbindlist(p_table)
+    
+    # change column names
+    colnames(p_table) <- c("Exposure.p.table",
+                           "p.value.full")
+    
+    # merge p table with XWAS results
+    smry[[k]] <- cbind(smry[[k]], p_table)
+    
+    # test to make sure the rows didn't get mixed up
+    all.equal(smry[[k]]$term, smry[[k]]$Exposure.p.table)
+    
+    # replace all 0 p-values from pooling with actual value
+    smry[[k]]$p.value <- ifelse(smry[[k]]$p.value == 0, 
+                               smry[[k]]$p.value.full,
+                               smry[[k]]$p.value)
+    
+    # test to see if any 0 p-values remain
+    paste("number of p-values rounded to 0:", 
+          nrow(smry[[k]][which(smry[[k]]$p.value == 0), ]))
+
+}
+
+# extract all model summaries from the lists and convert to single data frame of estimates
+cluster_mat <- rbindlist(smry)
+
+# rename column for exposure
+names(cluster_mat)[names(cluster_mat) == "term"] <- "Exposure"
+names(cluster_mat)[names(cluster_mat) == "estimate"] <- "Beta"
+
+# keep only highest level of alcohol
+aindex <- which(cluster_mat$Variable == "alcohol_freq" & cluster_mat$Exposure != "alcohol_freqDaily or almost daily")
+cluster_mat <- cluster_mat[-aindex, ]
+
+# keep only public housing
+hindex <- which(cluster_mat$Variable == "own_or_rent" & cluster_mat$Exposure != "own_or_rentRent - from local authority, local council, housing association")
+cluster_mat <- cluster_mat[-hindex, ]
+
+# # keep only renting flat 
+hindex <- which(cluster_mat$Variable == "accommodation_type" & cluster_mat$Exposure != "accommodation_typeA flat, maisonette or apartment")
+cluster_mat <- cluster_mat[-hindex, ]
+
+# sort so that most significant p-value is on top for each variable (if multiple)
+cluster_mat <- cluster_mat[order(cluster_mat$Variable, abs(cluster_mat$p.value)), ]
+
+# keep only first (top) row for each variable with most significant p-value
+cluster_mat <- cluster_mat[!duplicated(cluster_mat$Variable),]
+
+# remove ".L" from exposure names for ordinal variables 
+cluster_mat$Exposure <- gsub(".L", "", cluster_mat$Exposure, fixed = TRUE)
+
+# merge with labels to get all vars
+var_df <- as.data.frame(labels)
+cluster_mat <- merge(var_df,
+                     cluster_mat,
+                     by.x = "labels",
+                     by.y = "Variable",
+                     all = TRUE,
+                     sort = FALSE)
+
+# pollution var names
+pollution_vars <- 
+    c(
+        Cs(
+            NO_2010,
+            NO2_2005,
+            NO2_2006,
+            NO2_2007,
+            NO2_2010,
+            PM10_2007,
+            PM10_2010,
+            PM2.5_2010,
+            PM2.5_absorbance_2010
+        )
+    )
+
+# other physical environment vars used for PCs
+greenspace_vars <- 
+    c(
+        Cs(
+            greenspace_buffer_1000m,
+            greenspace_buffer_300m,
+            natural_environment_buffer_1000m,
+            natural_environment_buffer_300m
+        )
+    )
+
+noise_pollution_vars <-
+    c(
+        Cs(
+            daytime_sound_average,
+            evening_sound_average,
+            night_sound_average,
+            sound_average_16hr,
+            sound_average_24hr
+        )
+    )
+
+
+# all traffic vars
+traffic_vars <-
+    c(
+        Cs(
+            road_length_sum_100m,
+            traffic_load_major_roads
+        )
+    )
+
+
+# make all air pollution vars same beta as pollution PC1
+cluster_mat$Beta[which(cluster_mat$labels %in% pollution_vars)] <- 
+    (cluster_mat$Beta[which(cluster_mat$labels == "air_pollution_PC1")]) 
+
+# make all air pollution vars same p-value as pollution PC1
+cluster_mat$p.value[which(cluster_mat$labels %in% pollution_vars)] <- 
+    (cluster_mat$p.value[which(cluster_mat$labels == "air_pollution_PC1")]) 
+
+# remove air pollution PC row
+cluster_mat <- cluster_mat[which(cluster_mat$labels != "air_pollution_PC1"), ] 
+
+# make all air pollution vars same p-value as pollution PC1
+cluster_mat$Beta[which(cluster_mat$labels %in% greenspace_vars)] <- 
+    (cluster_mat$Beta[which(cluster_mat$labels == "greenspace_PC1")]) 
+
+# make all air pollution vars same p-value as pollution PC1
+cluster_mat$p.value[which(cluster_mat$labels %in% greenspace_vars)] <- 
+    (cluster_mat$p.value[which(cluster_mat$labels == "greenspace_PC1")]) 
+
+# remove air pollution PC row
+cluster_mat <- cluster_mat[which(cluster_mat$labels != "greenspace_PC1"), ]
+
+# re-order to match dendrogram label order
+cluster_mat <- cluster_mat[match(labels, cluster_mat$labels),]
+
+# make log-transformed p-values to plot in histogram
+cluster_mat$plot.val <- 
+    ifelse(cluster_mat$p.value >= 0.05,
+           1000, # set 1000 for non-significant
+           ifelse(
+               cluster_mat$Beta >= 0,
+               -log10(cluster_mat$p.value),
+               log10(cluster_mat$p.value)))
+
+sig_vars <- sig_vars[sig_vars %nin% combined]
+
+# set as not significant if adjusted out in early cluster models
+cluster_mat$plot.val[which(cluster_mat$labels %in% sig_vars & is.na(cluster_mat$Beta))] <- 1000
+
+# set 2000 for not tested
+cluster_mat$plot.val[which(cluster_mat$labels %in% combined)] <- 2000
+
+# manually set noise pollution vars to not significant from PC analysis
+cluster_mat$plot.val[which(cluster_mat$labels %in% noise_pollution_vars)] <- 1000
+
+# manually set noise pollution vars to not significant from PC analysis
+cluster_mat$plot.val[which(cluster_mat$labels %in% traffic_vars)] <- 1000
+
+# set 3000 for ruled out due to collinearity / forward selection
+cluster_mat$plot.val[which(cluster_mat$labels %in% corr_var_list)] <- 3000
+
+# set rownames
+rownames(cluster_mat) <- cluster_mat$labels
+
+# make copy for counts later
+cluster_model <- cluster_mat
+
+# reduce to just plot.val column
+cluster_mat <- cluster_mat[12]
+
+# convert to matrix
+cluster_mat <- as.matrix(cluster_mat)
+
+```
+
+## Matrix of biomarker results
+
+```{r biomarker_matrix}
+
+# load results
+load(paste0(path, "/biomarker_analysis_results_nov_07_2022_all_sexes_model2_resid.RData"))
+
+exposures <- read.csv(paste0(path, "/total_sig_vars_list_nov_07_2022_all_sexes.csv"))
+exposures <- exposures$x
+
+
+# function to get plot values
+circos_biomarker_plot_vals <- function(x){
+    
+    # get all rows significantly replicated
+    mat <- as.data.frame(labels)
+    mat <- merge(mat,
+                 x,
+                 by.x = "labels",
+                 by.y = "Variable",
+                 all = TRUE,
+                 sort = FALSE)
+    
+    # sort so that most significant p-value is on top for each variable (if multiple)
+    mat <- mat[order(mat$labels, abs(mat$p.value)), ]
+    
+    # keep only highest level of alcohol
+    aindex <- which(mat$labels == "alcohol_freq" & mat$Exposure != "alcohol_freqDaily or almost daily")
+    mat <- mat[-aindex, ]
+    
+    # keep only Asian ethnicity (second most common after white)
+    eindex <- which(mat$labels == "ethnicity" & mat$Exposure != "ethnicityAsian")
+    mat <- mat[-eindex, ]
+    
+    # keep only public housing
+    hindex <- which(mat$labels == "own_or_rent" & mat$Exposure != "own_or_rentRent - from local authority, local council, housing association")
+    mat <- mat[-hindex, ]
+    
+    # keep only renting flat 
+    hindex <- which(mat$labels == "accommodation_type" & mat$Exposure != "accommodation_typeA flat, maisonette or apartment")
+    mat <- mat[-hindex, ]
+    
+    # keep only first (top) row for each variable with most significant p-value
+    mat <- mat[!duplicated(mat$labels),]
+    
+    # make all air pollution vars same beta as pollution PC1
+    mat$Beta[which(mat$labels %in% pollution_vars)] <-
+        (mat$Beta[which(mat$labels == "air_pollution_PC1")])
+    
+    # make all air pollution vars same p-value as pollution PC1
+    mat$p.value[which(mat$labels %in% pollution_vars)] <-
+        (mat$p.value[which(mat$labels == "air_pollution_PC1")])
+
+    # make all air pollution vars same FDR p-value as pollution PC1
+    mat$FDR[which(mat$labels %in% pollution_vars)] <-
+        (mat$FDR[which(mat$labels == "air_pollution_PC1")])
+
+    # remove air pollution PC row
+    mat <- mat[which(mat$labels != "air_pollution_PC1"), ]
+    
+    
+    # make all air pollution vars same beta as pollution PC1
+    mat$Beta[which(mat$labels %in% greenspace_vars)] <-
+        (mat$Beta[which(mat$labels == "greenspace_PC1")])
+    
+    # make all air pollution vars same p-value as pollution PC1
+    mat$p.value[which(mat$labels %in% greenspace_vars)] <- 
+        (mat$p.value[which(mat$labels == "greenspace_PC1")]) 
+    
+    # make all air pollution vars same FDR p-value as pollution PC1
+    mat$FDR[which(mat$labels %in% greenspace_vars)] <-
+        (mat$FDR[which(mat$labels == "greenspace_PC1")])
+    
+    # remove air pollution PC row
+    mat <- mat[which(mat$labels != "greenspace_PC1"), ]
+    
+    
+    # re-order to match dendrogram label order
+    mat <- mat[match(labels, mat$labels),]
+    
+    # make log-transformed p-values to plot in histogram
+    mat$plot.val <- 
+        ifelse(mat$FDR >= 0.05,
+               1000, # set 1000 for non-significant
+               ifelse(
+                   mat$Beta >= 0 & mat$p.value == 0,
+                   -log10(mat$p.value + 0.0000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000001),
+                   ifelse(mat$Beta < 0 & mat$p.value == 0,
+                   log10(mat$p.value + 0.0000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000001),
+                   ifelse(mat$Beta >= 0 & mat$p.value != 0,
+                   -log10(mat$p.value),
+                   log10(mat$p.value)))))
+
+    # set 2000 for not tested
+    mat$plot.val[which(is.na(mat$Beta))] <- 2000
+
+    # set rownames
+    rownames(mat) <- mat$labels
+    
+    # reduce to just plot.val column
+    mat <- mat[15]
+    
+    # convert to matrix
+    mat <- as.matrix(mat)
+    
+    return(mat)
+}
+
+circos_matrix_list <- lapply(biomarker_results, circos_biomarker_plot_vals)
+
+# cbind together
+circos_bio_mat <- do.call(cbind, circos_matrix_list)
+
+# set column names to biomarkers
+# set list of outcome variable names
+biomarkers <-
+    c(
+        Cs(
+            alanine_aminotransferase,
+            albumin,
+            alkaline_phosphatase,
+            apolipoprotein_A,
+            apolipoprotein_B,
+            aspartate_aminotransferase,
+            C_reactive_protein,
+            cholesterol,
+            creatinine,
+            cystatin_C,
+            direct_bilirubin,
+            gamma_glutamyltransferase,
+            glucose,
+            hbA1c,
+            HDL_cholesterol,
+            IGF1,
+            LDL_direct,
+            lipoprotein_A,
+            phosphate,
+            total_bilirubin,
+            triglycerides,
+            urate,
+            urea,
+            vitamin_D
+        )
+    )
+names <- biomarkers[which(biomarkers %nin% c(Cs(IGF1,vitamin_D)))]
+names <- c(names, "IGF1", "vitamin_D", "LTL")
+
+colnames(circos_bio_mat) <- names
+
+# transpose
+circos_bio_mat <- t(circos_bio_mat)
+
+```
+
+## Matrix of disease results
+
+```{r incident_disease_matrix}
+
+# load disease analysis results
+load(paste0(path, "/results/incident disease/all_disease_analysis_output_with_cs_nov_07_2022_all_sexes.RData"))
+
+disease_results <- disease_results[1:25]
+
+# function to get log-transformed plot values
+disease_plot_vals <- function(x){
+    
+    # get all rows significantly replicated
+    mat <- as.data.frame(labels)
+    mat <- merge(mat,
+                 x,
+                 by.x = "labels",
+                 by.y = "Variable",
+                 all = TRUE,
+                 sort = FALSE)
+    
+    # sort so that most significant p-value is on top for each variable (if multiple)
+    mat <- mat[order(mat$labels, abs(mat$`P-value`)), ]
+    
+    # keep only highest level of alcohol
+    aindex <- which(mat$labels == "alcohol_freq" & mat$Exposure != "alcohol_freqDaily or almost daily")
+    mat <- mat[-aindex, ]
+    
+    # keep only Asian ethnicity (second most common after white)
+    eindex <- which(mat$labels == "ethnicity" & mat$Exposure != "ethnicityAsian")
+    mat <- mat[-eindex, ]
+    
+    # keep only public housing
+    hindex <- which(mat$labels == "own_or_rent" & mat$Exposure != "own_or_rentRent - from local authority, local council, housing association")
+    mat <- mat[-hindex, ]
+    
+    # keep only renting flat 
+    hindex <- which(mat$labels == "accommodation_type" & mat$Exposure != "accommodation_typeA flat, maisonette or apartment")
+    mat <- mat[-hindex, ]
+    
+    # keep only first (top) row for each variable with most significant p-value
+    mat <- mat[!duplicated(mat$labels),]
+    
+    # make all air pollution vars same beta as pollution PC1
+    mat$Beta[which(mat$labels %in% pollution_vars)] <-
+        (mat$Beta[which(mat$labels == "air_pollution_PC1")])
+    
+    # make all air pollution vars same p-value as pollution PC1
+    mat$`P-value`[which(mat$labels %in% pollution_vars)] <-
+        (mat$`P-value`[which(mat$labels == "air_pollution_PC1")])
+    
+    # make all air pollution vars same FDR p-value as pollution PC1
+    mat$FDR[which(mat$labels %in% pollution_vars)] <-
+        (mat$FDR[which(mat$labels == "air_pollution_PC1")])
+    
+    # remove air pollution PC row
+    mat <- mat[which(mat$labels != "air_pollution_PC1"), ]
+    
+    # make all air pollution vars same beta as pollution PC1
+    mat$Beta[which(mat$labels %in% greenspace_vars)] <-
+        (mat$Beta[which(mat$labels == "greenspace_PC1")])
+    
+    # make all air pollution vars same p-value as pollution PC1
+    mat$`P-value`[which(mat$labels %in% greenspace_vars)] <-
+        (mat$`P-value`[which(mat$labels == "greenspace_PC1")])
+    
+    # make all air pollution vars same FDR p-value as pollution PC1
+    mat$FDR[which(mat$labels %in% greenspace_vars)] <-
+        (mat$FDR[which(mat$labels == "greenspace_PC1")])
+    
+    # remove air pollution PC row
+    mat <- mat[which(mat$labels != "greenspace_PC1"), ]
+    
+    # re-order to match dendrogram label order
+    mat <- mat[match(labels, mat$labels),]
+    
+    # make log-transformed p-values to plot in histogram
+    mat$plot.val <- 
+        ifelse(mat$FDR >= 0.05,
+               1000, # set 1000 for non-significant
+               ifelse(
+                   mat$Beta >= 0 & mat$`P-value` == 0,
+                   -log10(mat$`P-value` + 0.0000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000001),
+                   ifelse(mat$Beta < 0 & mat$`P-value` == 0,
+                   log10(mat$`P-value` + 0.0000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000001),
+                   ifelse(mat$Beta >= 0 & mat$`P-value` != 0,
+                   -log10(mat$`P-value`),
+                   log10(mat$`P-value`)))))
+
+    # set rownames
+    rownames(mat) <- mat$labels
+    
+    # reduce to just plot.val column
+    mat <- mat[13]
+    
+    # convert to matrix
+    mat <- as.matrix(mat)
+    
+    return(mat)
+}
+
+
+# run function for each set of disease results
+circos_matrix_list <- lapply(disease_results, disease_plot_vals)
+
+# cbind together
+incident_disease_mat <- do.call(cbind, circos_matrix_list)
+
+# set column names to diseases
+names <- c(
+    "Colorectal cancer",
+    "Lung cancer",
+    "Esophageal cancer",
+    "Liver cancer",
+    "Pancreatic cancer",
+    "Brain cancer",
+    "Leukemia",
+    "Lymphoma",
+    "Breast cancer",
+    "Ovarian cancer",
+    "Prostate cancer",
+    "Type II diabetes",
+    "Ischemic heart disease",
+    "Cerebrovascular diseases",
+    "Chronic lower respiratory diseases",
+    "Chronic liver diseases",
+    "Chronic kidney diseases",
+    "All-cause dementia",
+    "Vascular dementia",
+    "Alzheimer's disease",
+    "Parkinson's disease",
+    "Rheumatoid arthritis",
+    "Macular degeneration",
+    "Osteoporosis",
+    "Osteoarthritis"
+)
+
+colnames(incident_disease_mat) <- names
+
+# transpose so that exposures are columns
+incident_disease_mat <- t(incident_disease_mat)
+
+
+```
+
+## Make pretty labels for exposures
+
+```{r pretty_labels}
+
+labels_df <- as.data.frame(labels)
+labels_df$pretty_labels <- labels_df$labels
+
+# make pretty labels for plot
+# this section will need to be tweaked for each new set of results
+labels_df$pretty_labels <-
+    gsub("_England", "", 
+         labels_df$pretty_labels, 
+         fixed = TRUE)
+labels_df$pretty_labels <-
+    gsub("_", " ",
+         labels_df$pretty_labels,
+         fixed = TRUE)
+labels_df$pretty_labels <-
+    gsub("hshld", "household", 
+         labels_df$pretty_labels, 
+         fixed = TRUE)
+labels_df$pretty_labels <-
+    gsub("freq", "frequency", 
+         labels_df$pretty_labels, 
+         fixed = TRUE)
+labels_df$pretty_labels <-
+    gsub("prop", "prop.",
+         labels_df$pretty_labels,
+         fixed = TRUE)
+labels_df$pretty_labels <- 
+    gsub("pack", "smoking pack",
+         labels_df$pretty_labels,
+         fixed = TRUE)
+labels_df$pretty_labels <- 
+    gsub("tobacco", "tobacco use",
+         labels_df$pretty_labels,
+         fixed = TRUE)
+labels_df$pretty_labels <- 
+    gsub("environ", "environment",
+         labels_df$pretty_labels,
+         fixed = TRUE)
+labels_df$pretty_labels <- 
+    gsub("10yrs", "10 yrs",
+         labels_df$pretty_labels,
+         fixed = TRUE)
+
+labels_df$pretty_labels[labels_df$labels == "recruitment_centre"] <- 
+    "UKB assessment center"
+
+labels_df$pretty_labels[labels_df$labels == "worry_embarassment"] <- 
+    "worry after embarassment"
+
+labels_df$pretty_labels[labels_df$labels == "PM10_2007"] <- 
+    "PM10 pollution 2007"
+labels_df$pretty_labels[labels_df$labels == "PM10_2010"] <- 
+    "PM10 pollution 2010"
+
+labels_df$pretty_labels[labels_df$labels == "NO2_2005"] <- 
+    "NO2 pollution 2005"
+labels_df$pretty_labels[labels_df$labels == "NO2_2006"] <- 
+    "NO2 pollution 2006"
+labels_df$pretty_labels[labels_df$labels == "NO2_2007"] <- 
+    "NO2 pollution 2007"
+labels_df$pretty_labels[labels_df$labels == "NO2_2010"] <- 
+    "NO2 pollution 2010"
+
+labels_df$pretty_labels[labels_df$labels == "NO_2010"] <- 
+    "NO pollution 2010"
+
+labels_df$pretty_labels[labels_df$labels == "NO2_2010"] <- 
+    "NO2 pollution 2010"
+
+labels_df$pretty_labels[labels_df$labels == "PM2.5_2010"] <- 
+    "PM2.5 pollution 2010"
+
+labels_df$pretty_labels[labels_df$labels == "psychiatrist_visit_mental_health"] <- 
+    "psychiatrist visit for MH"
+labels_df$pretty_labels[labels_df$labels == "doctor_visit_mental_health"] <- 
+    "doctor visit for MH"
+
+labels_df$pretty_labels[labels_df$labels == "maternal_smoking"] <- 
+    "maternal smoking around birth"
+
+labels_df$pretty_labels[labels_df$labels == "open_fire_heat"] <- 
+    "uses open fire for heating"
+labels_df$pretty_labels[labels_df$labels == "gas_hob_heat"] <- 
+    "uses gas hob for heating"
+labels_df$pretty_labels[labels_df$labels == "gas_fire_heat"] <- 
+    "uses gas fire for heating"
+
+labels_df$pretty_labels[labels_df$labels == "sound_average_16hr"] <- 
+    "average noise pollution (16hr)"
+labels_df$pretty_labels[labels_df$labels == "sound_average_24hr"] <- 
+    "average noise pollution (24hr)"
+
+labels_df$pretty_labels[labels_df$labels == "night_sound_average"] <- 
+    "average night noise pollution"
+labels_df$pretty_labels[labels_df$labels == "daytime_sound_average"] <- 
+    "average daytime noise pollution"
+labels_df$pretty_labels[labels_df$labels == "evening_sound_average"] <- 
+    "average evening noise pollution"
+
+labels_df$pretty_labels[labels_df$labels == "greenspace_buffer_300m"] <- 
+    "greenspace (300m buffer)"
+labels_df$pretty_labels[labels_df$labels == "greenspace_buffer_1000m"] <- 
+    "greenspace (1000m buffer)"
+labels_df$pretty_labels[labels_df$labels == "natural_environment_buffer_300m"] <- 
+    "natural environment (300m buffer)"
+labels_df$pretty_labels[labels_df$labels == "natural_environment_buffer_1000m"] <- 
+    "natural environment (1000m buffer)"
+labels_df$pretty_labels[labels_df$labels == "domestic_garden_buffer_300m"] <- 
+    "domestic garden (300m buffer)"
+
+labels_df$pretty_labels[labels_df$labels == "road_length_sum_100m"] <- 
+    "sum of major roads length w/in 100m"
+
+labels_df$pretty_labels[labels_df$labels == "public_transport_4wks"] <- 
+    "public transport past 4 wks"
+labels_df$pretty_labels[labels_df$labels == "cycle_transport_4wks"] <- 
+    "cycle transport past 4 wks"
+labels_df$pretty_labels[labels_df$labels == "walk_transport_4wks"] <- 
+    "walking transport past 4 wks"
+labels_df$pretty_labels[labels_df$labels == "car_transport_4wks"] <- 
+    "car transport past 4 wks"
+
+
+labels_df$pretty_labels[labels_df$labels == "strenuous_sports_4wks"] <- 
+    "strenuous sports past 4wks"
+labels_df$pretty_labels[labels_df$labels == "heavy_DIY_4wks"] <- 
+    "heavy DIY past 4 wks (e.g., carpentry, digging)"
+labels_df$pretty_labels[labels_df$labels == "light_DIY_4wks"] <- 
+    "light DIY past 4 wks (e.g., pruning, watering lawn)"
+
+labels_df$pretty_labels[labels_df$labels == "mobile_phone_duration"] <- 
+    "years using mobile phone"
+labels_df$pretty_labels[labels_df$labels == "mobile_phone_2yrs"] <- 
+    "mobile phone use now vs. 2 yrs ago"
+
+labels_df$pretty_labels[labels_df$labels == "vigorous_activity_over_10mins_days"] <- 
+    "days/week 10+ minutes of vigorous PA"
+labels_df$pretty_labels[labels_df$labels == "moderate_activity_over_10mins_days"] <- 
+    "days/week 10+ minutes of moderate PA"
+labels_df$pretty_labels[labels_df$labels == "mins_activity_sum"] <- 
+    "summed mins of PA"
+
+labels_df$pretty_labels[labels_df$labels == "sex_age_first"] <- 
+    "age first sexual intercourse"
+
+labels_df$pretty_labels[labels_df$labels == "easy_wake"] <- 
+    "easy to wake in the morning"
+
+labels_df$pretty_labels[labels_df$labels == "hshld_vehicles"] <- 
+    "no. household vehicles"
+
+labels_df$pretty_labels[labels_df$labels == "hshld_number"] <- 
+    "no. people living in household"
+
+labels_df$pretty_labels[labels_df$labels == "other_exercise_4wks"] <- 
+    "other exercise past 4wks (e.g., swim, cycle)"
+labels_df$pretty_labels[labels_df$labels == "days_activity_sum"] <- 
+    "summed days of PA"
+labels_df$pretty_labels[labels_df$labels == "pleasure_walks_4wks"] <- 
+    "pleasure walks past 4 wks"
+labels_df$pretty_labels[labels_df$labels == "sleep_hours_categorical"] <- 
+    "sleep hours"
+labels_df$pretty_labels[labels_df$labels == "above_activity_recommendation"] <- 
+    "meets UK PA guidelines"
+labels_df$pretty_labels[labels_df$labels == "above_activity_recommendation_incl_walk"] <- 
+    "meets UK PA guidelines (incl. walk)"
+labels_df$pretty_labels[labels_df$labels == "walked_over_10mins_days"] <- 
+    "no. days/week walked 10+ minutes"
+
+labels_df$pretty_labels[labels_df$labels == "air_pollution_PC1"] <- 
+    "air pollution"
+
+labels_df$pretty_labels[labels_df$labels == "greenspace_PC1"] <- 
+    "greenspace"
+
+labels_df$pretty_labels[labels_df$labels == "own_or_rent"] <- 
+    "home ownership"
+
+# set labels to new pretty labels
+pretty_labels <- labels_df$pretty_labels
+```
+
+## Circos plot prep
+
+```{r circos_prep}
+
+# set sector factor (only one sector)
+split <- sample(letters[1], n, replace = TRUE)
+split <- factor(split, levels = letters[1])
+
+library(RColorBrewer)
+col <- rev(brewer.pal(11, "Spectral"))
+
+
+col_fun_XWAS = colorRamp2(c(-1, 0, 1),
+                          c("blue", "white", "red"), 
+                          space = "RGB",
+                          transparency = 0.1)
+
+col_fun_ds = colorRamp2(c(-1, 0, 1, 1000),
+                        c("blue", "white", "red", "antiquewhite4"), 
+                        space = "RGB",
+                        transparency = 0.1)
+
+# set cluster multivariate color ramp
+col_fun_clust = colorRamp2(c(-10, 0, 10, 1000, 2000, 3000),
+                           c("blue",
+                             "white",
+                             "red",
+                             "antiquewhite4",
+                             "gray",
+                             "#FFFFB3"),
+                           space = "RGB"
+                           )
+
+library(viridis)
+col_fun_clust2 = colorRamp2(c(-1, 0, 1, 1000, 2000, 3000),
+                           c("blue",
+                             "white",
+                             "red",
+                             "gray",
+                             "floralwhite",
+                             brewer.pal(11, "RdYlBu")[5]),
+                           transparency = c(0.3, 0.3, 0.3, 0, 0, 0.3),
+                           space = "RGB"
+)
+
+
+```
+
+## Create circos plot
+
+```{r circos_no_heatmap}
+
+### create and save circos
+
+# save parameters
+setwd(paste0(path, "/output/circos"))
+jpeg("circos_nov_09_2022_all_sexes_model2.jpeg", 
+    width = 15,
+    height = 15,
+    units = "in", 
+    res = 1200)
+par(oma = c(10, 3, 10, 3)) # all sides have 3 lines of space
+par(mar = rep(1,4), xpd = NA)
+
+# start circos
+circos.par(cell.padding = c(0, 0, 0, 0),
+           gap.after = 4,
+           points.overflow.warning = FALSE)
+circos.heatmap.initialize(cluster_mat, 
+                          split = split,
+                          cluster = FALSE)
+max_height = attr(dend, "height")  # maximum height of the trees
+
+# text labels for dendrogram
+circos.trackPlotRegion(
+    ylim = c(0, 1),
+    bg.border = NA,
+    track.height = 0.3,
+    panel.fun = function(x, y) {
+        for (i in seq(n)) {
+            circos.text(
+                i - 0.5,
+                0,
+                pretty_labels[i],
+                adj = c(0, 0.5),
+                facing = "clockwise",
+                niceFacing = TRUE,
+                cex = 1.1
+            )
+        }
+    }
+)
+
+# histogram of number of significant disease associations
+incident_disease_mat2 <- incident_disease_mat
+incident_disease_mat2[which(incident_disease_mat2 == 1000)] <- NA
+incident_disease_mat2[which(incident_disease_mat2 == 2000)] <- NA
+circos_freq_count <- rowSums(!is.na(t(incident_disease_mat2)))
+circos_freq_count <- data.matrix(circos_freq_count)
+
+col_split <- rep(NA, length(circos_freq_count))
+col_split <- as.vector(
+    ifelse(
+        circos_freq_count >= 25/2,
+        "#8DA0CB",
+        "#FFD92F"
+    )
+)
+    
+circos.trackPlotRegion(
+    ylim = c(0, 27),
+    bg.border = "black",
+    track.height = 0.08,
+    track.margin = c(0.02, 0),
+    panel.fun = c(
+        circos.yaxis(side = "left",
+                     at = c(0, 10, 25),
+                     labels.cex = 0.6),
+        circos.lines(
+            seq(1,n) - 1,
+            circos_freq_count,
+            col = "#8DA0CB", 
+            border = "black",
+            type = "s",
+            area = TRUE)
+    )
+)
+
+
+# histogram of number of significant biomarker associations
+circos_bio_mat2 <- circos_bio_mat
+circos_bio_mat2[which(circos_bio_mat2 == 1000)] <- NA
+circos_bio_mat2[which(circos_bio_mat2 == 2000)] <- NA
+circos_freq_count2 <- rowSums(!is.na(t(circos_bio_mat2)))
+circos_freq_count2 <- data.matrix(circos_freq_count2)
+
+circos.trackPlotRegion(
+    ylim = c(0, 27),
+    bg.border = "black",
+    track.height = 0.08,
+    track.margin = c(0.02, 0),
+    panel.fun = c(
+        circos.yaxis(side = "left",
+                     at = c(0, 15, 25),
+                     labels.cex = 0.6,
+                     tick.length = convert_x(0.55, "mm")),
+        circos.lines(
+            seq(1,n) - 1,
+            circos_freq_count2,
+            col = "#FEE090B2", 
+            border = "black",
+            type = "s",
+            area = TRUE)
+    )
+)
+
+
+set_track_gap(gap = 0)
+
+# cluster multivariate heatmap
+cluster_mat3 <- cluster_mat
+cluster_mat3[which(cluster_mat3 >= 0 & cluster_mat3 %nin% c(1000,2000,3000))] <- 1
+cluster_mat3[which(cluster_mat3 < 0 & cluster_mat3 %nin% c(1000,2000,3000))] <- -1
+
+# XWAS heatmap
+XWAS_mat2 <- XWAS_mat
+XWAS_mat2[which(XWAS_mat2 >= 0)] <- 1
+XWAS_mat2[which(XWAS_mat2 < 0)] <--1
+
+# combined heatmap
+heat_map <- cbind(cluster_mat3, 
+                  XWAS_mat2)
+
+circos.heatmap(heat_map,
+               bg.border = "black",
+               col = col_fun_clust2,
+               cell.lty = "blank",
+               ignore.white = FALSE,
+               cluster = FALSE,
+               track.height = 0.05
+)
+
+
+set_track_gap(gap = 0.02)
+
+suppressPackageStartupMessages(require(dendextend))
+# color dendrogram branches (via dendextend) 
+dend = color_branches(dend, k = nclus, col = pal4)
+# set dendrogram branch width (via dendextend) 
+dend <- dend %>% 
+    set("branches_lwd", 2) 
+
+# dendrogram
+circos.track(
+    ylim = c(0, max_height),
+    bg.border = NA,
+    track.height = 0.38,
+    panel.fun = function(x, y) {
+        circos.dendrogram(dend,
+                          max_height = max_height)
+        }
+)
+
+# legend for cell coloring
+lgd_labels = Legend(
+    title = "Significance",
+    labels = c(
+        "Collinear or removed", 
+        "Increased mortality risk",
+        "Decreased mortality risk",
+        "Not significant"
+        # ,"Not tested"
+        ), 
+    legend_gp = gpar(fill = c(
+        "#FEE090B2", 
+        "#FF0000B2", 
+        "#0000FFB2", 
+        "gray"
+        ))
+)
+
+draw(lgd_labels, 
+     x = unit(1, "npc") - unit(65, "mm"), 
+     y = unit(40, "mm"),
+     just = c("right", "bottom"))
+
+
+
+
+circos.clear()
+dev.off()
+```

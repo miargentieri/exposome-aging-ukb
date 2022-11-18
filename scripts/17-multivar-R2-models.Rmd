@@ -1,0 +1,5550 @@
+
+### Calculating exposome multivariable models
+
+```{r packages, eval=TRUE}
+library(Hmisc)
+library(survival)
+library(mice)
+library(CoxR2)
+library(car)
+library(DescTools)
+library(ggplot2)
+library(reshape2)
+library(rms)
+library(viridis)
+
+```
+
+```{r load, results='hide'}
+
+path <- "/path/to/file"
+
+# load analysis datasets
+load(paste0(path, "/ACM_final_analysis_datasets_aug_20_2022_all_data.RData"))
+load(paste0(path, "/ACM_final_analysis_datasets_aug_20_2022_scotwales.RData"))
+
+# load physical environment PCA results
+load(paste0(path, "/physical_environment_PCA_nov_07_2022_all_sexes.RData"))
+
+# load NCD data
+load("/path/to/file/NCD_all_subsets_aug_04_2022.RData")
+
+# load interview baseline dx data
+load("/path/to/file/baseline_dx_data_july_07_2022.RData")
+
+# load variable categories
+categories <- read.csv("/path/to/file/Argentieri UKB dataset data dictionary.csv")
+
+# load PRS data
+load(paste0(path, "/datasets/PRS_data_nov_04_2022.RData"))
+
+# load disease analysis results
+load(paste0(path, "/all_disease_analysis_output_with_cs_nov_07_2022_all_sexes.RData"))
+
+# load list of vars significant in cluster multivariate analyses
+exposures <- read.csv(paste0(path, "/total_sig_vars_list_nov_07_2022_all_sexes.csv"))
+exposures <- as.vector(unlist(exposures[1]))
+
+# set global R options
+options(scipen = 999) # turn off scientific notation
+pboptions(type = "timer", char = "=") # initialize progress bar
+cores <- NULL
+```
+
+## Data prep
+
+```{r variable_prep}
+
+# make new var for scaled age
+for (k in seq_along(all_data)) {
+    all_data[[k]]$age_scaled <- all_data[[k]]$recruitment_age
+    scotwales[[k]]$age_scaled <- scotwales[[k]]$recruitment_age
+}
+
+# scale function
+scale_numeric <- function(x) { 
+    # create logical vector of numeric columns
+    nums <- sapply(x, is.numeric)
+    
+    # list of numeric variables to exclude from scaling
+    scale_exclude <- c(
+        Cs(
+            censor_age,
+            recruitment_age,
+            ACM_event_indicator,
+            eid,
+            time,
+            ACM_survival_time,
+            hazard     
+        )
+    )
+    
+    # exclude those columns I don't want to scale
+    nums[names(nums) %in% scale_exclude] <- FALSE # don't want to scale these
+    
+    # # don't bother scaling other numeric cols not in analysis
+    nums[names(nums) %nin% exposures] <- FALSE
+
+    # perform scale
+    x[nums] <- scale(x[nums],
+                     scale = TRUE)
+    
+    # return entire dataset
+    return(x)
+}
+
+# scale desired numeric columns
+all_data <- lapply(all_data, scale_numeric)
+scotwales <- lapply(scotwales, scale_numeric)
+
+```
+
+## Run physical environment PCAs in Scotland/Wales datasets
+
+```{r pca_scotwales, eval=FALSE}
+
+# duplicate dataset for PCA
+data_pca <- scotwales
+
+# make rownames eid
+for (k in seq_along(data_pca)) {
+    rownames(data_pca[[k]]) <- data_pca[[k]]$eid
+}
+
+# all pollution vars significant in XWAS
+pollution_vars <- 
+    c(
+        Cs(
+            NO_2010,
+            NO2_2005,
+            NO2_2006,
+            NO2_2007,
+            NO2_2010,
+            PM10_2007,
+            PM10_2010,
+            PM2.5_2010,
+            PM2.5_absorbance_2010
+        )
+    )
+
+# all greenspace and natural environment vars significant in XWAS
+greenspace_vars <- 
+    c(
+        Cs(
+            greenspace_buffer_1000m,
+            greenspace_buffer_300m,
+            natural_environment_buffer_1000m,
+            natural_environment_buffer_300m
+        )
+    )
+
+# run PCA in each imputed dataset - set scale to T because not scaled above
+set.seed(3456)
+pollution_PCA_list <- 
+    lapply(data_pca, function(x) {
+        prcomp(x[which(names(x) %in% pollution_vars)], 
+               scale = TRUE)
+    }
+)
+
+set.seed(3456)
+greenspace_PCA_list <- 
+    lapply(data_pca, function(x) {
+        prcomp(x[which(names(x) %in% greenspace_vars)], 
+               scale = TRUE)
+    }
+)
+
+# summary to see explained variance per PC
+summary(pollution_PCA_list[[1]])
+summary(pollution_PCA_list[[2]])
+summary(pollution_PCA_list[[3]])
+summary(pollution_PCA_list[[4]])
+summary(pollution_PCA_list[[5]])
+# first 3 PCs explain > 98% of variance in all datasets
+
+summary(greenspace_PCA_list[[1]])
+summary(greenspace_PCA_list[[2]])
+summary(greenspace_PCA_list[[3]])
+summary(greenspace_PCA_list[[4]])
+summary(greenspace_PCA_list[[5]])
+# first 2 PCs explain > 96% of variance in all datasets
+
+# get df of pollution PC scores for each participant
+pollution_pca_dfs_scotwales <- 
+    lapply(pollution_PCA_list, function(x) {
+        # get individual PC scores
+        df <- data.frame(x$x)
+        # subset to just 3 PCs
+        df <- df[1:4]
+        # rename columns
+        colnames(df) <- c("air_pollution_PC1", 
+                          "air_pollution_PC2",
+                          "air_pollution_PC3",
+                          "air_pollution_PC4")
+        # return df
+        return(df)
+    }
+)
+
+
+# get df of greenspace PC scores for each participant
+greenspace_PCA_dfs_scotwales <- 
+    lapply(greenspace_PCA_list, function(x) {
+        # get individual PC scores
+        df <- data.frame(x$x)
+        # subset to just 2 PCs
+        df <- df[1:2]
+        # rename columns
+        colnames(df) <- c("greenspace_PC1", 
+                          "greenspace_PC2")
+        # return df
+        return(df)
+    }
+)
+
+
+# make eids a column again for merge with larger dataset
+for (k in seq_along(pollution_pca_dfs_scotwales)) {
+    pollution_pca_dfs_scotwales[[k]]$eid <- rownames(pollution_pca_dfs_scotwales[[k]])
+}
+
+# make eids a column again for merge with larger dataset
+for (k in seq_along(greenspace_PCA_dfs_scotwales)) {
+    greenspace_PCA_dfs_scotwales[[k]]$eid <- rownames(greenspace_PCA_dfs_scotwales[[k]])
+}
+
+## make plots for PCA loadings
+
+pca1 <- pollution_PCA_list[[1]]
+pca2 <- greenspace_PCA_list[[1]]
+
+pca_mat1 <- as.matrix(pca1$rotation[,1:3])
+pca_mat1 <- ifelse(pca_mat1 > -0.3 & pca_mat1 < 0.3, 
+                  0,
+                  pca_mat1)
+melted_cormat1 <- melt(pca_mat1)
+
+pca_mat2 <- as.matrix(pca2$rotation[,1:2])
+pca_mat2 <- ifelse(pca_mat2 > -0.3 & pca_mat2 < 0.3, 
+                  0,
+                  pca_mat2)
+melted_cormat2 <- melt(pca_mat2)
+
+heat1 <- 
+    ggplot(data = melted_cormat1, aes(x=Var2, y=Var1, fill=value)) + 
+    geom_tile(color = "white") +
+    scale_fill_gradient2(
+        low = "blue",
+        high = "red",
+        mid = "white",
+        midpoint = 0,
+        limit = c(-1, 1),
+        space = "Lab",
+        name = ""
+    ) +
+    ggtitle("PCA loadings for physical environment variables - Scottish/Welsh UK Biobank participants") +
+    theme_classic(base_size = 16) +   
+    theme(
+        legend.position = "right",
+        legend.title = element_blank(),
+        plot.title.position = "plot",
+        plot.title = element_text(size = 16),
+        plot.subtitle = element_text(
+            size = 14,
+            face = "italic",
+            margin = margin(0,0,30,0)
+        )
+    ) +
+    labs(x = "",
+         y = "",
+         subtitle = "Note: only loadings < -0.3 or > 0.3 are colored"
+    ) 
+
+heat2 <- 
+    ggplot(data = melted_cormat2, aes(x=Var2, y=Var1, fill=value)) + 
+    geom_tile(color = "white") +
+    scale_fill_gradient2(
+        low = "blue",
+        high = "red",
+        mid = "white",
+        midpoint = 0,
+        limit = c(-1, 1),
+        space = "Lab",
+        name = ""
+    ) +
+    # ggtitle("PCA loadings for natural/green space variables - UK Biobank") +
+    theme_classic(base_size = 16) +   
+    theme(
+        legend.position = "right",
+        legend.title = element_blank(),
+    ) +
+    labs(x = "",
+         y = ""
+    ) 
+
+heat1
+heat2
+
+library(gridExtra)
+grid <- grid.arrange(heat1, heat2, ncol = 1, nrow = 2, widths = c(6), heights = c(10, 5))
+
+ggsave(grid, filename = paste0(path, "/phys_environment_PCA_sept_10_2022_scotwales.png"), width = 9, height = 6)
+
+
+# merge PCA dfs together and save
+pca_dfs_scotwales <- as.list(seq_along(greenspace_PCA_dfs_scotwales))
+for (k in seq_along(pca_dfs_scotwales)) {
+    pca_dfs_scotwales[[k]] <-
+        merge(pollution_pca_dfs_scotwales[[k]],
+              greenspace_PCA_dfs_scotwales[[k]],
+              by = "eid",
+              sort = FALSE)
+}
+
+# according to loadings, PC1 is inversely related to the pollution vars. So flip sign for sensible interpretation.
+for (k in seq_along(pca_dfs_scotwales)) {
+    pca_dfs_scotwales[[k]]$air_pollution_PC1 <- pca_dfs_scotwales[[k]]$air_pollution_PC1 * (-1)
+}
+
+save(pca_dfs_scotwales, file = paste0(path, "/results/physical_environment_PCA_sept_10_2022_scotwales.RData"))
+
+# scale for analyses
+for (k in seq_along(pca_dfs_scotwales)) {
+pca_dfs_scotwales[[k]][-1] <- scale(pca_dfs_scotwales[[k]][-1], scale = TRUE)
+}
+
+```
+
+## PRS data processing
+
+```{r PRS_quintiles}
+
+# breast cancer quintiles
+PRS_data$PRS_breast_quintile <- NA
+PRS_data$PRS_breast_quintile <- cut(PRS_data$PRS_breast, quantile(PRS_data$PRS_breast, probs = seq(0, 1, 0.20), na.rm = TRUE))
+table(PRS_data$PRS_breast_quintile)
+PRS_data$PRS_breast_quintile <- factor(PRS_data$PRS_breast_quintile, ordered = FALSE)
+PRS_data$PRS_breast_quintile <- relevel(PRS_data$PRS_breast_quintile, ref = "(-4.98,-0.977]")
+
+# bowel cancer quintiles
+PRS_data$PRS_bowel_quintile <- NA
+PRS_data$PRS_bowel_quintile <- cut(PRS_data$PRS_bowel, quantile(PRS_data$PRS_bowel, probs = seq(0, 1, 0.20), na.rm = TRUE))
+table(PRS_data$PRS_bowel_quintile)
+PRS_data$PRS_bowel_quintile <- factor(PRS_data$PRS_bowel_quintile, ordered = FALSE)
+PRS_data$PRS_bowel_quintile <- relevel(PRS_data$PRS_bowel_quintile, ref = "(-4.67,-0.664]")
+
+# prostate cancer quintiles
+PRS_data$PRS_prostate_quintile <- NA
+PRS_data$PRS_prostate_quintile <- cut(PRS_data$PRS_prostate, quantile(PRS_data$PRS_prostate, probs = seq(0, 1, 0.20), na.rm = TRUE))
+table(PRS_data$PRS_prostate_quintile)
+PRS_data$PRS_prostate_quintile <- factor(PRS_data$PRS_prostate_quintile, ordered = FALSE)
+PRS_data$PRS_prostate_quintile <- relevel(PRS_data$PRS_prostate_quintile, ref = "(-4.44,-0.271]")
+
+# T2D quintiles
+PRS_data$PRS_T2D_quintile <- NA
+PRS_data$PRS_T2D_quintile <- cut(PRS_data$PRS_T2D, quantile(PRS_data$PRS_T2D, probs = seq(0, 1, 0.20), na.rm = TRUE))
+table(PRS_data$PRS_T2D_quintile)
+PRS_data$PRS_T2D_quintile <- factor(PRS_data$PRS_T2D_quintile, ordered = FALSE)
+PRS_data$PRS_T2D_quintile <- relevel(PRS_data$PRS_T2D_quintile, ref = "(-4.57,-0.945]")
+
+# CVD quintiles
+PRS_data$PRS_CVD_quintile <- NA
+PRS_data$PRS_CVD_quintile <- cut(PRS_data$PRS_CVD, quantile(PRS_data$PRS_CVD, probs = seq(0, 1, 0.20), na.rm = TRUE))
+table(PRS_data$PRS_CVD_quintile)
+PRS_data$PRS_CVD_quintile <- factor(PRS_data$PRS_CVD_quintile, ordered = FALSE)
+PRS_data$PRS_CVD_quintile <- relevel(PRS_data$PRS_CVD_quintile, ref = "(-4.8,-0.928]")
+
+# CAD quintiles
+PRS_data$PRS_CAD_quintile <- NA
+PRS_data$PRS_CAD_quintile <- cut(PRS_data$PRS_CAD, quantile(PRS_data$PRS_CAD, probs = seq(0, 1, 0.20), na.rm = TRUE))
+table(PRS_data$PRS_CAD_quintile)
+PRS_data$PRS_CAD_quintile <- factor(PRS_data$PRS_CAD_quintile, ordered = FALSE)
+PRS_data$PRS_CAD_quintile <- relevel(PRS_data$PRS_CAD_quintile, ref = "(-4.95,-0.968]")
+
+# stroke quintiles
+PRS_data$PRS_stroke_quintile <- NA
+PRS_data$PRS_stroke_quintile <- cut(PRS_data$PRS_stroke, quantile(PRS_data$PRS_stroke, probs = seq(0, 1, 0.20), na.rm = TRUE))
+table(PRS_data$PRS_stroke_quintile)
+PRS_data$PRS_stroke_quintile <- factor(PRS_data$PRS_stroke_quintile, ordered = FALSE)
+PRS_data$PRS_stroke_quintile <- relevel(PRS_data$PRS_stroke_quintile, ref = "(-4.22,-0.805]")
+
+# Alzheimer's quintiles
+PRS_data$PRS_alzheimers_quintile <- NA
+PRS_data$PRS_alzheimers_quintile <- cut(PRS_data$PRS_alzheimers, quantile(PRS_data$PRS_alzheimers, probs = seq(0, 1, 0.20), na.rm = TRUE))
+table(PRS_data$PRS_alzheimers_quintile)
+PRS_data$PRS_alzheimers_quintile <- factor(PRS_data$PRS_alzheimers_quintile, ordered = FALSE)
+PRS_data$PRS_alzheimers_quintile <- relevel(PRS_data$PRS_alzheimers_quintile, ref = "(-3.73,-0.776]")
+
+# parkinson's quintiles
+PRS_data$PRS_parkinsons_quintile <- NA
+PRS_data$PRS_parkinsons_quintile <- cut(PRS_data$PRS_parkinsons, quantile(PRS_data$PRS_parkinsons, probs = seq(0, 1, 0.20), na.rm = TRUE))
+table(PRS_data$PRS_parkinsons_quintile)
+PRS_data$PRS_parkinsons_quintile <- factor(PRS_data$PRS_parkinsons_quintile, ordered = FALSE)
+PRS_data$PRS_parkinsons_quintile <- relevel(PRS_data$PRS_parkinsons_quintile, ref = "(-4.55,-0.998]")
+
+# rheumatoid quintiles
+PRS_data$PRS_rheumatoid_quintile <- NA
+PRS_data$PRS_rheumatoid_quintile <- cut(PRS_data$PRS_rheumatoid, quantile(PRS_data$PRS_rheumatoid, probs = seq(0, 1, 0.20), na.rm = TRUE))
+table(PRS_data$PRS_rheumatoid_quintile)
+PRS_data$PRS_rheumatoid_quintile <- factor(PRS_data$PRS_rheumatoid_quintile, ordered = FALSE)
+PRS_data$PRS_rheumatoid_quintile <- relevel(PRS_data$PRS_rheumatoid_quintile, ref = "(-3.74,-0.709]")
+
+# macular degeneration quintiles
+PRS_data$PRS_macular_quintile <- NA
+PRS_data$PRS_macular_quintile <- cut(PRS_data$PRS_macular, quantile(PRS_data$PRS_macular, probs = seq(0, 1, 0.20), na.rm = TRUE))
+table(PRS_data$PRS_macular_quintile)
+PRS_data$PRS_macular_quintile <- factor(PRS_data$PRS_macular_quintile, ordered = FALSE)
+PRS_data$PRS_macular_quintile <- relevel(PRS_data$PRS_macular_quintile, ref = "(-4.32,-0.754]")
+
+# osteoporosis quintiles
+PRS_data$PRS_osteoporosis_quintile <- NA
+PRS_data$PRS_osteoporosis_quintile <- cut(PRS_data$PRS_osteoporosis, quantile(PRS_data$PRS_osteoporosis, probs = seq(0, 1, 0.20), na.rm = TRUE))
+table(PRS_data$PRS_osteoporosis_quintile)
+PRS_data$PRS_osteoporosis_quintile <- factor(PRS_data$PRS_osteoporosis_quintile, ordered = FALSE)
+PRS_data$PRS_osteoporosis_quintile <- relevel(PRS_data$PRS_osteoporosis_quintile, ref = "(-4.49,-0.831]")
+
+# ovarian cancer quintiles
+PRS_data$PRS_ovarian_quintile <- NA
+PRS_data$PRS_ovarian_quintile <- cut(PRS_data$PRS_ovarian, quantile(PRS_data$PRS_ovarian, probs = seq(0, 1, 0.20), na.rm = TRUE))
+table(PRS_data$PRS_ovarian_quintile)
+PRS_data$PRS_ovarian_quintile <- factor(PRS_data$PRS_ovarian_quintile, ordered = FALSE)
+PRS_data$PRS_ovarian_quintile <- relevel(PRS_data$PRS_ovarian_quintile, ref = "(-5.06,-1.07]")
+
+```
+
+## Merge all datasets
+
+```{r merge_disease_data}
+
+### all data
+# merge in PCA data
+for (k in seq_along(all_data)) {
+    all_data[[k]] <- merge(
+        all_data[[k]],
+        pca_dfs[[k]],
+        by = "eid",
+        sort = FALSE)
+}
+
+# merge ICD-10 data with ACM datasets
+all_data_ncd <- lapply(all_data, function(x)
+    as.data.frame(
+        merge(x, 
+              dat_NCD_all,
+              by = "eid",
+              all.x = TRUE,
+              all.y = FALSE,
+              sort = FALSE)
+    )
+)
+
+# merge baseline dx data with ACM datasets
+all_data_ncd <- lapply(all_data_ncd, function(x)
+    as.data.frame(
+        merge(x, 
+              dat_dx,
+              by = "eid",
+              all.x = TRUE,
+              all.y = FALSE,
+              sort = FALSE)
+    )
+)
+
+# merge PRS data with ACM datasets
+all_data_ncd <- lapply(all_data_ncd, function(x)
+    as.data.frame(
+        merge(x, 
+              PRS_data,
+              by = "eid",
+              all.x = TRUE,
+              all.y = FALSE,
+              sort = FALSE)
+    )
+)
+
+### scotwales
+
+# merge in PCA data
+for (k in seq_along(scotwales)) {
+    scotwales[[k]] <- merge(
+        scotwales[[k]],
+        pca_dfs_scotwales[[k]],
+        by = "eid",
+        sort = FALSE)
+}
+
+# merge ICD-10 data with ACM datasets
+scotwales_ncd <- lapply(scotwales, function(x)
+    as.data.frame(
+        merge(x, 
+              dat_NCD_all,
+              by = "eid",
+              all.x = TRUE,
+              all.y = FALSE,
+              sort = FALSE)
+    )
+)
+
+# merge baseline dx data with ACM datasets
+scotwales_ncd <- lapply(scotwales_ncd, function(x)
+    as.data.frame(
+        merge(x, 
+              dat_dx,
+              by = "eid",
+              all.x = TRUE,
+              all.y = FALSE,
+              sort = FALSE)
+    )
+)
+
+# merge PRS data with ACM datasets
+scotwales_ncd <- lapply(scotwales_ncd, function(x)
+    as.data.frame(
+        merge(x, 
+              PRS_data,
+              by = "eid",
+              all.x = TRUE,
+              all.y = FALSE,
+              sort = FALSE)
+    )
+)
+
+
+
+```
+
+```{r remove_objects, eval=TRUE}
+rm(
+    all_data,
+    scotwales,
+    dat_dx,
+    dat_NCD_all
+)
+
+invisible(gc())
+```
+
+## Create lists of disease names, indicator variables, survival time variables
+
+```{r disease_list}
+
+disease_list <- c(
+    "All-cause mortality",
+    "Colorectal cancer",
+    "Lung cancer",
+    "Esophageal cancer",
+    "Liver cancer",
+    "Pancreatic cancer",
+    "Brain cancer",
+    "Leukemia",
+    "Lymphoma",
+    "Breast cancer",
+    "Ovarian cancer",
+    "Prostate cancer",
+    "Type II diabetes",
+    "Ischemic heart disease",
+    "Cerebrovascular diseases",
+    "Emphysema, COPD",
+    "Chronic liver diseases",
+    "Chronic kidney diseases",
+    "All-cause dementia",
+    "Vascular dementia",
+    "Alzheimer's disease",
+    "Parkinson's disease",
+    "Rheumatoid arthritis",
+    "Macular degeneration",
+    "Osteoporosis",
+    "Osteoarthritis"
+)
+
+indicator <- c(
+    Cs(
+        ACM_event_indicator,
+        colon_cancer_event,
+        lung_cancer_event,
+        eso_cancer_event,
+        liver_cancer_event,
+        pancreatic_cancer_event,
+        brain_cancer_event,
+        leukemia_event,
+        lymphoma_event,
+        breast_cancer_event,
+        ovarian_cancer_event,
+        prostate_cancer_event,
+        diabetes_event,
+        CVD_event,
+        cerebro_event,
+        COPD_event,
+        liver_event,
+        kidney_event,
+        all_dementia_event,
+        vasc_dementia_event,
+        alzheimers_event,
+        parkinsons_event,
+        rheumatoid_event,
+        macular_event,
+        osteoporosis_event,
+        osteoarthritis_event
+    )
+)
+
+surv_time <- c(
+    Cs(
+        ACM_survival_time,
+        colon_cancer_survival_time,
+        lung_cancer_survival_time,
+        eso_cancer_survival_time,
+        liver_cancer_survival_time,
+        pancreatic_cancer_survival_time,
+        brain_cancer_survival_time,
+        leukemia_survival_time,
+        lymphoma_survival_time,
+        breast_cancer_survival_time,
+        ovarian_cancer_survival_time,
+        prostate_cancer_survival_time,
+        diabetes_survival_time,
+        CVD_survival_time,
+        cerebro_survival_time,
+        COPD_survival_time,
+        liver_survival_time,
+        kidney_survival_time,
+        all_dementia_survival_time,
+        vasc_dementia_survival_time,
+        alzheimers_survival_time,
+        parkinsons_survival_time,
+        rheumatoid_survival_time,
+        macular_survival_time,
+        osteoporosis_survival_time,
+        osteoarthritis_survival_time
+    )
+)
+
+
+
+```
+
+## Create lists of survival objects for models
+
+```{r surv_list}
+
+# list of survival objects
+
+surv_list <- c(
+    "Surv(ACM_survival_time, ACM_event_indicator) ~
+                  age_scaled + sex +   ",
+    "Surv(colon_cancer_survival_time, colon_cancer_event) ~
+                  age_scaled + sex +   ",
+    "Surv(lung_cancer_survival_time, lung_cancer_event) ~
+                  age_scaled + sex +   ",
+    "Surv(eso_cancer_survival_time, eso_cancer_event) ~
+                  age_scaled + sex +   ",
+    "Surv(liver_cancer_survival_time, liver_cancer_event) ~
+                  age_scaled + sex +   ",
+    "Surv(pancreatic_cancer_survival_time, pancreatic_cancer_event) ~
+                  age_scaled + sex +   ",
+    "Surv(brain_cancer_survival_time, brain_cancer_event) ~
+                  age_scaled + sex +   ",
+    "Surv(leukemia_survival_time, leukemia_event) ~
+                  age_scaled + sex +   ",
+    "Surv(lymphoma_survival_time, lymphoma_event) ~
+                  age_scaled + sex +   ",
+    "Surv(breast_cancer_survival_time, breast_cancer_event) ~
+                  age_scaled +   ",
+    "Surv(ovarian_cancer_survival_time, ovarian_cancer_event) ~
+                  age_scaled +   ",
+    "Surv(prostate_cancer_survival_time, prostate_cancer_event) ~
+                  age_scaled +   ",
+    "Surv(diabetes_survival_time, diabetes_event) ~
+                  age_scaled + sex +   ",
+    "Surv(CVD_survival_time, CVD_event) ~
+                  age_scaled + sex +   ",
+    "Surv(cerebro_survival_time, cerebro_event) ~
+                  age_scaled + sex +   ",
+    "Surv(COPD_survival_time, COPD_event) ~
+                  age_scaled + sex +   ",
+    "Surv(liver_survival_time, liver_event) ~
+                  age_scaled + sex +   ",
+    "Surv(kidney_survival_time, kidney_event) ~
+                  age_scaled + sex +   ",
+    "Surv(all_dementia_survival_time, all_dementia_event) ~
+                  age_scaled + sex +   ",
+    "Surv(vasc_dementia_survival_time, vasc_dementia_event) ~
+                  age_scaled + sex +   ",
+    "Surv(alzheimers_survival_time, alzheimers_event) ~
+                  age_scaled + sex +   ",
+    "Surv(parkinsons_survival_time, parkinsons_event) ~
+                  age_scaled + sex +   ",
+    "Surv(rheumatoid_survival_time, rheumatoid_event) ~
+                  age_scaled + sex +   ",
+    "Surv(macular_survival_time, macular_event) ~
+                  age_scaled + sex +   ",
+    "Surv(osteoporosis_survival_time, osteoporosis_event) ~
+                  age_scaled + sex +   ",
+    "Surv(osteoarthritis_survival_time, osteoarthritis_event) ~
+                  age_scaled + sex +   "
+    
+)
+
+# duplicate
+surv_list_copy <- surv_list
+
+surv_list_tt <- c(
+    "Surv(Start_time, Stop_time, ACM_event_indicator) ~
+                  age_scaled + sex +   ",
+    "Surv(Start_time, Stop_time, colon_cancer_event) ~
+                  age_scaled + sex +   ",
+    "Surv(Start_time, Stop_time, lung_cancer_event) ~
+                  age_scaled + sex +   ",
+    "Surv(Start_time, Stop_time, eso_cancer_event) ~
+                  age_scaled + sex +   ",
+    "Surv(Start_time, Stop_time, liver_cancer_event) ~
+                  age_scaled + sex +   ",
+    "Surv(Start_time, Stop_time, pancreatic_cancer_event) ~
+                  age_scaled + sex +   ",
+    "Surv(Start_time, Stop_time, brain_cancer_event) ~
+                  age_scaled + sex +   ",
+    "Surv(Start_time, Stop_time, leukemia_event) ~
+                  age_scaled + sex +   ",
+    "Surv(Start_time, Stop_time, lymphoma_event) ~
+                  age_scaled + sex +   ",
+    "Surv(Start_time, Stop_time, breast_cancer_event) ~
+                  age_scaled +   ",
+    "Surv(Start_time, Stop_time, ovarian_cancer_event) ~
+                  age_scaled +   ",
+    "Surv(Start_time, Stop_time, prostate_cancer_event) ~
+                  age_scaled +   ",
+    "Surv(Start_time, Stop_time, diabetes_event) ~
+                  age_scaled + sex +   ",
+    "Surv(Start_time, Stop_time, CVD_event) ~
+                  age_scaled + sex +   ",
+    "Surv(Start_time, Stop_time, cerebro_event) ~
+                  age_scaled + sex +   ",
+    "Surv(Start_time, Stop_time, COPD_event) ~
+                  age_scaled + sex +   ",
+    "Surv(Start_time, Stop_time, liver_event) ~
+                  age_scaled + sex +   ",
+    "Surv(Start_time, Stop_time, kidney_event) ~
+                  age_scaled + sex +   ",
+    "Surv(Start_time, Stop_time, all_dementia_event) ~
+                  age_scaled + sex +   ",
+    "Surv(Start_time, Stop_time, vasc_dementia_event) ~
+                  age_scaled + sex +   ",
+    "Surv(Start_time, Stop_time, alzheimers_event) ~
+                  age_scaled + sex +   ",
+    "Surv(Start_time, Stop_time, parkinsons_event) ~
+                  age_scaled + sex +   ",
+    "Surv(Start_time, Stop_time, rheumatoid_event) ~
+                  age_scaled + sex +   ",
+    "Surv(Start_time, Stop_time, macular_event) ~
+                  age_scaled + sex +   ",
+    "Surv(Start_time, Stop_time, osteoporosis_event) ~
+                  age_scaled + sex +   ",
+    "Surv(Start_time, Stop_time, osteoarthritis_event) ~
+                  age_scaled + sex +   "
+)
+
+surv_list_age_sex <- c(
+    "Surv(ACM_survival_time, ACM_event_indicator) ~
+                  age_scaled + sex",
+    "Surv(colon_cancer_survival_time, colon_cancer_event) ~
+                  age_scaled + sex",
+    "Surv(lung_cancer_survival_time, lung_cancer_event) ~
+                  age_scaled + sex",
+    "Surv(eso_cancer_survival_time, eso_cancer_event) ~
+                  age_scaled + sex",
+    "Surv(liver_cancer_survival_time, liver_cancer_event) ~
+                  age_scaled + sex",
+    "Surv(pancreatic_cancer_survival_time, pancreatic_cancer_event) ~
+                  age_scaled + sex",
+    "Surv(brain_cancer_survival_time, brain_cancer_event) ~
+                  age_scaled + sex",
+    "Surv(leukemia_survival_time, leukemia_event) ~
+                  age_scaled + sex",
+    "Surv(lymphoma_survival_time, lymphoma_event) ~
+                  age_scaled + sex",
+    "Surv(breast_cancer_survival_time, breast_cancer_event) ~
+                  age_scaled",
+    "Surv(ovarian_cancer_survival_time, ovarian_cancer_event) ~
+                  age_scaled",
+    "Surv(prostate_cancer_survival_time, prostate_cancer_event) ~
+                  age_scaled",
+    "Surv(diabetes_survival_time, diabetes_event) ~
+                  age_scaled + sex",
+    "Surv(CVD_survival_time, CVD_event) ~
+                  age_scaled + sex",
+    "Surv(cerebro_survival_time, cerebro_event) ~
+                  age_scaled + sex",
+    "Surv(COPD_survival_time, COPD_event) ~
+                  age_scaled + sex",
+    "Surv(liver_survival_time, liver_event) ~
+                  age_scaled + sex",
+    "Surv(kidney_survival_time, kidney_event) ~
+                  age_scaled + sex",
+    "Surv(all_dementia_survival_time, all_dementia_event) ~
+                  age_scaled + sex",
+    "Surv(vasc_dementia_survival_time, vasc_dementia_event) ~
+                  age_scaled + sex",
+    "Surv(alzheimers_survival_time, alzheimers_event) ~
+                  age_scaled + sex",
+    "Surv(parkinsons_survival_time, parkinsons_event) ~
+                  age_scaled + sex",
+    "Surv(rheumatoid_survival_time, rheumatoid_event) ~
+                  age_scaled + sex",
+    "Surv(macular_survival_time, macular_event) ~
+                  age_scaled + sex",
+    "Surv(osteoporosis_survival_time, osteoporosis_event) ~
+                  age_scaled + sex",
+    "Surv(osteoarthritis_survival_time, osteoarthritis_event) ~
+                  age_scaled + sex"
+)
+
+
+```
+
+## Create list of significant exposures for each disease
+
+```{r exposures_list}
+
+exposures_list <- as.list(seq(1, length(disease_list)))
+
+exposures_list[[1]] <- exposures
+
+for (k in 2:length(exposures_list)) {
+    sig_vars <- disease_results[[k-1]]
+    exposures_list[[k]] <- unique(sig_vars$Variable[which(sig_vars$FDR < 0.05)])
+    
+}
+
+names(exposures_list) <- disease_list
+
+```
+
+## Make list of functions to exclude prevalent cases for each disease
+
+```{r prevalent_cases_list}
+
+identify_prev_cases_list <- as.list(seq(1, length(disease_list)))
+
+# mortality (no subset)
+identify_prev_cases_list[[1]] <- function(x) {x <- x}
+
+# colorectal cancer
+identify_prev_cases_list[[2]] <- function(x) {
+  
+    # define all participants with NCD diagnosis before or equal to recruitment date
+    baseline_ncd <- which(x$colon_cancer_censor_date <= x$recruitment_date)
+    
+    # creating health indicator for baseline disease in total population
+    x$baseline_colon_cancer <- NA
+    x$baseline_colon_cancer[baseline_ncd] <- 1
+    x$baseline_colon_cancer[which(x$colon_cancer_baseline_dx == 1)] <- 1
+    x$baseline_colon_cancer[which(is.na(x$baseline_colon_cancer))] <- 0
+    x$baseline_colon_cancer <- factor(x$baseline_colon_cancer)
+    
+    x <- x[which(x$baseline_colon_cancer == 0), ]
+    return(x)
+}
+
+# lung cancer
+identify_prev_cases_list[[3]] <- function(x) {
+    
+    # define all participants with NCD diagnosis before or equal to recruitment date
+    baseline_ncd <- which(x$lung_cancer_censor_date <= x$recruitment_date)
+    
+    # creating health indicator for baseline disease in total population
+    x$baseline_lung_cancer <- NA
+    x$baseline_lung_cancer[baseline_ncd] <- 1
+    x$baseline_lung_cancer[which(x$lung_cancer_baseline_dx == 1)] <- 1
+    x$baseline_lung_cancer[which(is.na(x$baseline_lung_cancer))] <- 0
+    x$baseline_lung_cancer <- factor(x$baseline_lung_cancer)
+    
+    x <- x[which(x$baseline_lung_cancer == 0), ]
+    return(x)
+}
+
+# eso cancer
+identify_prev_cases_list[[4]] <- function(x) {
+    
+    # define all participants with NCD diagnosis before or equal to recruitment date
+    baseline_ncd <- which(x$eso_cancer_censor_date <= x$recruitment_date)
+    
+    # creating health indicator for baseline disease in total population
+    x$baseline_eso_cancer <- NA
+    x$baseline_eso_cancer[baseline_ncd] <- 1
+    x$baseline_eso_cancer[which(x$eso_cancer_baseline_dx == 1)] <- 1
+    x$baseline_eso_cancer[which(is.na(x$baseline_eso_cancer))] <- 0
+    x$baseline_eso_cancer <- factor(x$baseline_eso_cancer)
+    
+    x <- x[which(x$baseline_eso_cancer == 0), ]
+    return(x)
+}
+
+# liver cancer
+identify_prev_cases_list[[5]] <- function(x) {
+    
+    # define all participants with NCD diagnosis before or equal to recruitment date
+    baseline_ncd <- which(x$liver_cancer_censor_date <= x$recruitment_date)
+    
+    # creating health indicator for baseline disease in total population
+    x$baseline_liver_cancer <- NA
+    x$baseline_liver_cancer[baseline_ncd] <- 1
+    x$baseline_liver_cancer[which(x$liver_cancer_baseline_dx == 1)] <- 1
+    x$baseline_liver_cancer[which(is.na(x$baseline_liver_cancer))] <- 0
+    x$baseline_liver_cancer <- factor(x$baseline_liver_cancer)
+    
+    x <- x[which(x$baseline_liver_cancer == 0), ]
+    return(x)
+}
+
+# pancreatic cancer
+identify_prev_cases_list[[6]] <- function(x) {
+    
+    # define all participants with NCD diagnosis before or equal to recruitment date
+    baseline_ncd <- which(x$pancreatic_cancer_censor_date <= x$recruitment_date)
+    
+    # creating health indicator for baseline disease in total population
+    x$baseline_pancreatic_cancer <- NA
+    x$baseline_pancreatic_cancer[baseline_ncd] <- 1
+    x$baseline_pancreatic_cancer[which(x$pancreatic_cancer_baseline_dx == 1)] <- 1
+    x$baseline_pancreatic_cancer[which(is.na(x$baseline_pancreatic_cancer))] <- 0
+    x$baseline_pancreatic_cancer <- factor(x$baseline_pancreatic_cancer)
+    
+    x <- x[which(x$baseline_pancreatic_cancer == 0), ]
+    return(x)
+}
+
+# brain cancer
+identify_prev_cases_list[[7]] <- function(x) {
+    
+    # define all participants with NCD diagnosis before or equal to recruitment date
+    baseline_ncd <- which(x$brain_cancer_censor_date <= x$recruitment_date)
+    
+    # creating health indicator for baseline disease in total population
+    x$baseline_brain_cancer <- NA
+    x$baseline_brain_cancer[baseline_ncd] <- 1
+    x$baseline_brain_cancer[which(x$brain_cancer_baseline_dx == 1)] <- 1
+    x$baseline_brain_cancer[which(is.na(x$baseline_brain_cancer))] <- 0
+    x$baseline_brain_cancer <- factor(x$baseline_brain_cancer)
+    
+    x <- x[which(x$baseline_brain_cancer == 0), ]
+    return(x)
+}
+
+# leukemia
+identify_prev_cases_list[[8]] <- function(x) {
+    
+    # define all participants with NCD diagnosis before or equal to recruitment date
+    baseline_ncd <- which(x$leukemia_censor_date <= x$recruitment_date)
+    
+    # creating health indicator for baseline disease in total population
+    x$baseline_leukemia <- NA
+    x$baseline_leukemia[baseline_ncd] <- 1
+    x$baseline_leukemia[which(x$leukemia_baseline_dx == 1)] <- 1
+    x$baseline_leukemia[which(is.na(x$baseline_leukemia))] <- 0
+    x$baseline_leukemia <- factor(x$baseline_leukemia)
+    
+    x <- x[which(x$baseline_leukemia == 0), ]
+    return(x)
+}
+
+# lymphoma
+identify_prev_cases_list[[9]] <- function(x) {
+    
+    # define all participants with NCD diagnosis before or equal to recruitment date
+    baseline_ncd <- which(x$lymphoma_censor_date <= x$recruitment_date)
+    
+    # creating health indicator for baseline disease in total population
+    x$baseline_lymphoma <- NA
+    x$baseline_lymphoma[baseline_ncd] <- 1
+    x$baseline_lymphoma[which(x$lymphoma_baseline_dx == 1)] <- 1
+    x$baseline_lymphoma[which(is.na(x$baseline_lymphoma))] <- 0
+    x$baseline_lymphoma <- factor(x$baseline_lymphoma)
+    
+    x <- x[which(x$baseline_lymphoma == 0), ]
+    return(x)
+}
+
+# breast cancer
+identify_prev_cases_list[[10]] <- function(x) {
+    
+    # define all participants with NCD diagnosis before or equal to recruitment date
+    baseline_ncd <- which(x$breast_cancer_censor_date <= x$recruitment_date)
+    
+    # creating health indicator for baseline disease in total population
+    x$baseline_breast_cancer <- NA
+    x$baseline_breast_cancer[baseline_ncd] <- 1
+    x$baseline_breast_cancer[which(x$breast_cancer_baseline_dx == 1)] <- 1
+    x$baseline_breast_cancer[which(is.na(x$baseline_breast_cancer))] <- 0
+    x$baseline_breast_cancer <- factor(x$baseline_breast_cancer)
+    
+    x <- x[which(x$baseline_breast_cancer == 0), ]
+    x <- x[which(x$sex == "Female"), ]
+    return(x)
+}
+
+# ovarian cancer
+identify_prev_cases_list[[11]] <- function(x) {
+    
+    # define all participants with NCD diagnosis before or equal to recruitment date
+    baseline_ncd <- which(x$ovarian_cancer_censor_date <= x$recruitment_date)
+    
+    # creating health indicator for baseline disease in total population
+    x$baseline_ovarian_cancer <- NA
+    x$baseline_ovarian_cancer[baseline_ncd] <- 1
+    x$baseline_ovarian_cancer[which(x$ovarian_cancer_baseline_dx == 1)] <- 1
+    x$baseline_ovarian_cancer[which(is.na(x$baseline_ovarian_cancer))] <- 0
+    x$baseline_ovarian_cancer <- factor(x$baseline_ovarian_cancer)
+    
+    x <- x[which(x$baseline_ovarian_cancer == 0), ]
+    x <- x[which(x$sex == "Female"), ]
+    return(x)
+}
+
+# prostate cancer
+identify_prev_cases_list[[12]] <- function(x) {
+    
+    # define all participants with NCD diagnosis before or equal to recruitment date
+    baseline_ncd <- which(x$prostate_cancer_censor_date <= x$recruitment_date)
+    
+    # creating health indicator for baseline disease in total population
+    x$baseline_prostate_cancer <- NA
+    x$baseline_prostate_cancer[baseline_ncd] <- 1
+    x$baseline_prostate_cancer[which(x$prostate_cancer_baseline_dx == 1)] <- 1
+    x$baseline_prostate_cancer[which(is.na(x$baseline_prostate_cancer))] <- 0
+    x$baseline_prostate_cancer <- factor(x$baseline_prostate_cancer)
+    
+    x <- x[which(x$baseline_prostate_cancer == 0), ]
+    x <- x[which(x$sex == "Male"), ]
+    return(x)
+}
+
+# diabetes
+identify_prev_cases_list[[13]] <- function(x) {
+    
+    # define all participants with NCD diagnosis before or equal to recruitment date
+    baseline_ncd <- which(x$diabetes_censor_date <= x$recruitment_date)
+    
+    # creating health indicator for baseline disease in total population
+    x$baseline_diabetes <- NA
+    x$baseline_diabetes[baseline_ncd] <- 1
+    x$baseline_diabetes[which(x$diabetes_diagnosis == "Yes")] <- 1
+    x$baseline_diabetes[which(x$diabetes_baseline_dx == 1)] <- 1
+    x$baseline_diabetes[which(x$insulin == "Yes")] <- 1
+    x$baseline_diabetes[which(x$hbA1c >= 48)] <- 1
+    x$baseline_diabetes[which(x$glucose >= 11.1)] <- 1
+    x$baseline_diabetes[which(is.na(x$baseline_diabetes))] <- 0
+    x$baseline_diabetes <- factor(x$baseline_diabetes)
+    
+    x <- x[which(x$baseline_diabetes == 0), ]
+    return(x)
+}
+
+# cvd
+identify_prev_cases_list[[14]] <- function(x) {
+    
+    # define all participants with NCD diagnosis before or equal to recruitment date
+    baseline_ncd <- which(x$cvd_censor_date <= x$recruitment_date)
+    
+    # creating health indicator for baseline disease in total population
+    x$baseline_cvd <- NA
+    x$baseline_cvd[baseline_ncd] <- 1
+    x$baseline_cvd[which(x$heart_attack_diagnosis == "Yes")] <- 1
+    x$baseline_cvd[which(x$angina_diagnosis == "Yes")] <- 1
+    x$baseline_cvd[which(x$CVD_baseline_dx == 1)] <- 1
+    x$baseline_cvd[which(is.na(x$baseline_cvd))] <- 0
+    x$baseline_cvd <- factor(x$baseline_cvd)
+    
+    x <- x[which(x$baseline_cvd == 0), ]
+    return(x)
+}
+
+# cerebro
+identify_prev_cases_list[[15]] <- function(x) {
+    
+    # define all participants with NCD diagnosis before or equal to recruitment date
+    baseline_ncd <- which(x$cerebro_censor_date <= x$recruitment_date)
+    
+    # creating health indicator for baseline disease in total population
+    x$baseline_cerebro <- NA
+    x$baseline_cerebro[baseline_ncd] <- 1
+    x$baseline_cerebro[which(x$stroke_diagnosis == "Yes")] <- 1
+    x$baseline_cerebro[which(x$cerebro_baseline_dx == 1)] <- 1
+    x$baseline_cerebro[which(is.na(x$baseline_cerebro))] <- 0
+    x$baseline_cerebro <- factor(x$baseline_cerebro)
+    
+    x <- x[which(x$baseline_cerebro == 0), ]
+    return(x)
+}
+
+# copd
+identify_prev_cases_list[[16]] <- function(x) {
+    
+    # define all participants with NCD diagnosis before or equal to recruitment date
+    baseline_ncd <- which(x$copd_censor_date <= x$recruitment_date)
+    
+    # creating health indicator for baseline disease in total population
+    x$baseline_copd <- NA
+    x$baseline_copd[baseline_ncd] <- 1
+    x$baseline_copd[which(x$bronchitis_emphysema_diagnosis == "Yes")] <- 1
+    x$baseline_copd[which(x$COPD_baseline_dx == 1)] <- 1
+    x$baseline_copd[which(is.na(x$baseline_copd))] <- 0
+    x$baseline_copd <- factor(x$baseline_copd)
+    
+    x <- x[which(x$baseline_copd == 0), ]
+    return(x)
+}
+
+# liver
+identify_prev_cases_list[[17]] <- function(x) {
+    
+    # define all participants with NCD diagnosis before or equal to recruitment date
+    baseline_ncd <- which(x$liver_censor_date <= x$recruitment_date)
+    
+    # creating health indicator for baseline disease in total population
+    x$baseline_liver <- NA
+    x$baseline_liver[baseline_ncd] <- 1
+    x$baseline_liver[which(x$liver_baseline_dx == 1)] <- 1
+    x$baseline_liver[which(is.na(x$baseline_liver))] <- 0
+    x$baseline_liver <- factor(x$baseline_liver)
+    
+    x <- x[which(x$baseline_liver == 0), ]
+    return(x)
+}
+
+# kidney
+identify_prev_cases_list[[18]] <- function(x) {
+    
+    # define all participants with NCD diagnosis before or equal to recruitment date
+    baseline_ncd <- which(x$kidney_censor_date <= x$recruitment_date)
+    
+    # creating health indicator for baseline disease in total population
+    x$baseline_kidney <- NA
+    x$baseline_kidney[baseline_ncd] <- 1
+    x$baseline_kidney[which(x$kidney_baseline_dx == 1)] <- 1
+    x$baseline_kidney[which(is.na(x$baseline_kidney))] <- 0
+    x$baseline_kidney <- factor(x$baseline_kidney)
+    
+    x <- x[which(x$baseline_kidney == 0), ]
+    return(x)
+}
+
+# all_dementia
+identify_prev_cases_list[[19]] <- function(x) {
+    
+    # define all participants with NCD diagnosis before or equal to recruitment date
+    baseline_ncd <- which(x$all_dementia_censor_date <= x$recruitment_date)
+    
+    # creating health indicator for baseline disease in total population
+    x$baseline_all_dementia <- NA
+    x$baseline_all_dementia[baseline_ncd] <- 1
+    x$baseline_all_dementia[which(x$all_dementia_baseline_dx == 1)] <- 1
+    x$baseline_all_dementia[which(is.na(x$baseline_all_dementia))] <- 0
+    x$baseline_all_dementia <- factor(x$baseline_all_dementia)
+    
+    x <- x[which(x$baseline_all_dementia == 0), ]
+    return(x)
+}
+
+# vasc_dementia
+identify_prev_cases_list[[20]] <- function(x) {
+    
+    # define all participants with NCD diagnosis before or equal to recruitment date
+    baseline_ncd <- which(x$vasc_dementia_censor_date <= x$recruitment_date)
+    
+    # creating health indicator for baseline disease in total population
+    x$baseline_vasc_dementia <- NA
+    x$baseline_vasc_dementia[baseline_ncd] <- 1
+    x$baseline_vasc_dementia[which(x$vasc_dementia_baseline_dx == 1)] <- 1
+    x$baseline_vasc_dementia[which(is.na(x$baseline_vasc_dementia))] <- 0
+    x$baseline_vasc_dementia <- factor(x$baseline_vasc_dementia)
+    
+    x <- x[which(x$baseline_vasc_dementia == 0), ]
+    return(x)
+}
+
+# alzheimers
+identify_prev_cases_list[[21]] <- function(x) {
+    
+    # define all participants with NCD diagnosis before or equal to recruitment date
+    baseline_ncd <- which(x$alzheimers_censor_date <= x$recruitment_date)
+    
+    # creating health indicator for baseline disease in total population
+    x$baseline_alzheimers <- NA
+    x$baseline_alzheimers[baseline_ncd] <- 1
+    x$baseline_alzheimers[which(x$alzheimers_baseline_dx == 1)] <- 1
+    x$baseline_alzheimers[which(is.na(x$baseline_alzheimers))] <- 0
+    x$baseline_alzheimers <- factor(x$baseline_alzheimers)
+    
+    x <- x[which(x$baseline_alzheimers == 0), ]
+    return(x)
+}
+
+# parkinsons
+identify_prev_cases_list[[22]] <- function(x) {
+    
+    # define all participants with NCD diagnosis before or equal to recruitment date
+    baseline_ncd <- which(x$parkinsons_censor_date <= x$recruitment_date)
+    
+    # creating health indicator for baseline disease in total population
+    x$baseline_parkinsons <- NA
+    x$baseline_parkinsons[baseline_ncd] <- 1
+    x$baseline_parkinsons[which(x$parkinsons_baseline_dx == 1)] <- 1
+    x$baseline_parkinsons[which(is.na(x$baseline_parkinsons))] <- 0
+    x$baseline_parkinsons <- factor(x$baseline_parkinsons)
+    
+    x <- x[which(x$baseline_parkinsons == 0), ]
+    return(x)
+}
+
+# rheumatoid
+identify_prev_cases_list[[23]] <- function(x) {
+    
+    # define all participants with NCD diagnosis before or equal to recruitment date
+    baseline_ncd <- which(x$rheumatoid_censor_date <= x$recruitment_date)
+    
+    # creating health indicator for baseline disease in total population
+    x$baseline_rheumatoid <- NA
+    x$baseline_rheumatoid[baseline_ncd] <- 1
+    x$baseline_rheumatoid[which(x$rheumatoid_baseline_dx == 1)] <- 1
+    x$baseline_rheumatoid[which(is.na(x$baseline_rheumatoid))] <- 0
+    x$baseline_rheumatoid <- factor(x$baseline_rheumatoid)
+    
+    x <- x[which(x$baseline_rheumatoid == 0), ]
+    return(x)
+}
+
+# macular
+identify_prev_cases_list[[24]] <- function(x) {
+    
+    # define all participants with NCD diagnosis before or equal to recruitment date
+    baseline_ncd <- which(x$macular_censor_date <= x$recruitment_date)
+    
+    # creating health indicator for baseline disease in total population
+    x$baseline_macular <- NA
+    x$baseline_macular[baseline_ncd] <- 1
+    x$baseline_macular[which(x$macular_baseline_dx == 1)] <- 1
+    x$baseline_macular[which(is.na(x$baseline_macular))] <- 0
+    x$baseline_macular <- factor(x$baseline_macular)
+    
+    x <- x[which(x$baseline_macular == 0), ]
+    return(x)
+}
+
+# osteoporosis
+identify_prev_cases_list[[25]] <- function(x) {
+    
+    # define all participants with NCD diagnosis before or equal to recruitment date
+    baseline_ncd <- which(x$osteoporosis_censor_date <= x$recruitment_date)
+    
+    # creating health indicator for baseline disease in total population
+    x$baseline_osteoporosis <- NA
+    x$baseline_osteoporosis[baseline_ncd] <- 1
+    x$baseline_osteoporosis[which(x$osteoporosis_baseline_dx == 1)] <- 1
+    x$baseline_osteoporosis[which(is.na(x$baseline_osteoporosis))] <- 0
+    x$baseline_osteoporosis <- factor(x$baseline_osteoporosis)
+    
+    x <- x[which(x$baseline_osteoporosis == 0), ]
+    return(x)
+}
+
+# osteoarthritis
+identify_prev_cases_list[[26]] <- function(x) {
+    
+    # define all participants with NCD diagnosis before or equal to recruitment date
+    baseline_ncd <- which(x$osteoarthritis_censor_date <= x$recruitment_date)
+    
+    # creating health indicator for baseline disease in total population
+    x$baseline_osteoarthritis <- NA
+    x$baseline_osteoarthritis[baseline_ncd] <- 1
+    x$baseline_osteoarthritis[which(x$osteoarthritis_baseline_dx == 1)] <- 1
+    x$baseline_osteoarthritis[which(is.na(x$baseline_osteoarthritis))] <- 0
+    x$baseline_osteoarthritis <- factor(x$baseline_osteoarthritis)
+    
+    x <- x[which(x$baseline_osteoarthritis == 0), ]
+    return(x)
+}
+
+
+
+```
+
+## Make lists of PRS diseases and exposures for PRS models
+
+```{r PRS_prep}
+
+# diseases where we have PRS data
+PRS_disease_list <- c(
+    "All-cause mortality",
+    "Colorectal cancer",
+    "Lung cancer",
+    "Esophageal cancer",
+    "Pancreatic cancer",
+    "Leukemia",
+    "Breast cancer",
+    "Ovarian cancer",
+    "Prostate cancer",
+    "Type II diabetes",
+    "Ischemic heart disease",
+    "Cerebrovascular diseases",
+    "Emphysema, COPD",
+    "All-cause dementia",
+    "Vascular dementia",
+    "Alzheimer's disease",
+    "Parkinson's disease",
+    "Rheumatoid arthritis",
+    "Macular degeneration",
+    "Osteoporosis"
+)
+
+
+# list of PRS vars
+PRS_list <- c(
+    "GeP_PC1",
+    "GeP_PC2",
+    "GeP_PC3",
+    "GeP_PC4",
+    "GeP_Array",
+    "PRS_breast_quintile",
+    "PRS_bowel_quintile",
+    "PRS_prostate_quintile",
+    "PRS_T2D_quintile",
+    "PRS_CVD_quintile",
+    "PRS_CAD_quintile",
+    "PRS_stroke_quintile",
+    "PRS_COPD_quintile",
+    "PRS_alzheimers_quintile",
+    "PRS_parkinsons_quintile",
+    "PRS_rheumatoid_quintile",
+    "PRS_macular_quintile",
+    "PRS_osteoporosis_quintile",
+    "PRS_ovarian_quintile",
+    "PRS_leukemia_quintile",
+    "PRS_lung_quintile",
+    "PRS_eso_quintile",
+    "PRS_pancreatic_quintile"
+)
+
+# list of PRS covariates
+PRS_covars <- c(
+    "GeP_PC1",
+    "GeP_PC2",
+    "GeP_PC3",
+    "GeP_PC4",
+    "GeP_Array"
+)
+
+
+# create exposure lists for each PRS model by adding PRS variable(s) to exposures
+names(exposures_list) <- disease_list
+PRS_exposures <- exposures_list
+PRS_exposures <- PRS_exposures[which(names(PRS_exposures) %in% PRS_disease_list)]
+
+
+PRS_exposures$`All-cause mortality` <- 
+    c(exposures_list$`All-cause mortality`, PRS_list)
+
+PRS_exposures$`Colorectal cancer` <- 
+    c(exposures_list$`Colorectal cancer`, c(PRS_covars, "PRS_bowel_quintile"))
+
+PRS_exposures$`Breast cancer` <- 
+    c(exposures_list$`Breast cancer`, c(PRS_covars, "PRS_breast_quintile"))
+
+PRS_exposures$`Ovarian cancer` <-
+    c(exposures_list$`Ovarian cancer`, c(PRS_covars, "PRS_ovarian_quintile"))
+
+PRS_exposures$`Prostate cancer` <- 
+    c(exposures_list$`Prostate cancer`, c(PRS_covars, "PRS_prostate_quintile"))
+
+PRS_exposures$`Type II diabetes` <- 
+    c(exposures_list$`Type II diabetes`, c(PRS_covars, "PRS_T2D_quintile"))
+
+PRS_exposures$`Ischemic heart disease` <- 
+    c(exposures_list$`Ischemic heart disease`, c(PRS_covars, "PRS_CVD_quintile", "PRS_CAD_quintile"))
+
+PRS_exposures$`Cerebrovascular diseases` <- 
+    c(exposures_list$`Cerebrovascular diseases`, c(PRS_covars, "PRS_stroke_quintile"))
+
+PRS_exposures$`Emphysema, COPD` <- 
+    c(exposures_list$`Emphysema, COPD`, c(PRS_covars, "PRS_COPD_quintile"))
+
+PRS_exposures$`All-cause dementia` <- 
+    c(exposures_list$`All-cause dementia`, c(PRS_covars, "PRS_alzheimers_quintile"))
+
+PRS_exposures$`Vascular dementia` <- 
+    c(exposures_list$`Vascular dementia`, c(PRS_covars, "PRS_alzheimers_quintile"))
+
+PRS_exposures$`Alzheimer's disease` <- 
+    c(exposures_list$`Alzheimer's disease`, c(PRS_covars, "PRS_alzheimers_quintile"))
+
+PRS_exposures$`Parkinson's disease` <- 
+    c(exposures_list$`Parkinson's disease`, c(PRS_covars, "PRS_parkinsons_quintile"))
+
+PRS_exposures$`Rheumatoid arthritis` <- 
+    c(exposures_list$`Rheumatoid arthritis`, c(PRS_covars, "PRS_rheumatoid_quintile"))
+
+PRS_exposures$`Macular degeneration` <- 
+    c(exposures_list$`Macular degeneration`, c(PRS_covars, "PRS_macular_quintile"))
+
+PRS_exposures$Osteoporosis <- 
+    c(exposures_list$Osteoporosis, c(PRS_covars, "PRS_osteoporosis_quintile"))
+
+PRS_exposures$`Lung cancer` <- 
+    c(exposures_list$`Lung cancer`, c(PRS_covars, "PRS_lung_quintile"))
+
+PRS_exposures$Leukemia <- 
+    c(exposures_list$Leukemia, c(PRS_covars, "PRS_leukemia_quintile"))
+
+PRS_exposures$`Esophageal cancer` <- 
+    c(exposures_list$`Esophageal cancer`, c(PRS_covars, "PRS_eso_quintile"))
+
+PRS_exposures$`Pancreatic cancer` <- 
+    c(exposures_list$`Pancreatic cancer`, c(PRS_covars, "PRS_pancreatic_quintile"))
+
+```
+
+## Run crosstab checks between exposures and each outcome
+
+# Exposome exposures
+
+```{r crosstab_check}
+
+library(caret)
+
+sig_exposures <- sapply(exposures_list, length)
+sig_exposures <- which(sig_exposures != 0)
+
+problem_vars <- as.list(rep(1, length(exposures_list)))
+
+for (k in sig_exposures) {
+    
+    
+    # subset the data
+    test_data <- all_data_ncd[[1]]
+    test_data <- identify_prev_cases_list[[k]](test_data)
+    test_data <- test_data[c(exposures_list[[k]], indicator[k])]
+    test_data <- na.omit(test_data)
+    
+    ### crosstab check
+    
+    # convert mortality event indicator to factor for crosstabs
+    test_data[[indicator[k]]] <- factor(test_data[[indicator[k]]])
+    
+    # identify all factor variables
+    vars <- names(test_data[exposures_list[[k]]])
+    fact_vars <- sapply(test_data[exposures_list[[k]]], is.factor)
+    trial_vars <- vars[fact_vars]
+    
+    # subset dataset to just factors
+    crosstab_data <- test_data[c(trial_vars, indicator[k])]
+    
+    # get column number for event indicator
+    mort_index <- which(colnames(crosstab_data) == indicator[k])
+    
+    # create list for crosstab of results
+    tables <- as.list(rep(1, ncol(crosstab_data)-1))
+    
+    # create list of column positions
+    col_position <- seq(1, ncol(crosstab_data))
+    
+    # remove mortality event column from list of columns
+    col_position <- col_position[which(col_position != mort_index)]
+    
+    # run loop of crosstabs between variables and mortality
+    for (j in col_position) {
+        tables[[j]] <- 
+            as.data.frame.matrix(table(crosstab_data[[j]], crosstab_data[[indicator[k]]]))
+        tables[[j]][3] <- names(crosstab_data[j])
+    }
+    
+    # rbind all results together into single table
+    crosstabs <- Reduce(function(x, y) 
+        rbind(x = x, 
+              y = y), 
+        tables)
+    
+    # make column for variable levels
+    crosstabs$levels <- NA
+    
+    # add in levels to each variable
+    for (j in col_position) {
+        crosstabs$levels[which(crosstabs$V3 == names(crosstab_data[j]))] <- levels(crosstab_data[[j]])
+    }
+    
+    # fix rownames
+    rownames(crosstabs) <- NULL
+    crosstabs <- crosstabs[which(crosstabs$V3 != 1), ]
+    crosstabs <- crosstabs[which(crosstabs$V3 != "sex"), ]
+    
+    
+    # get list of variables with <30 mortality cases in a response level
+    low_variance <- crosstabs$V3[which(crosstabs$'1' < 10)]
+    
+    # get a df of these problem vars that shows all response categories and the cross-tab tables
+    problem_vars[[k]] <- crosstabs[which(crosstabs$V3 %in% low_variance), ]
+    
+    cat("\r", paste("completed:", paste(k, length(problem_vars), sep = "/")))
+}
+
+```
+
+# Exposome + PRS exposures
+
+```{r crosstab_check_PRS}
+
+library(caret)
+
+sig_exposures_prs <- sapply(PRS_exposures, length)
+sig_exposures_prs <- which(sig_exposures_prs != 0)
+
+problem_vars_prs <- as.list(rep(1, length(PRS_exposures)))
+
+for (k in sig_exposures_prs) {
+    
+    
+    # subset the data
+    test_data <- all_data_ncd[[1]]
+    test_data <- identify_prev_cases_list[[k]](test_data)
+    test_data <- test_data[c(PRS_exposures[[k]], indicator[k])]
+    test_data <- na.omit(test_data)
+    
+    ### crosstab check
+    
+    # convert mortality event indicator to factor for crosstabs
+    test_data[[indicator[k]]] <- factor(test_data[[indicator[k]]])
+    
+    # identify all factor variables
+    vars <- names(test_data[PRS_exposures[[k]]])
+    fact_vars <- sapply(test_data[PRS_exposures[[k]]], is.factor)
+    trial_vars <- vars[fact_vars]
+    
+    # subset dataset to just factors
+    crosstab_data <- test_data[c(trial_vars, indicator[k])]
+    
+    # get column number for event indicator
+    mort_index <- which(colnames(crosstab_data) == indicator[k])
+    
+    # create list for crosstab of results
+    tables <- as.list(rep(1, ncol(crosstab_data)-1))
+    
+    # create list of column positions
+    col_position <- seq(1, ncol(crosstab_data))
+    
+    # remove mortality event column from list of columns
+    col_position <- col_position[which(col_position != mort_index)]
+    
+    # run loop of crosstabs between variables and mortality
+    for (j in col_position) {
+        tables[[j]] <- 
+            as.data.frame.matrix(table(crosstab_data[[j]], crosstab_data[[indicator[k]]]))
+        tables[[j]][3] <- names(crosstab_data[j])
+    }
+    
+    # rbind all results together into single table
+    crosstabs <- Reduce(function(x, y) 
+        rbind(x = x, 
+              y = y), 
+        tables)
+    
+    # make column for variable levels
+    crosstabs$levels <- NA
+    
+    # add in levels to each variable
+    for (j in col_position) {
+        crosstabs$levels[which(crosstabs$V3 == names(crosstab_data[j]))] <- levels(crosstab_data[[j]])
+    }
+    
+    # fix rownames
+    rownames(crosstabs) <- NULL
+    crosstabs <- crosstabs[which(crosstabs$V3 != 1), ]
+    crosstabs <- crosstabs[which(crosstabs$V3 != "sex"), ]
+    
+    
+    # get list of variables with <30 mortality cases in a response level
+    low_variance <- crosstabs$V3[which(crosstabs$'1' < 10)]
+    
+    # get a df of these problem vars that shows all response categories and the cross-tab tables
+    problem_vars_prs[[k]] <- crosstabs[which(crosstabs$V3 %in% low_variance), ]
+    
+    cat("\r", paste("completed:", paste(k, length(problem_vars_prs), sep = "/")))
+}
+
+# subset to only models that were run
+names(problem_vars_prs) <- names(PRS_exposures)
+
+```
+
+## Remove problem variables where there are too few cases per response level
+
+```{r remove_problem_vars}
+
+sig_exposures <- sapply(exposures_list, length)
+sig_exposures <- which(sig_exposures != 0)
+
+other <- which(names(exposures_list) %nin% names(PRS_exposures))
+together <- which(names(exposures_list) %in% names(PRS_exposures))
+together_vars <- exposures_list
+
+exp_vars <- as.list(seq_along(problem_vars))
+for (k in sig_exposures) {
+    exp_vars[[k]] <- problem_vars[[k]]$V3
+    exp_vars[[k]] <- exp_vars[[k]][exp_vars[[k]] != "accommodation_type"]
+}
+
+prs_vars <- as.list(seq_along(problem_vars_prs))
+for (k in seq_along(prs_vars)) {
+    prs_vars[[k]] <- problem_vars_prs[[k]]$V3
+    prs_vars[[k]] <- prs_vars[[k]][prs_vars[[k]] != "accommodation_type"]
+}
+
+# remove problem variables for exposome only
+for (k in other) {
+    exposures_list[[k]] <- exposures_list[[k]][which(exposures_list[[k]] %nin% exp_vars[[k]])]
+}
+
+for (k in together) {
+    exposures_list[[k]] <- exposures_list[[k]][which(exposures_list[[k]] %nin% prs_vars[[which(names(problem_vars_prs) == names(exposures_list)[k])]])]
+}
+
+# remove problem variables for PRS
+for (k in seq_along(PRS_exposures)) {
+    PRS_exposures[[k]] <- PRS_exposures[[k]][which(PRS_exposures[[k]] %nin% prs_vars[[k]])]
+}
+
+```
+
+## Recode variables according to crosstabs
+
+```{r crosstab_recode}
+
+crosstab_recode <- function(x) {
+  # accommodation_type
+  x$accommodation_type[which(x$accommodation_type == "Mobile or temporary structure (i.e. caravan)")] <- NA
+  old_levels <- levels(x$accommodation_type)
+  x$accommodation_type <- 
+    factor(x$accommodation_type,
+           ordered = FALSE,
+           levels = old_levels[which(old_levels !="Mobile or temporary structure (i.e. caravan)")])
+  
+  return(x)
+  
+}
+
+all_data_ncd <- lapply(all_data_ncd, crosstab_recode)
+scotwales_ncd <- lapply(scotwales_ncd, crosstab_recode)
+
+```
+
+## Create exposure lists for clinical risk factor models
+
+```{r clinical_vars}
+
+# copy exposures list
+clinical_vars <- exposures_list
+# get index of outcomes for which we have PRS
+together <- which(names(exposures_list) %in% names(PRS_exposures))
+# copy list of PRS exposures to those outcomes
+clinical_vars[together] <- PRS_exposures
+
+## functions to code prevalent disease diagnoses to use as clinical risk factors
+
+baseline_cvd <- function(x) {
+    baseline_ncd <- which(x$cvd_censor_date <= x$recruitment_date)
+    
+    # creating health indicator for baseline disease in total population
+    x$baseline_cvd <- NA
+    x$baseline_cvd[baseline_ncd] <- 1
+    x$baseline_cvd[which(x$heart_attack_diagnosis == "Yes")] <- 1
+    x$baseline_cvd[which(x$angina_diagnosis == "Yes")] <- 1
+    x$baseline_cvd[which(x$CVD_baseline_dx == 1)] <- 1
+    x$baseline_cvd[which(is.na(x$baseline_cvd))] <- 0
+    x$baseline_cvd <- factor(x$baseline_cvd)
+    
+    return(x)
+}
+
+baseline_t2d <- function(x) {
+    
+    # define all participants with NCD diagnosis before or equal to recruitment date
+    baseline_ncd <- which(x$diabetes_censor_date <= x$recruitment_date)
+    
+    # creating health indicator for baseline disease in total population
+    x$baseline_diabetes <- NA
+    x$baseline_diabetes[baseline_ncd] <- 1
+    x$baseline_diabetes[which(x$diabetes_diagnosis == "Yes")] <- 1
+    x$baseline_diabetes[which(x$diabetes_baseline_dx == 1)] <- 1
+    x$baseline_diabetes[which(x$insulin == "Yes")] <- 1
+    x$baseline_diabetes[which(x$hbA1c >= 48)] <- 1
+    x$baseline_diabetes[which(x$glucose >= 11.1)] <- 1
+    x$baseline_diabetes[which(is.na(x$baseline_diabetes))] <- 0
+    x$baseline_diabetes <- factor(x$baseline_diabetes)
+    
+    return(x)
+}
+
+baseline_breast <- function(x) {
+    
+    # define all participants with NCD diagnosis before or equal to recruitment date
+    baseline_ncd <- which(x$breast_cancer_censor_date <= x$recruitment_date)
+    
+    # creating health indicator for baseline disease in total population
+    x$baseline_breast_cancer <- NA
+    x$baseline_breast_cancer[baseline_ncd] <- 1
+    x$baseline_breast_cancer[which(x$breast_cancer_baseline_dx == 1)] <- 1
+    x$baseline_breast_cancer[which(is.na(x$baseline_breast_cancer))] <- 0
+    x$baseline_breast_cancer <- factor(x$baseline_breast_cancer)
+    
+    return(x)
+}
+
+baseline_crc <- function(x) {
+  
+    # define all participants with NCD diagnosis before or equal to recruitment date
+    baseline_ncd <- which(x$colon_cancer_censor_date <= x$recruitment_date)
+    
+    # creating health indicator for baseline disease in total population
+    x$baseline_colon_cancer <- NA
+    x$baseline_colon_cancer[baseline_ncd] <- 1
+    x$baseline_colon_cancer[which(x$colon_cancer_baseline_dx == 1)] <- 1
+    x$baseline_colon_cancer[which(is.na(x$baseline_colon_cancer))] <- 0
+    x$baseline_colon_cancer <- factor(x$baseline_colon_cancer)
+    
+    return(x)
+}
+
+baseline_leukemia <- function(x) {
+    
+    # define all participants with NCD diagnosis before or equal to recruitment date
+    baseline_ncd <- which(x$leukemia_censor_date <= x$recruitment_date)
+    
+    # creating health indicator for baseline disease in total population
+    x$baseline_leukemia <- NA
+    x$baseline_leukemia[baseline_ncd] <- 1
+    x$baseline_leukemia[which(x$leukemia_baseline_dx == 1)] <- 1
+    x$baseline_leukemia[which(is.na(x$baseline_leukemia))] <- 0
+    x$baseline_leukemia <- factor(x$baseline_leukemia)
+    
+    return(x)
+}
+
+baseline_lung <- function(x) {
+    
+    # define all participants with NCD diagnosis before or equal to recruitment date
+    baseline_ncd <- which(x$lung_cancer_censor_date <= x$recruitment_date)
+    
+    # creating health indicator for baseline disease in total population
+    x$baseline_lung_cancer <- NA
+    x$baseline_lung_cancer[baseline_ncd] <- 1
+    x$baseline_lung_cancer[which(x$lung_cancer_baseline_dx == 1)] <- 1
+    x$baseline_lung_cancer[which(is.na(x$baseline_lung_cancer))] <- 0
+    x$baseline_lung_cancer <- factor(x$baseline_lung_cancer)
+    
+    return(x)
+}
+
+baseline_copd <- function(x) {
+    
+    # define all participants with NCD diagnosis before or equal to recruitment date
+    baseline_ncd <- which(x$copd_censor_date <= x$recruitment_date)
+    
+    # creating health indicator for baseline disease in total population
+    x$baseline_copd <- NA
+    x$baseline_copd[baseline_ncd] <- 1
+    x$baseline_copd[which(x$bronchitis_emphysema_diagnosis == "Yes")] <- 1
+    x$baseline_copd[which(x$COPD_baseline_dx == 1)] <- 1
+    x$baseline_copd[which(is.na(x$baseline_copd))] <- 0
+    x$baseline_copd <- factor(x$baseline_copd)
+    
+    return(x)
+}
+
+baseline_dyslipidemia <- function(x) {
+  
+    # define all participants with NCD diagnosis before or equal to recruitment date
+    baseline_ncd <- which(x$dyslipidemia_censor_date <= x$recruitment_date)
+    
+    # creating health indicator for baseline disease in total population
+    x$baseline_dyslipidemia <- NA
+    x$baseline_dyslipidemia[baseline_ncd] <- 1
+    x$baseline_dyslipidemia[which(x$cholesterol_meds == "Yes")] <- 1
+    x$baseline_dyslipidemia[which(x$cholesterol >= (240 / 38.67))] <- 1
+    x$baseline_dyslipidemia[which(x$LDL_direct >= (160 / 38.67))] <- 1
+    x$baseline_dyslipidemia[which(x$HDL_cholesterol < (40 / 38.67))] <- 1
+    x$baseline_dyslipidemia[which(x$triglycerides >= (200 / 88.57))] <- 1
+    x$baseline_dyslipidemia[which(is.na(x$baseline_dyslipidemia))] <- 0
+    x$baseline_dyslipidemia <- factor(x$baseline_dyslipidemia)
+    x$baseline_dyslipidemia <- relevel(x$baseline_dyslipidemia, ref = "0")
+    
+    return(x)
+}
+
+baseline_liver <- function(x) {
+    
+    # define all participants with NCD diagnosis before or equal to recruitment date
+    baseline_ncd <- which(x$liver_censor_date <= x$recruitment_date)
+    
+    # creating health indicator for baseline disease in total population
+    x$baseline_liver <- NA
+    x$baseline_liver[baseline_ncd] <- 1
+    x$baseline_liver[which(x$liver_baseline_dx == 1)] <- 1
+    x$baseline_liver[which(is.na(x$baseline_liver))] <- 0
+    x$baseline_liver <- factor(x$baseline_liver)
+    
+    return(x)
+}
+
+baseline_cerebro <- function(x) {
+    
+    # define all participants with NCD diagnosis before or equal to recruitment date
+    baseline_ncd <- which(x$cerebro_censor_date <= x$recruitment_date)
+    
+    # creating health indicator for baseline disease in total population
+    x$baseline_cerebro <- NA
+    x$baseline_cerebro[baseline_ncd] <- 1
+    x$baseline_cerebro[which(x$stroke_diagnosis == "Yes")] <- 1
+    x$baseline_cerebro[which(x$cerebro_baseline_dx == 1)] <- 1
+    x$baseline_cerebro[which(is.na(x$baseline_cerebro))] <- 0
+    x$baseline_cerebro <- factor(x$baseline_cerebro)
+    
+    return(x)
+}
+
+baseline_rheumatoid <- function(x) {
+    
+    # define all participants with NCD diagnosis before or equal to recruitment date
+    baseline_ncd <- which(x$rheumatoid_censor_date <= x$recruitment_date)
+    
+    # creating health indicator for baseline disease in total population
+    x$baseline_rheumatoid <- NA
+    x$baseline_rheumatoid[baseline_ncd] <- 1
+    x$baseline_rheumatoid[which(x$rheumatoid_baseline_dx == 1)] <- 1
+    x$baseline_rheumatoid[which(is.na(x$baseline_rheumatoid))] <- 0
+    x$baseline_rheumatoid <- factor(x$baseline_rheumatoid)
+    
+    return(x)
+}
+
+baseline_kidney <- function(x) {
+    
+    # define all participants with NCD diagnosis before or equal to recruitment date
+    baseline_ncd <- which(x$kidney_censor_date <= x$recruitment_date)
+    
+    # creating health indicator for baseline disease in total population
+    x$baseline_kidney <- NA
+    x$baseline_kidney[baseline_ncd] <- 1
+    x$baseline_kidney[which(x$kidney_baseline_dx == 1)] <- 1
+    x$baseline_kidney[which(is.na(x$baseline_kidney))] <- 0
+    x$baseline_kidney <- factor(x$baseline_kidney)
+    
+    return(x)
+}
+
+## apply functions in each dataset
+all_data_ncd <- lapply(all_data_ncd, baseline_cvd)
+all_data_ncd <- lapply(all_data_ncd, baseline_t2d)
+all_data_ncd <- lapply(all_data_ncd, baseline_breast)
+all_data_ncd <- lapply(all_data_ncd, baseline_crc)
+all_data_ncd <- lapply(all_data_ncd, baseline_leukemia)
+all_data_ncd <- lapply(all_data_ncd, baseline_lung)
+all_data_ncd <- lapply(all_data_ncd, baseline_copd)
+all_data_ncd <- lapply(all_data_ncd, baseline_dyslipidemia)
+all_data_ncd <- lapply(all_data_ncd, baseline_liver)
+all_data_ncd <- lapply(all_data_ncd, baseline_cerebro)
+all_data_ncd <- lapply(all_data_ncd, baseline_rheumatoid)
+all_data_ncd <- lapply(all_data_ncd, baseline_kidney)
+
+scotwales_ncd <- lapply(scotwales_ncd, baseline_cvd)
+scotwales_ncd <- lapply(scotwales_ncd, baseline_t2d)
+scotwales_ncd <- lapply(scotwales_ncd, baseline_breast)
+scotwales_ncd <- lapply(scotwales_ncd, baseline_crc)
+scotwales_ncd <- lapply(scotwales_ncd, baseline_leukemia)
+scotwales_ncd <- lapply(scotwales_ncd, baseline_lung)
+scotwales_ncd <- lapply(scotwales_ncd, baseline_copd)
+scotwales_ncd <- lapply(scotwales_ncd, baseline_dyslipidemia)
+scotwales_ncd <- lapply(scotwales_ncd, baseline_liver)
+scotwales_ncd <- lapply(scotwales_ncd, baseline_cerebro)
+scotwales_ncd <- lapply(scotwales_ncd, baseline_rheumatoid)
+scotwales_ncd <- lapply(scotwales_ncd, baseline_kidney)
+
+## add extra clinical risk factors to exposure list for each disease
+# information on cancer risk factors was taken from cancer reasearch UK (https://www.cancerresearchuk.org/about-cancer/breast-cancer/risks-causes/risk-factors)
+
+clinical_vars$`Cerebrovascular diseases` <- 
+    c(clinical_vars$`Cerebrovascular diseases`, Cs(baseline_cvd, baseline_diabetes, blood_pressure_meds, systolic_bp, BMI, baseline_dyslipidemia))
+
+clinical_vars$`All-cause dementia` <- 
+    c(clinical_vars$`All-cause dementia`, Cs(baseline_diabetes, blood_pressure_meds, systolic_bp, BMI, hearing_difficulty, MDD, prospective_memory, identify_matches_mean_time, fluid_intelligence
+))
+
+clinical_vars$`Vascular dementia` <- 
+    c(clinical_vars$`Vascular dementia`, Cs(baseline_diabetes, blood_pressure_meds, systolic_bp, BMI, hearing_difficulty, MDD, prospective_memory, identify_matches_mean_time, fluid_intelligence))
+
+clinical_vars$`Alzheimer's disease` <- 
+    c(clinical_vars$`Alzheimer's disease`, Cs(baseline_diabetes, blood_pressure_meds, systolic_bp, BMI, hearing_difficulty, MDD, prospective_memory, identify_matches_mean_time, fluid_intelligence))
+
+clinical_vars$`Lung cancer` <- 
+    c(clinical_vars$`Lung cancer`, Cs(FEV1_standardized, BMI, baseline_copd))
+
+clinical_vars$`Emphysema, COPD` <- 
+    c(clinical_vars$`Emphysema, COPD`, Cs(FEV1_standardized, BMI))
+
+clinical_vars$`Ovarian cancer` <-
+    c(clinical_vars$`Ovarian cancer`, Cs(BMI, HRT, hysterectomy, cancer_diagnosis))
+
+clinical_vars$`Breast cancer` <- 
+    c(clinical_vars$`Breast cancer`, Cs(IGF1, BMI, oral_contraceptive, HRT, menarche_age, number_births, stillbirth, cancer_diagnosis, standing_height, testosterone))
+
+clinical_vars$`Prostate cancer` <- 
+    c(clinical_vars$`Prostate cancer`, Cs(IGF1, BMI, standing_height))
+
+clinical_vars$`Colorectal cancer` <- 
+    c(clinical_vars$`Colorectal cancer`, Cs(BMI, baseline_diabetes))
+
+clinical_vars$Leukemia <- 
+    c(clinical_vars$Leukemia, Cs(BMI, baseline_diabetes, leukocyte_count))
+
+clinical_vars$`Esophageal cancer` <- 
+    c(clinical_vars$`Esophageal cancer`, Cs(BMI, omeprazole, ranitidine, hot_drink_temp)) 
+
+clinical_vars$`Pancreatic cancer` <- 
+    c(clinical_vars$`Pancreatic cancer`, Cs(BMI, baseline_diabetes, blood_pressure_meds, baseline_cvd, systolic_bp, baseline_dyslipidemia))
+
+clinical_vars$`Liver cancer` <- 
+    c(clinical_vars$`Liver cancer`, Cs(BMI, baseline_diabetes, baseline_liver, leukocyte_count))
+
+clinical_vars$`Parkinson's disease` <- 
+    c(clinical_vars$`Parkinson's disease`, Cs(baseline_cerebro))
+
+clinical_vars$Osteoporosis <- 
+    c(clinical_vars$Osteoporosis, Cs(heel_bone_mineral_density, testosterone, BMI, fracture_last_5yrs, baseline_rheumatoid, omeprazole, ranitidine, baseline_kidney, baseline_liver, cancer_diagnosis))
+
+clinical_vars$`Rheumatoid arthritis` <- 
+    c(clinical_vars$`Rheumatoid arthritis`, Cs(maternal_smoking, BMI))
+
+clinical_vars$`Macular degeneration` <- 
+    c(clinical_vars$`Macular degeneration`, Cs(BMI, baseline_cvd, blood_pressure_meds, systolic_bp))
+
+clinical_vars$`Ischemic heart disease` <- 
+    c(clinical_vars$`Ischemic heart disease`, Cs(blood_pressure_meds, systolic_bp, baseline_dyslipidemia, BMI, baseline_diabetes, MDD))
+
+clinical_vars$`Type II diabetes` <- 
+    c(clinical_vars$`Type II diabetes`, Cs(blood_pressure_meds, systolic_bp, baseline_dyslipidemia, BMI, MDD))
+
+clinical_vars$`Chronic liver diseases` <- 
+    c(clinical_vars$`Chronic liver diseases`, Cs(BMI, baseline_diabetes, cancer_diagnosis, leukocyte_count))
+
+clinical_vars$`Chronic kidney diseases` <- 
+    c(clinical_vars$`Chronic kidney diseases`, Cs(BMI, baseline_diabetes, blood_pressure_meds, systolic_bp, baseline_cvd))
+
+clinical_vars$`Osteoarthritis` <- 
+    c(clinical_vars$`Osteoarthritis`, Cs(BMI, strenuous_sports_4wks, heavy_DIY_4wks, heel_bone_mineral_density))
+
+clinical_vars$`Lymphoma` <- 
+    c(clinical_vars$`Osteoarthritis`, Cs(BMI, leukocyte_count))
+
+clinical_vars$`All-cause mortality` <- 
+    c(clinical_vars$`All-cause mortality`, Cs(overall_health, usual_walking_pace, baseline_diabetes, baseline_cvd, cancer_diagnosis, blood_pressure_meds, cholesterol_meds, baseline_cerebro, attendance_allowance, blue_badge, disability_allowance, BMI, systolic_bp, baseline_dyslipidemia, MDD))
+
+
+# make sure unique
+clinical_vars <- lapply(clinical_vars, function(x) {unique(x)})
+
+```
+
+```{r save dataset}
+
+# save for quicker loading next time
+save(all_data_ncd,
+     scotwales_ncd,
+     exposures_list,
+     PRS_exposures,
+     clinical_vars,
+     file = paste0(path, "/R2_model_datasets_nov_09_2022.RData"))
+
+```
+
+## Run age and sex models
+
+```{r run_models_age_sex}
+
+# make index of diseases with at least 1 significant exposure
+sig_exposures <- sapply(exposures_list, length)
+sig_exposures <- which(sig_exposures != 0)
+
+# list to store model results
+R2_results_as <- as.list(seq(1, length(disease_list)))
+names(R2_results_as) <- disease_list
+
+# list to store sample sizes
+sample_sizes <- as.list(seq(1, length(disease_list)))
+names(sample_sizes) <- disease_list
+
+for (k in seq_along(R2_results_as)) {
+  
+    # subset data
+    # data <- all_data_ncd
+    data <- all_data_ncd
+    data <- lapply(data, identify_prev_cases_list[[k]])
+    
+    # make sub-list for model results
+    R2_results_as[[k]] <- as.list(seq(1, length(data)))
+    
+    # run model in each imputed dataset
+    for (j in seq_along(data)) {
+
+        R2_results_as[[k]][[j]] <-
+            coxph(as.formula(
+                surv_list_age_sex[[k]]
+            ), data = data[[j]])
+
+    }
+    
+    # record sample size
+    rm(data)
+    
+    cat("\r", paste("completed:", paste(k, length(R2_results_as), sep = "/")))
+}
+
+
+# subset to only models that were run
+exclude <- which(names(exposures_list) == "Brain cancer")
+R2_results_as <- R2_results_as[-exclude]
+
+# create table_as for results
+table_as <- data.frame(matrix(ncol = 5, nrow = length(R2_results_as)))
+colnames(table_as) <- c("Disease", "C-index", "R-squared", "Cases", "Sample size")
+
+# get R2 and C-index for all models
+for (k in seq_along(R2_results_as)) {
+
+    # get r-squared across imputations
+    avg_rsq <- c(coxr2(R2_results_as[[k]][[1]])$rsq,
+                 coxr2(R2_results_as[[k]][[2]])$rsq,
+                 coxr2(R2_results_as[[k]][[3]])$rsq,
+                 coxr2(R2_results_as[[k]][[4]])$rsq,
+                 coxr2(R2_results_as[[k]][[5]])$rsq)
+    
+    # transform to correlation scale (sqrt)
+    avg_rsq <- sapply(avg_rsq, sqrt)
+    
+    # transform using Fischer's Z
+    avg_rsq <- sapply(avg_rsq, FisherZ)
+    
+    # pool coefficients (which is just the average)
+    avg_rsq <- mean(avg_rsq)
+    
+    # transform coefficients back to r scale
+    avg_rsq <- FisherZInv(avg_rsq)
+    
+    # transform r squared scale
+    avg_rsq <- (avg_rsq)^2
+    
+    # add to table_as
+    table_as[k,3] <- avg_rsq
+    
+    
+    # get c-index across imputations
+    avg_index <- c(summary(R2_results_as[[k]][[1]])$concordance[1],
+                   summary(R2_results_as[[k]][[2]])$concordance[1],
+                   summary(R2_results_as[[k]][[3]])$concordance[1],
+                   summary(R2_results_as[[k]][[4]])$concordance[1],
+                   summary(R2_results_as[[k]][[5]])$concordance[1])
+    
+    # transform to correlation scale (sqrt)
+    avg_index <- sapply(avg_index, sqrt)
+    
+    # transform using Fischer's Z
+    avg_index <- sapply(avg_index, FisherZ)
+    
+    # pool coefficients (which is just the average)
+    avg_index <- mean(avg_index)
+    
+    # transform coefficients back to r scale
+    avg_index <- FisherZInv(avg_index)
+    
+    # transform r squared scale
+    avg_index <- (avg_index)^2
+    
+    # add to table_as
+    table_as[k,2] <- avg_index
+
+
+}
+
+table_as$Disease <- names(R2_results_as)
+
+# add in number of cases and sample sizes
+for (k in seq_along(R2_results_as)) {
+
+    table_as[k,4] <- R2_results_as[[k]][[1]]$nevent
+    table_as[k,5] <- R2_results_as[[k]][[1]]$n
+}
+
+
+### save
+save(R2_results_as,
+     table_as,
+     file = paste0(path, "/results/incident disease/R2_models_aug_25_2022_age_sex.RData"))
+
+```
+
+## Validate age and sex models in Scotland/Wales dataset
+
+```{r prediction_age_sex, eval=TRUE}
+
+# subset surv list
+indicator_val <- indicator[sig_exposures]
+surv_time_val <- surv_time[sig_exposures]
+
+# subset prev cases function list
+identify_prev_cases_list_val <- identify_prev_cases_list[sig_exposures]
+
+# get prediction values for each disease
+# pred_list <- as.list(seq_along(R2_results_exp))
+# cindex_list <- as.list(seq_along(R2_results_exp))
+
+pred_list <- as.list(seq_along(R2_results_as))
+cindex_list_as <- as.list(seq_along(R2_results_as))
+rsq_list_as <- as.list(seq_along(R2_results_as))
+
+table_scotwales_as <- data.frame(matrix(ncol = 5, nrow = length(cindex_list_as)))
+colnames(table_scotwales_as) <- c("Disease", "C-index", "R-squared", "Cases", "Sample size")
+
+
+for (k in seq_along(pred_list)) {
+    
+    # subset data
+    data <- scotwales_ncd
+    data <- lapply(data, identify_prev_cases_list_val[[k]])
+    
+    # make sub-list for model results
+    pred_list[[k]] <- as.list(seq(1, length(data)))
+    cindex_list_as[[k]] <- as.list(seq(1, length(data)))
+    rsq_list_as[[k]] <- as.list(seq(1, length(data)))
+    
+    # run model in each imputed dataset
+    for (j in seq_along(data)) {
+        
+        # get linear predictors using scotwales data
+        pred_list[[k]][[j]] <-
+            predict(R2_results_as[[k]][[j]],
+                    newdata = data[[j]])
+        
+        # Surv object in scotwales
+        yrep <- Surv(data[[j]][[surv_time_val[k]]], data[[j]][[indicator_val[k]]])
+        # calculate concordance outcomes using linear predictors and Surv object
+        rs.corr <- rcorr.cens(x = pred_list[[k]][[j]], S = yrep)
+        # take Dxy, negate, and then get C using formula Dxy=2*(C−0.5)
+        cindex_list_as[[k]][[j]] <- (-rs.corr[2]/2) + 0.5
+        
+        # Get R-squared using predicted values from scotwales data
+        cox <- coxph(yrep ~ pred_list[[k]][[j]], data = data[[j]])
+        rsq_list_as[[k]][[j]] <- coxr2(cox)
+        
+    }
+    
+    table_scotwales_as[k,4] <- as.numeric(table(data[[1]][indicator_val[k]])[2])
+    table_scotwales_as[k,5] <- nrow(data[[1]])
+    
+    # record sample size
+    rm(data)
+    
+    cat("\r", paste("completed:", paste(k, length(pred_list), sep = "/")))
+    
+}
+
+### For further discussion of Dxy calculation, see comment here from Harrell on using linear predictors with rcorr.cens: https://stats.stackexchange.com/questions/48298/computing-c-index-for-an-external-validation-of-a-cox-ph-model-with-r#comment93976_48369
+
+
+# get C-index for all models
+for (k in seq_along(cindex_list_as)) {
+    
+    # Rsq
+    avg_index <- c(rsq_list_as[[k]][[1]]$rsq,
+                   rsq_list_as[[k]][[2]]$rsq,
+                   rsq_list_as[[k]][[3]]$rsq,
+                   rsq_list_as[[k]][[4]]$rsq,
+                   rsq_list_as[[k]][[5]]$rsq)
+    
+    # transform to correlation scale (sqrt)
+    avg_index <- sapply(avg_index, sqrt)
+    
+    # transform using Fischer's Z
+    avg_index <- sapply(avg_index, FisherZ)
+    
+    # pool coefficients (which is just the average)
+    avg_index <- mean(avg_index)
+    
+    # transform coefficients back to r scale
+    avg_index <- FisherZInv(avg_index)
+    
+    # transform r squared scale
+    avg_index <- (avg_index)^2
+    
+    # add to table
+    table_scotwales_as[k,3] <- avg_index
+    
+    # C-index
+    avg_index <- c(cindex_list_as[[k]][[1]],
+                   cindex_list_as[[k]][[2]],
+                   cindex_list_as[[k]][[3]],
+                   cindex_list_as[[k]][[4]],
+                   cindex_list_as[[k]][[5]])
+    
+   
+### save # transform to correlation scale (sqrt)
+    avg_index <- sapply(avg_index, sqrt)
+    
+    # transform using Fischer's Z
+    avg_index <- sapply(avg_index, FisherZ)
+    
+    # pool coefficients (which is just the average)
+    avg_index <- mean(avg_index)
+    
+    # transform coefficients back to r scale
+    avg_index <- FisherZInv(avg_index)
+    
+    # transform r squared scale
+    avg_index <- (avg_index)^2
+    
+    # add to table
+    table_scotwales_as[k,2] <- avg_index
+
+}
+
+table_scotwales_as$Disease <- names(R2_results_as)
+
+save(rsq_list_as,
+     cindex_list_as,
+     table_scotwales_as,
+     file = paste0(path, "/results/incident disease/R2_models_aug_25_2022_scotwales_age_sex.RData"))
+
+```
+
+## Run exposome models
+
+```{r run_models_exposome}
+
+# make index of diseases with at least 1 significant exposure
+sig_exposures <- sapply(exposures_list, length)
+sig_exposures <- which(sig_exposures != 0)
+
+# make list of diseases with at least 1 significant exposure
+sig_diseases <- disease_list[sig_exposures]
+
+# list to store model results
+R2_results_exp <- as.list(seq(1, length(disease_list)))
+names(R2_results_exp) <- disease_list
+
+# list to store sample sizes
+sample_sizes <- as.list(seq(1, length(disease_list)))
+names(sample_sizes) <- disease_list
+
+# make model exposures
+model_exposures <- lapply(exposures_list, paste, collapse = " + ")
+cores <- NULL
+# run all models
+for (k in sig_exposures) {
+  
+    # subset data
+    data <- all_data_ncd
+    data <- lapply(data, identify_prev_cases_list[[k]])
+    
+    
+    # make sub-list for model results
+    R2_results_exp[[k]] <- as.list(seq(1, length(data)))
+    
+    # run model in each imputed dataset
+    for (j in seq_along(data)) {
+
+        R2_results_exp[[k]][[j]] <-
+            coxph(as.formula(
+                paste0(
+                    surv_list[[k]],
+                    model_exposures[[k]])
+            ), data = data[[j]])
+    }
+    
+    # remove
+    rm(data)
+    invisible(gc())
+    
+    cat("\r", paste("completed:", paste(k, length(R2_results_exp), sep = "/")))
+}
+
+
+# subset to only models that were run
+exclude <- which(sapply(R2_results_exp, is.numeric))
+R2_results_exp <- R2_results_exp[-exclude]
+
+# create table_exp for results
+table_exp <- data.frame(matrix(ncol = 5, nrow = length(R2_results_exp)))
+colnames(table_exp) <- c("Disease", "C-index", "R-squared", "Cases", "Sample size")
+
+# get R2 and C-index for all models
+for (k in seq_along(R2_results_exp)) {
+
+    # get r-squared across imputations
+    avg_rsq <- c(coxr2(R2_results_exp[[k]][[1]])$rsq,
+                 coxr2(R2_results_exp[[k]][[2]])$rsq,
+                 coxr2(R2_results_exp[[k]][[3]])$rsq,
+                 coxr2(R2_results_exp[[k]][[4]])$rsq,
+                 coxr2(R2_results_exp[[k]][[5]])$rsq)
+    
+    # transform to correlation scale (sqrt)
+    avg_rsq <- sapply(avg_rsq, sqrt)
+    
+    # transform using Fischer's Z
+    avg_rsq <- sapply(avg_rsq, FisherZ)
+    
+    # pool coefficients (which is just the average)
+    avg_rsq <- mean(avg_rsq)
+    
+    # transform coefficients back to r scale
+    avg_rsq <- FisherZInv(avg_rsq)
+    
+    # transform r squared scale
+    avg_rsq <- (avg_rsq)^2
+    
+    # add to table_exp
+    table_exp[k,3] <- avg_rsq
+    
+    
+    # get c-index across imputations
+    avg_index <- c(summary(R2_results_exp[[k]][[1]])$concordance[1],
+                   summary(R2_results_exp[[k]][[2]])$concordance[1],
+                   summary(R2_results_exp[[k]][[3]])$concordance[1],
+                   summary(R2_results_exp[[k]][[4]])$concordance[1],
+                   summary(R2_results_exp[[k]][[5]])$concordance[1])
+    
+    # transform to correlation scale (sqrt)
+    avg_index <- sapply(avg_index, sqrt)
+    
+    # transform using Fischer's Z
+    avg_index <- sapply(avg_index, FisherZ)
+    
+    # pool coefficients (which is just the average)
+    avg_index <- mean(avg_index)
+    
+    # transform coefficients back to r scale
+    avg_index <- FisherZInv(avg_index)
+    
+    # transform r squared scale
+    avg_index <- (avg_index)^2
+    
+    # add to table_exp
+    table_exp[k,2] <- avg_index
+
+
+}
+
+table_exp$Disease <- names(R2_results_exp)
+
+# add in number of cases and sample sizes
+for (k in seq_along(R2_results_exp)) {
+
+    table_exp[k,4] <- R2_results_exp[[k]][[1]]$nevent
+    table_exp[k,5] <- R2_results_exp[[k]][[1]]$n
+}
+
+### save
+save(R2_results_exp,
+     table_exp,
+     file = paste0(path, "/results/incident disease/R2_models_nov_09_2022_exposome.RData"))
+
+
+```
+
+## Check proportional hazards in exposome models
+
+```{r ph_check_exp}
+
+
+sig_exposures <- sapply(exposures_list, length)
+sig_exposures <- which(sig_exposures != 0)
+cph_identify_prev <- identify_prev_cases_list[sig_exposures]
+surv_list <- surv_list[sig_exposures]
+model_exposures <- lapply(exposures_list, paste, collapse = " + ")
+model_exposures <- model_exposures[sig_exposures]
+
+j <- 1
+
+# run check in first imputed dataset of each model result
+test <- as.list(seq_along(cph_identify_prev))
+for (k in 1:length(cph_identify_prev)) {
+    data <- lapply(all_data_ncd, cph_identify_prev[[k]])
+    test[[k]] <- cox.zph(R2_results_exp[[k]][[j]])
+    rm(data)
+    cat("\r", paste("completed:", paste(k, length(R2_results_exp), sep = "/")))
+}
+
+names(test) <- disease_list[sig_exposures]
+
+# save
+save(test,
+     file = paste0(path, "/results/incident disease/cph_check_nov_09_2022_exposome.RData"))
+
+# return to full surv_list
+surv_list <- surv_list_copy
+```
+
+## check residual plots - exposome models
+
+```{r ph_residuals_exposome}
+
+load(paste0(path, "/results/incident disease/cph_check_nov_09_2022_exposome.RData"))
+
+### find variables with low p-value from coxzph test
+cph_var <- sapply(test, function(x){rownames(as.data.frame(x$table))[which(as.data.frame(x$table)$p < 0.00001)]})
+cph_var <- lapply(cph_var, function(x) {x <- x[x != "GLOBAL"]})
+
+
+### check schoenfield residuals for each
+
+# residuals **could be skewed - test further
+plot(test$`All-cause mortality`, var = cph_var$`All-cause mortality`, resid = TRUE)
+
+# residuals look fine
+for (k in 1:length(cph_var$`Prostate cancer`)) {
+plot(test$`Prostate cancer`, var = cph_var$`Prostate cancer`[k], resid = TRUE)
+}
+
+# residuals look fine
+for (k in 1:length(cph_var$`Ischemic heart disease`)) {
+plot(test$`Ischemic heart disease`, var = cph_var$`Ischemic heart disease`[k], resid = TRUE)
+}
+
+# residuals look fine
+for (k in 1:length(cph_var$`Emphysema, COPD`)) {
+plot(test$`Emphysema, COPD`, var = cph_var$`Emphysema, COPD`[k], resid = TRUE)
+}
+
+# residuals look fine
+plot(test$`Chronic liver diseases`, var = cph_var$`Chronic liver diseases`, resid = TRUE)
+
+# residuals look fine
+for (k in 1:length(cph_var$`Chronic kidney diseases`)) {
+plot(test$`Chronic kidney diseases`, var = cph_var$`Chronic kidney diseases`[k], resid = TRUE)
+}
+
+# residuals look fine
+plot(test$`Rheumatoid arthritis`, var = cph_var$`Rheumatoid arthritis`, resid = TRUE)
+
+# residuals look fine
+for (k in 1:length(cph_var$Osteoarthritis)) {
+plot(test$Osteoarthritis, var = cph_var$Osteoarthritis[k], resid = TRUE)
+}
+
+# one variable to correct:
+## all-cause mortality
+
+```
+
+## Re-run exposome models with time interaction
+
+```{r ph_run_models_exposome}
+
+# get list of outcomes to redo with time interaction
+redo <- which(names(cph_var) %in% c("All-cause mortality"))
+
+# make index of diseases with at least 1 significant exposure
+sig_exposures <- sapply(exposures_list, length)
+sig_exposures <- which(sig_exposures != 0)
+cph_exposures_list <- exposures_list[sig_exposures]
+cph_identify_prev <- identify_prev_cases_list[sig_exposures]
+surv_list_time <- surv_list_tt[sig_exposures]
+cph_indicator <- indicator[sig_exposures]
+cph_surv <- surv_time[sig_exposures]
+ph.test <- as.list(seq(1, length(R2_results_exp)))
+
+# make model exposures
+time_int_var <- cph_var
+for (k in redo) {
+    time_int_var[[k]] <- paste0(time_int_var[[k]], ":Start_time")
+}
+
+for (k in seq_along(time_int_var)[-redo]) {
+    time_int_var[[k]] <- vector()
+}
+
+time_int_var <- lapply(time_int_var, function(x) paste(x, collapse = " + "))
+model_exposures <- lapply(cph_exposures_list, paste, collapse = " + ")
+
+
+library(magrittr)
+library(Greg)
+
+# copy old R2 results
+R2_results_exp_cph <- R2_results_exp
+
+# redo interaction models
+for (k in redo) {
+  
+    # subset data
+    data <- all_data_ncd
+    data <- lapply(data, cph_identify_prev[[k]])
+    
+    # timesplit function
+    data <- lapply(data, function(x){
+        # reduce data to just colnames of model variables to improve runtime with timesplit
+        x <- x[c(cph_exposures_list[[k]], cph_indicator[k], cph_surv[k], "recruitment_age", "age_scaled", "sex")]
+        # turn survival time to years to be on same scale as age
+        x$time <- as.numeric(x[[cph_surv[k]]] / 365.25)
+        # timesplit data
+        x <- x %>% 
+            timeSplitter(by = 2,  
+                         event_var = cph_indicator[k],
+                         event_start_status = 0,
+                         time_var = "time",
+                         time_related_vars = "recruitment_age")
+        return(x)
+    })
+    
+    # make sub-list for model results
+    R2_results_exp_cph[[k]] <- as.list(seq(1, length(data)))
+    ph.test[[k]] <- as.list(seq(1, length(data)))
+    # run model in each imputed dataset
+    for (j in seq_along(data)) {
+
+        R2_results_exp_cph[[k]][[j]] <-
+            coxph(as.formula(
+                paste(
+                    paste0(
+                        surv_list_time[[k]],
+                        model_exposures[[k]]),
+                    time_int_var[[k]], sep = " + ")
+                ), data = data[[j]])
+        
+        # test ph assumption, stop if not fixed
+        ph.test[[k]][[j]] <- cox.zph(R2_results_exp_cph[[k]][[j]])
+        # trial <- any(as.data.frame(ph.test$table)$p < 0.00001)
+        # if (trial == TRUE) {
+            # print(ph.test)
+            # stop("non-proportional hazards not fixed")
+        # }
+    }
+    
+    # remove
+    rm(data)
+    invisible(gc())
+    
+    cat("\r", paste("completed:", paste(k, length(R2_results_exp_cph), sep = "/")))
+}
+
+# create table_exp_cph for results
+table_exp_cph <- data.frame(matrix(ncol = 5, nrow = length(R2_results_exp_cph)))
+colnames(table_exp_cph) <- c("Disease", "C-index", "R-squared", "Cases", "Sample size")
+
+# get R2 and C-index for all models
+for (k in seq_along(R2_results_exp_cph)) {
+
+    # get r-squared across imputations
+    avg_rsq <- c(coxr2(R2_results_exp_cph[[k]][[1]])$rsq,
+                 coxr2(R2_results_exp_cph[[k]][[2]])$rsq,
+                 coxr2(R2_results_exp_cph[[k]][[3]])$rsq,
+                 coxr2(R2_results_exp_cph[[k]][[4]])$rsq,
+                 coxr2(R2_results_exp_cph[[k]][[5]])$rsq)
+    
+    # transform to correlation scale (sqrt)
+    avg_rsq <- sapply(avg_rsq, sqrt)
+    
+    # transform using Fischer's Z
+    avg_rsq <- sapply(avg_rsq, FisherZ)
+    
+    # pool coefficients (which is just the average)
+    avg_rsq <- mean(avg_rsq)
+    
+    # transform coefficients back to r scale
+    avg_rsq <- FisherZInv(avg_rsq)
+    
+    # transform r squared scale
+    avg_rsq <- (avg_rsq)^2
+    
+    # add to table_exp_cph
+    table_exp_cph[k,3] <- avg_rsq
+    
+    
+    # get c-index across imputations
+    avg_index <- c(summary(R2_results_exp_cph[[k]][[1]])$concordance[1],
+                   summary(R2_results_exp_cph[[k]][[2]])$concordance[1],
+                   summary(R2_results_exp_cph[[k]][[3]])$concordance[1],
+                   summary(R2_results_exp_cph[[k]][[4]])$concordance[1],
+                   summary(R2_results_exp_cph[[k]][[5]])$concordance[1])
+    
+    # transform to correlation scale (sqrt)
+    avg_index <- sapply(avg_index, sqrt)
+    
+    # transform using Fischer's Z
+    avg_index <- sapply(avg_index, FisherZ)
+    
+    # pool coefficients (which is just the average)
+    avg_index <- mean(avg_index)
+    
+    # transform coefficients back to r scale
+    avg_index <- FisherZInv(avg_index)
+    
+    # transform r squared scale
+    avg_index <- (avg_index)^2
+    
+    # add to table_exp_cph
+    table_exp_cph[k,2] <- avg_index
+
+
+}
+
+table_exp_cph$Disease <- names(R2_results_exp_cph)
+
+# add in number of cases and sample sizes
+for (k in seq_along(R2_results_exp_cph)[-redo]) {
+
+    table_exp_cph[k,4] <- R2_results_exp_cph[[k]][[1]]$nevent
+    table_exp_cph[k,5] <- R2_results_exp_cph[[k]][[1]]$n
+}
+
+# use old table for new time split models, since sample will be in millions
+for (k in seq_along(R2_results_exp_cph)[redo]) {
+
+    table_exp_cph[k,4] <- table_exp[k,4]
+    table_exp_cph[k,5] <- table_exp[k,5]
+}
+
+
+### save
+save(R2_results_exp_cph,
+     ph.test,
+     table_exp_cph,
+     file = paste0(path, "/results/incident disease/R2_models_nov_09_2022_exposome_cph.RData"))
+
+```
+
+## Validate exposome model in Scotland/Wales dataset
+
+```{r prediction_exposome, eval=TRUE}
+
+# subset surv list
+indicator_val <- indicator[sig_exposures]
+surv_time_val <- surv_time[sig_exposures]
+
+# subset prev cases function list
+identify_prev_cases_list_val <- identify_prev_cases_list[sig_exposures]
+
+# get prediction values for each disease
+pred_list <- as.list(seq_along(R2_results_exp))
+cindex_list_exp <- as.list(seq_along(R2_results_exp))
+rsq_list_exp <- as.list(seq_along(R2_results_exp))
+
+# create table for results
+table_scotwales_exp <- data.frame(matrix(ncol = 5, nrow = length(cindex_list_exp)))
+colnames(table_scotwales_exp) <- c("Disease", "C-index", "R-squared", "Cases", "Sample size")
+
+# run
+for (k in seq_along(pred_list)) {
+    
+    # subset data
+    data <- scotwales_ncd
+    data <- lapply(data, identify_prev_cases_list_val[[k]])
+    
+    # make sub-list for model results
+    pred_list[[k]] <- as.list(seq(1, length(data)))
+    cindex_list_exp[[k]] <- as.list(seq(1, length(data)))
+    rsq_list_exp[[k]] <- as.list(seq(1, length(data)))
+    
+    # run model in each imputed dataset
+    for (j in seq_along(data)) {
+        
+        # get linear predictors using scotwales data
+        pred_list[[k]][[j]] <-
+            predict(R2_results_exp[[k]][[j]],
+                    newdata = data[[j]])
+        
+        # Surv object in scotwales
+        yrep <- Surv(data[[j]][[surv_time_val[k]]], data[[j]][[indicator_val[k]]])
+        # calculate concordance outcomes using linear predictors and Surv object
+        rs.corr <- rcorr.cens(x = pred_list[[k]][[j]], S = yrep)
+        # take Dxy, negate, and then get C using formula Dxy=2*(C−0.5)
+        cindex_list_exp[[k]][[j]] <- (-rs.corr[2]/2) + 0.5
+        
+        # Get R-squared using predicted values from scotwales data
+        cox <- coxph(yrep ~ pred_list[[k]][[j]], data = data[[j]])
+        rsq_list_exp[[k]][[j]] <- coxr2(cox)
+        
+    }
+    
+    table_scotwales_exp[k,4] <- as.numeric(table(data[[1]][indicator_val[k]])[2])
+    table_scotwales_exp[k,5] <- nrow(data[[1]])
+    
+    # record sample size
+    rm(data)
+    
+    cat("\r", paste("completed:", paste(k, length(pred_list), sep = "/")))
+    
+}
+
+### For further discussion of Dxy calculation, see comment here from Harrell on using linear predictors with rcorr.cens: https://stats.stackexchange.com/questions/48298/computing-c-index-for-an-external-validation-of-a-cox-ph-model-with-r#comment93976_48369
+
+
+# get C-index for all models
+for (k in seq_along(cindex_list_exp)) {
+    
+    # Rsq
+    avg_index <- c(rsq_list_exp[[k]][[1]]$rsq,
+                   rsq_list_exp[[k]][[2]]$rsq,
+                   rsq_list_exp[[k]][[3]]$rsq,
+                   rsq_list_exp[[k]][[4]]$rsq,
+                   rsq_list_exp[[k]][[5]]$rsq)
+    
+    # transform to correlation scale (sqrt)
+    avg_index <- sapply(avg_index, sqrt)
+    
+    # transform using Fischer's Z
+    avg_index <- sapply(avg_index, FisherZ)
+    
+    # pool coefficients (which is just the average)
+    avg_index <- mean(avg_index)
+    
+    # transform coefficients back to r scale
+    avg_index <- FisherZInv(avg_index)
+    
+    # transform r squared scale
+    avg_index <- (avg_index)^2
+    
+    # add to table
+    table_scotwales_exp[k,3] <- avg_index
+    
+    # C-index
+    avg_index <- c(cindex_list_exp[[k]][[1]],
+                   cindex_list_exp[[k]][[2]],
+                   cindex_list_exp[[k]][[3]],
+                   cindex_list_exp[[k]][[4]],
+                   cindex_list_exp[[k]][[5]])
+    
+    # transform to correlation scale (sqrt)
+    avg_index <- sapply(avg_index, sqrt)
+    
+    # transform using Fischer's Z
+    avg_index <- sapply(avg_index, FisherZ)
+    
+    # pool coefficients (which is just the average)
+    avg_index <- mean(avg_index)
+    
+    # transform coefficients back to r scale
+    avg_index <- FisherZInv(avg_index)
+    
+    # transform r squared scale
+    avg_index <- (avg_index)^2
+    
+    # add to table
+    table_scotwales_exp[k,2] <- avg_index
+
+}
+
+table_scotwales_exp$Disease <- names(R2_results_exp)
+
+### save
+save(rsq_list_exp,
+     cindex_list_exp,
+     table_scotwales_exp,
+     file = paste0(path, "/results/incident disease/R2_models_nov_09_2022_scotwales_exposome.RData"))
+
+```
+
+## Validate exposome model in Scotland/Wales dataset - adding time interaction results
+
+```{r prediction_exposome_cph, eval=TRUE}
+
+# subset surv list
+indicator_val <- indicator[sig_exposures]
+surv_time_val <- surv_time[sig_exposures]
+
+# subset prev cases function list
+identify_prev_cases_list_val <- identify_prev_cases_list[sig_exposures]
+
+# list for prediction values for each disease
+pred_list <- as.list(seq_along(R2_results_exp_cph))
+
+# copy results from previous
+cindex_list_exp_cph <- cindex_list_exp
+rsq_list_exp_cph <- rsq_list_exp
+
+table_scotwales_exp_cph <- table_scotwales_exp
+
+for (k in redo) {
+    
+    # subset data
+    data <- scotwales_ncd
+    data <- lapply(data, identify_prev_cases_list_val[[k]])
+    data2 <- data
+    
+    data <- lapply(data, function(x){
+        # reduce data to just colnames of model variables to improve runtime with timesplit
+        x <- x[c(cph_exposures_list[[k]], cph_indicator[k], cph_surv[k], "recruitment_age", "age_scaled", "sex")]
+        # turn survival time to years to be on same scale as age
+        x$time <- as.numeric(x[[cph_surv[k]]] / 365.25)
+        # timesplit data
+        x <- x %>% 
+            timeSplitter(by = 2,  
+                         event_var = cph_indicator[k],
+                         event_start_status = 0,
+                         time_var = "time",
+                         time_related_vars = "recruitment_age")
+        return(x)
+    })
+    
+    # make sub-list for model results
+    pred_list[[k]] <- as.list(seq(1, length(data)))
+    cindex_list_exp_cph[[k]] <- as.list(seq(1, length(data)))
+    rsq_list_exp_cph[[k]] <- as.list(seq(1, length(data)))
+    
+    # run model in each imputed dataset
+    for (j in seq_along(data)) {
+        
+        # get linear predictors using scotwales data
+        pred_list[[k]][[j]] <-
+            predict(R2_results_exp_cph[[k]][[j]],
+                    newdata = data[[j]])
+        # Surv object in scotwales using interval time for cph interaction
+        yrep <- Surv(data[[j]][["Start_time"]], data[[j]][["Stop_time"]], data[[j]][[indicator_val[k]]])
+        # Get R-squared using predicted values from scotwales data
+        cox <- coxph(yrep ~ pred_list[[k]][[j]], data = data[[j]])
+        cindex_list_exp_cph[[k]][[j]] <- summary(cox)$concordance[1]
+        rsq_list_exp_cph[[k]][[j]] <- coxr2(cox)
+    }
+    
+    # add no. cases and sample size to table
+    table_scotwales_exp_cph[k,4] <- as.numeric(table(data2[[1]][indicator_val[k]])[2])
+    table_scotwales_exp_cph[k,5] <- nrow(data2[[1]])
+    
+    # record sample size
+    rm(data, data2)
+    
+    cat("\r", paste("completed:", paste(k, length(pred_list), sep = "/")))
+    
+}
+
+### For further discussion of Dxy calculation, see comment here from Harrell on using linear predictors with rcorr.cens: https://stats.stackexchange.com/questions/48298/computing-c-index-for-an-external-validation-of-a-cox-ph-model-with-r#comment93976_48369
+
+
+# get C-index for all models
+for (k in redo) {
+    
+    # Rsq
+    avg_index <- c(rsq_list_exp_cph[[k]][[1]]$rsq,
+                   rsq_list_exp_cph[[k]][[2]]$rsq,
+                   rsq_list_exp_cph[[k]][[3]]$rsq,
+                   rsq_list_exp_cph[[k]][[4]]$rsq,
+                   rsq_list_exp_cph[[k]][[5]]$rsq)
+    
+    # transform to correlation scale (sqrt)
+    avg_index <- sapply(avg_index, sqrt)
+    
+    # transform using Fischer's Z
+    avg_index <- sapply(avg_index, FisherZ)
+    
+    # pool coefficients (which is just the average)
+    avg_index <- mean(avg_index)
+    
+    # transform coefficients back to r scale
+    avg_index <- FisherZInv(avg_index)
+    
+    # transform r squared scale
+    avg_index <- (avg_index)^2
+    
+    # add to table
+    table_scotwales_exp_cph[k,3] <- avg_index
+    
+    # C-index
+    avg_index <- c(cindex_list_exp_cph[[k]][[1]],
+                   cindex_list_exp_cph[[k]][[2]],
+                   cindex_list_exp_cph[[k]][[3]],
+                   cindex_list_exp_cph[[k]][[4]],
+                   cindex_list_exp_cph[[k]][[5]])
+    
+    # transform to correlation scale (sqrt)
+    avg_index <- sapply(avg_index, sqrt)
+    
+    # transform using Fischer's Z
+    avg_index <- sapply(avg_index, FisherZ)
+    
+    # pool coefficients (which is just the average)
+    avg_index <- mean(avg_index)
+    
+    # transform coefficients back to r scale
+    avg_index <- FisherZInv(avg_index)
+    
+    # transform r squared scale
+    avg_index <- (avg_index)^2
+    
+    # add to table
+    table_scotwales_exp_cph[k,2] <- avg_index
+
+}
+
+### save
+save(rsq_list_exp_cph,
+     cindex_list_exp_cph,
+     table_scotwales_exp_cph,
+     file = paste0(path, "/results/incident disease/R2_models_nov_09_2022_scotwales_exposome_cph.RData"))
+
+```
+
+## Run exposome + PRS models
+
+```{r run_models_prs}
+
+# subset to diseases with PRS
+PRS_index <- which(disease_list %in% PRS_disease_list)
+PRS_identify_prev <- identify_prev_cases_list[PRS_index]
+PRS_surv_list <- surv_list[PRS_index]
+
+# list to store model results
+R2_results_prs <- as.list(seq(1, length(PRS_disease_list)))
+names(R2_results_prs) <- PRS_disease_list
+
+# list to store sample sizes
+sample_sizes <- as.list(seq(1, length(PRS_disease_list)))
+names(sample_sizes) <- PRS_disease_list
+
+# make model exposures
+model_exposures <- lapply(PRS_exposures, paste, collapse = " + ")
+
+# run all models
+for (k in seq_along(R2_results_prs)) {
+  
+    # subset data
+    data <- all_data_ncd
+    data <- lapply(data, PRS_identify_prev[[k]])
+    
+    # make sub-list for model results
+    R2_results_prs[[k]] <- as.list(seq(1, length(data)))
+    
+    # run model in each imputed dataset
+    for (j in seq_along(data)) {
+
+        R2_results_prs[[k]][[j]] <-
+            coxph(as.formula(
+                paste0(
+                    PRS_surv_list[[k]],
+                    model_exposures[[k]])
+            ), data = data[[j]])
+    }
+    
+    # record sample size
+    rm(data)
+    
+    cat("\r", paste("completed:", paste(k, length(R2_results_prs), sep = "/")))
+}
+
+# create table_prs for results
+table_prs <- data.frame(matrix(ncol = 5, nrow = length(R2_results_prs)))
+colnames(table_prs) <- c("Disease", "C-index", "R-squared", "Cases", "Sample size")
+
+# get R2 and C-index for all models
+for (k in seq_along(R2_results_prs)) {
+
+    # get r-squared across imputations
+    avg_rsq <- c(coxr2(R2_results_prs[[k]][[1]])$rsq,
+                 coxr2(R2_results_prs[[k]][[2]])$rsq,
+                 coxr2(R2_results_prs[[k]][[3]])$rsq,
+                 coxr2(R2_results_prs[[k]][[4]])$rsq,
+                 coxr2(R2_results_prs[[k]][[5]])$rsq)
+    
+    # transform to correlation scale (sqrt)
+    avg_rsq <- sapply(avg_rsq, sqrt)
+    
+    # transform using Fischer's Z
+    avg_rsq <- sapply(avg_rsq, FisherZ)
+    
+    # pool coefficients (which is just the average)
+    avg_rsq <- mean(avg_rsq)
+    
+    # transform coefficients back to r scale
+    avg_rsq <- FisherZInv(avg_rsq)
+    
+    # transform r squared scale
+    avg_rsq <- (avg_rsq)^2
+    
+    # add to table_prs
+    table_prs[k,3] <- avg_rsq
+    
+    
+    # get c-index across imputations
+    avg_index <- c(summary(R2_results_prs[[k]][[1]])$concordance[1],
+                   summary(R2_results_prs[[k]][[2]])$concordance[1],
+                   summary(R2_results_prs[[k]][[3]])$concordance[1],
+                   summary(R2_results_prs[[k]][[4]])$concordance[1],
+                   summary(R2_results_prs[[k]][[5]])$concordance[1])
+    
+    # transform to correlation scale (sqrt)
+    avg_index <- sapply(avg_index, sqrt)
+    
+    # transform using Fischer's Z
+    avg_index <- sapply(avg_index, FisherZ)
+    
+    # pool coefficients (which is just the average)
+    avg_index <- mean(avg_index)
+    
+    # transform coefficients back to r scale
+    avg_index <- FisherZInv(avg_index)
+    
+    # transform r squared scale
+    avg_index <- (avg_index)^2
+    
+    # add to table_prs
+    table_prs[k,2] <- avg_index
+
+
+}
+
+table_prs$Disease <- names(R2_results_prs)
+
+# add in number of cases and sample sizes
+for (k in seq_along(R2_results_prs)) {
+
+    table_prs[k,4] <- R2_results_prs[[k]][[1]]$nevent
+    table_prs[k,5] <- R2_results_prs[[k]][[1]]$n
+}
+
+
+### save
+save(R2_results_prs,
+     table_prs,
+     file = paste0(path, "/results/incident disease/R2_models_nov_09_2022_PRS.RData"))
+
+```
+
+## Check proportional hazards for exposome + PRS models
+
+```{r ph_check_prs}
+
+PRS_index <- which(disease_list %in% PRS_disease_list)
+
+cph_identify_prev <- identify_prev_cases_list[PRS_index]
+cph_surv_list <- surv_list[PRS_index]
+model_exposures <- lapply(PRS_exposures, paste, collapse = " + ")
+
+j <- 1
+
+# run
+test <- as.list(seq_along(cph_identify_prev))
+for (k in 1:length(cph_identify_prev)) {
+    data <- lapply(all_data_ncd, cph_identify_prev[[k]])
+    test[[k]] <- cox.zph(R2_results_prs[[k]][[j]])
+    rm(data)
+    cat("\r", paste("completed:", paste(k, length(R2_results_prs), sep = "/")))
+}
+
+names(test) <- disease_list[PRS_index]
+
+# save
+save(test,
+     file = paste0(path, "/results/incident disease/cph_check_nov_09_2022_prs.RData"))
+```
+
+## Check residuals for exposome + PRS models
+
+```{r ph_residuals_prs}
+
+### find variables with low p-value from coxzph test
+cph_var <- sapply(test, function(x){rownames(as.data.frame(x$table))[which(as.data.frame(x$table)$p < 0.00001)]})
+cph_var <- lapply(cph_var, function(x) {x <- x[x != "GLOBAL"]})
+
+
+### check schoenfield residuals for each
+
+# residuals **could be skewed - test further
+plot(test$`All-cause mortality`, var = cph_var$`All-cause mortality`, resid = TRUE)
+
+# residuals look fine
+for (k in 1:length(cph_var$`Prostate cancer`)) {
+plot(test$`Prostate cancer`, var = cph_var$`Prostate cancer`[k], resid = TRUE)
+}
+
+# residuals look fine
+for (k in 1:length(cph_var$`Ischemic heart disease`)) {
+plot(test$`Ischemic heart disease`, var = cph_var$`Ischemic heart disease`[k], resid = TRUE)
+}
+
+# residuals look fine
+plot(test$`Rheumatoid arthritis`, var = cph_var$`Rheumatoid arthritis`, resid = TRUE)
+
+# one variables to correct:
+## all-cause mortality
+
+```
+
+## Re-run exposome + PRS models with time interaction
+
+```{r ph_run_models_prs}
+
+indicator <- c(
+    Cs(
+        ACM_event_indicator,
+        colon_cancer_event,
+        lung_cancer_event,
+        eso_cancer_event,
+        liver_cancer_event,
+        pancreatic_cancer_event,
+        brain_cancer_event,
+        leukemia_event,
+        lymphoma_event,
+        breast_cancer_event,
+        ovarian_cancer_event,
+        prostate_cancer_event,
+        diabetes_event,
+        CVD_event,
+        cerebro_event,
+        COPD_event,
+        liver_event,
+        kidney_event,
+        all_dementia_event,
+        vasc_dementia_event,
+        alzheimers_event,
+        parkinsons_event,
+        rheumatoid_event,
+        macular_event,
+        osteoporosis_event,
+        osteoarthritis_event
+    )
+)
+
+surv_time <- c(
+    Cs(
+        ACM_survival_time,
+        colon_cancer_survival_time,
+        lung_cancer_survival_time,
+        eso_cancer_survival_time,
+        liver_cancer_survival_time,
+        pancreatic_cancer_survival_time,
+        brain_cancer_survival_time,
+        leukemia_survival_time,
+        lymphoma_survival_time,
+        breast_cancer_survival_time,
+        ovarian_cancer_survival_time,
+        prostate_cancer_survival_time,
+        diabetes_survival_time,
+        CVD_survival_time,
+        cerebro_survival_time,
+        COPD_survival_time,
+        liver_survival_time,
+        kidney_survival_time,
+        all_dementia_survival_time,
+        vasc_dementia_survival_time,
+        alzheimers_survival_time,
+        parkinsons_survival_time,
+        rheumatoid_survival_time,
+        macular_survival_time,
+        osteoporosis_survival_time,
+        osteoarthritis_survival_time
+    )
+)
+
+# get index of outcomes to redo with time interaction
+redo <- which(names(R2_results_prs) %in% c("All-cause mortality"))
+
+# make index of diseases with PRS
+PRS_index <- which(disease_list %in% PRS_disease_list)
+cph_exposures_list <- PRS_exposures
+cph_identify_prev <- identify_prev_cases_list[PRS_index]
+surv_list_time <- surv_list_tt[PRS_index]
+cph_indicator <- indicator[PRS_index]
+cph_surv <- surv_time[PRS_index]
+ph.test <- as.list(seq(1, length(R2_results_prs)))
+
+# make model exposures
+time_int_var <- cph_var
+for (k in redo) {
+    time_int_var[[k]] <- paste0(time_int_var[[k]], ":Start_time")
+}
+
+for (k in seq_along(time_int_var)[-redo]) {
+    time_int_var[[k]] <- vector()
+}
+
+time_int_var <- lapply(time_int_var, function(x) paste(x, collapse = " + "))
+model_exposures <- lapply(cph_exposures_list, paste, collapse = " + ")
+
+
+library(magrittr)
+library(Greg)
+
+# copy old R2 results
+R2_results_prs_cph <- R2_results_prs
+
+# redo interaction models
+for (k in redo) {
+  
+    # subset data
+    data <- all_data_ncd
+    data <- lapply(data, cph_identify_prev[[k]])
+    
+    # timesplit function
+    data <- lapply(data, function(x){
+        # reduce data to just colnames of model variables to improve runtime with timesplit
+        x <- x[c(cph_exposures_list[[k]], cph_indicator[k], cph_surv[k], "recruitment_age", "age_scaled", "sex")]
+        # turn survival time to years to be on same scale as age
+        x$time <- as.numeric(x[[cph_surv[k]]] / 365.25)
+        # timesplit data
+        x <- x %>% 
+            timeSplitter(by = 2,  
+                         event_var = cph_indicator[k],
+                         event_start_status = 0,
+                         time_var = "time",
+                         time_related_vars = "recruitment_age")
+        return(x)
+    })
+    
+    # make sub-list for model results
+    R2_results_prs_cph[[k]] <- as.list(seq(1, length(data)))
+    ph.test[[k]] <- as.list(seq(1, length(data)))
+    
+    # run model in each imputed dataset
+    for (j in seq_along(data)) {
+
+        R2_results_prs_cph[[k]][[j]] <-
+            coxph(as.formula(
+                paste(
+                    paste0(
+                        surv_list_time[[k]],
+                        model_exposures[[k]]),
+                    time_int_var[[k]], sep = " + ")
+                ), data = data[[j]])
+        
+        # test ph assumption, stop if not fixed
+        ph.test[[k]][[j]] <- cox.zph(R2_results_prs_cph[[k]][[j]])
+    }
+    
+    # remove
+    rm(data)
+    invisible(gc())
+    
+    cat("\r", paste("completed:", paste(k, length(R2_results_prs_cph), sep = "/")))
+}
+
+
+# create table_prs_cph for results
+table_prs_cph <- data.frame(matrix(ncol = 5, nrow = length(R2_results_prs_cph)))
+colnames(table_prs_cph) <- c("Disease", "C-index", "R-squared", "Cases", "Sample size")
+
+# get R2 and C-index for all models
+for (k in seq_along(R2_results_prs_cph)) {
+
+    # get r-squared across imputations
+    avg_rsq <- c(coxr2(R2_results_prs_cph[[k]][[1]])$rsq,
+                 coxr2(R2_results_prs_cph[[k]][[2]])$rsq,
+                 coxr2(R2_results_prs_cph[[k]][[3]])$rsq,
+                 coxr2(R2_results_prs_cph[[k]][[4]])$rsq,
+                 coxr2(R2_results_prs_cph[[k]][[5]])$rsq)
+    
+    # transform to correlation scale (sqrt)
+    avg_rsq <- sapply(avg_rsq, sqrt)
+    
+    # transform using Fischer's Z
+    avg_rsq <- sapply(avg_rsq, FisherZ)
+    
+    # pool coefficients (which is just the average)
+    avg_rsq <- mean(avg_rsq)
+    
+    # transform coefficients back to r scale
+    avg_rsq <- FisherZInv(avg_rsq)
+    
+    # transform r squared scale
+    avg_rsq <- (avg_rsq)^2
+    
+    # add to table_prs_cph
+    table_prs_cph[k,3] <- avg_rsq
+    
+    
+    # get c-index across imputations
+    avg_index <- c(summary(R2_results_prs_cph[[k]][[1]])$concordance[1],
+                   summary(R2_results_prs_cph[[k]][[2]])$concordance[1],
+                   summary(R2_results_prs_cph[[k]][[3]])$concordance[1],
+                   summary(R2_results_prs_cph[[k]][[4]])$concordance[1],
+                   summary(R2_results_prs_cph[[k]][[5]])$concordance[1])
+    
+    # transform to correlation scale (sqrt)
+    avg_index <- sapply(avg_index, sqrt)
+    
+    # transform using Fischer's Z
+    avg_index <- sapply(avg_index, FisherZ)
+    
+    # pool coefficients (which is just the average)
+    avg_index <- mean(avg_index)
+    
+    # transform coefficients back to r scale
+    avg_index <- FisherZInv(avg_index)
+    
+    # transform r squared scale
+    avg_index <- (avg_index)^2
+    
+    # add to table_prs_cph
+    table_prs_cph[k,2] <- avg_index
+
+
+}
+
+table_prs_cph$Disease <- names(R2_results_prs_cph)
+
+# add in number of cases and sample sizes
+for (k in seq_along(R2_results_prs_cph)[-redo]) {
+
+    table_prs_cph[k,4] <- R2_results_prs_cph[[k]][[1]]$nevent
+    table_prs_cph[k,5] <- R2_results_prs_cph[[k]][[1]]$n
+}
+
+# use old table for new time split models, since sample will be in millions
+for (k in seq_along(R2_results_prs_cph)[redo]) {
+
+    table_prs_cph[k,4] <- table_prs[k,4]
+    table_prs_cph[k,5] <- table_prs[k,5]
+}
+
+
+### save
+save(R2_results_prs_cph,
+     ph.test,
+     table_prs_cph,
+     file = paste0(path, "/results/incident disease/R2_models_nov_09_2022_PRS_cph.RData"))
+
+```
+
+## Validate exposome + PRS model in Scotland/Wales dataset
+
+```{r prediction_prs, eval=TRUE}
+
+PRS_index <- which(disease_list %in% PRS_disease_list)
+PRS_identify_prev <- identify_prev_cases_list[PRS_index]
+PRS_surv_list <- surv_list[PRS_index]
+
+# subset surv list
+indicator_val <- indicator[PRS_index]
+surv_time_val <- surv_time[PRS_index]
+
+pred_list <- as.list(seq_along(R2_results_prs))
+cindex_list_prs <- as.list(seq_along(R2_results_prs))
+rsq_list_prs <- as.list(seq_along(R2_results_prs))
+
+table_scotwales_prs <- data.frame(matrix(ncol = 5, nrow = length(cindex_list_prs)))
+colnames(table_scotwales_prs) <- c("Disease", "C-index", "R-squared", "Cases", "Sample size")
+
+
+for (k in seq_along(pred_list)) {
+    
+    # subset data
+    data <- scotwales_ncd
+    data <- lapply(data, PRS_identify_prev[[k]])
+    
+    # make sub-list for model results
+    pred_list[[k]] <- as.list(seq(1, length(data)))
+    cindex_list_prs[[k]] <- as.list(seq(1, length(data)))
+    rsq_list_prs[[k]] <- as.list(seq(1, length(data)))
+    
+    # run model in each imputed dataset
+    for (j in seq_along(data)) {
+        
+        # get linear predictors using scotwales data
+        pred_list[[k]][[j]] <-
+            predict(R2_results_prs[[k]][[j]],
+                    newdata = data[[j]])
+        
+        # Surv object in scotwales
+        yrep <- Surv(data[[j]][[surv_time_val[k]]], data[[j]][[indicator_val[k]]])
+        # calculate concordance outcomes using linear predictors and Surv object
+        rs.corr <- rcorr.cens(x = pred_list[[k]][[j]], S = yrep)
+        # take Dxy, negate, and then get C using formula Dxy=2*(C−0.5)
+        cindex_list_prs[[k]][[j]] <- (-rs.corr[2]/2) + 0.5
+        
+        # Get R-squared using predicted values from scotwales data
+        cox <- coxph(yrep ~ pred_list[[k]][[j]], data = data[[j]])
+        rsq_list_prs[[k]][[j]] <- coxr2(cox)
+        
+    }
+    
+    table_scotwales_prs[k,4] <- as.numeric(table(data[[1]][indicator_val[k]])[2])
+    table_scotwales_prs[k,5] <- nrow(data[[1]])
+    
+    # record sample size
+    rm(data)
+    
+    cat("\r", paste("completed:", paste(k, length(pred_list), sep = "/")))
+    
+}
+
+### For further discussion of Dxy calculation, see comment here from Harrell on using linear predictors with rcorr.cens: https://stats.stackexchange.com/questions/48298/computing-c-index-for-an-external-validation-of-a-cox-ph-model-with-r#comment93976_48369
+
+
+# get C-index for all models
+for (k in seq_along(cindex_list_prs)) {
+    
+    # Rsq
+    avg_index <- c(rsq_list_prs[[k]][[1]]$rsq,
+                   rsq_list_prs[[k]][[2]]$rsq,
+                   rsq_list_prs[[k]][[3]]$rsq,
+                   rsq_list_prs[[k]][[4]]$rsq,
+                   rsq_list_prs[[k]][[5]]$rsq)
+    
+    # transform to correlation scale (sqrt)
+    avg_index <- sapply(avg_index, sqrt)
+    
+    # transform using Fischer's Z
+    avg_index <- sapply(avg_index, FisherZ)
+    
+    # pool coefficients (which is just the average)
+    avg_index <- mean(avg_index)
+    
+    # transform coefficients back to r scale
+    avg_index <- FisherZInv(avg_index)
+    
+    # transform r squared scale
+    avg_index <- (avg_index)^2
+    
+    # add to table
+    table_scotwales_prs[k,3] <- avg_index
+    
+    # C-index
+    avg_index <- c(cindex_list_prs[[k]][[1]],
+                   cindex_list_prs[[k]][[2]],
+                   cindex_list_prs[[k]][[3]],
+                   cindex_list_prs[[k]][[4]],
+                   cindex_list_prs[[k]][[5]])
+    
+    # transform to correlation scale (sqrt)
+    avg_index <- sapply(avg_index, sqrt)
+    
+    # transform using Fischer's Z
+    avg_index <- sapply(avg_index, FisherZ)
+    
+    # pool coefficients (which is just the average)
+    avg_index <- mean(avg_index)
+    
+    # transform coefficients back to r scale
+    avg_index <- FisherZInv(avg_index)
+    
+    # transform r squared scale
+    avg_index <- (avg_index)^2
+    
+    # add to table
+    table_scotwales_prs[k,2] <- avg_index
+
+}
+
+table_scotwales_prs$Disease <- names(R2_results_prs)
+
+### save
+save(rsq_list_prs,
+     cindex_list_prs,
+     table_scotwales_prs,
+     file = paste0(path, "/results/incident disease/R2_models_nov_09_2022_scotwales_PRS.RData"))
+
+```
+
+## Validate exposome + PRS model in Scotland/Wales dataset - adding time interaction results
+
+```{r prediction_prs_cph, eval=TRUE}
+
+# get index of outcomes to redo with time interaction
+redo <- which(names(R2_results_prs_cph) %in% c("All-cause mortality"))
+
+# subset prev cases function list
+PRS_index <- which(disease_list %in% PRS_disease_list)
+identify_prev_cases_list_val <- identify_prev_cases_list[PRS_index]
+
+# subset surv list
+indicator_val <- indicator[PRS_index]
+surv_time_val <- surv_time[PRS_index]
+
+# list for prediction values for each disease
+pred_list <- as.list(seq_along(R2_results_prs_cph))
+cindex_list_prs_cph <- cindex_list_prs
+rsq_list_prs_cph <- rsq_list_prs
+
+table_scotwales_prs_cph <- table_scotwales_prs
+
+
+for (k in redo) {
+    
+    # subset data
+    data <- scotwales_ncd
+    data <- lapply(data, identify_prev_cases_list_val[[k]])
+    data2 <- data
+    
+    # timesplit function
+    data <- lapply(data, function(x){
+        # reduce data to just colnames of model variables to improve runtime with timesplit
+        x <- x[c(PRS_exposures[[k]], indicator_val[k], cph_surv[k], "recruitment_age", "age_scaled", "sex")]
+        # turn survival time to years to be on same scale as age
+        x$time <- as.numeric(x[[cph_surv[k]]] / 365.25)
+        # timesplit data
+        x <- x %>% 
+            timeSplitter(by = 2,  
+                         event_var = indicator_val[k],
+                         event_start_status = 0,
+                         time_var = "time",
+                         time_related_vars = "recruitment_age")
+        return(x)
+    })
+    
+    # make sub-list for model results
+    pred_list[[k]] <- as.list(seq(1, length(data)))
+    cindex_list_prs_cph[[k]] <- as.list(seq(1, length(data)))
+    rsq_list_prs_cph[[k]] <- as.list(seq(1, length(data)))
+    
+    # run model in each imputed dataset
+    for (j in seq_along(data)) {
+        
+        # get linear predictors using scotwales data
+        pred_list[[k]][[j]] <-
+            predict(R2_results_prs_cph[[k]][[j]],
+                    newdata = data[[j]])
+        
+        # Surv object in scotwales using interval time for cph interaction
+        yrep <- Surv(data[[j]][["Start_time"]], data[[j]][["Stop_time"]], data[[j]][[indicator_val[k]]])
+        # Get R-squared using predicted values from scotwales data
+        cox <- coxph(yrep ~ pred_list[[k]][[j]], data = data[[j]])
+        cindex_list_prs_cph[[k]][[j]] <- summary(cox)$concordance[1]
+        rsq_list_prs_cph[[k]][[j]] <- coxr2(cox)
+    }
+    
+    
+    table_scotwales_prs_cph[k,4] <- as.numeric(table(data2[[1]][indicator_val[k]])[2])
+    table_scotwales_prs_cph[k,5] <- nrow(data2[[1]])
+    
+    # record sample size
+    rm(data, data2)
+    
+    cat("\r", paste("completed:", paste(k, length(pred_list), sep = "/")))
+    
+}
+
+### For further discussion of Dxy calculation, see comment here from Harrell on using linear predictors with rcorr.cens: https://stats.stackexchange.com/questions/48298/computing-c-index-for-an-external-validation-of-a-cox-ph-model-with-r#comment93976_48369
+
+
+# get C-index for all models
+for (k in seq_along(cindex_list_prs_cph)) {
+    
+    # Rsq
+    avg_index <- c(rsq_list_prs_cph[[k]][[1]]$rsq,
+                   rsq_list_prs_cph[[k]][[2]]$rsq,
+                   rsq_list_prs_cph[[k]][[3]]$rsq,
+                   rsq_list_prs_cph[[k]][[4]]$rsq,
+                   rsq_list_prs_cph[[k]][[5]]$rsq)
+    
+    # transform to correlation scale (sqrt)
+    avg_index <- sapply(avg_index, sqrt)
+    
+    # transform using Fischer's Z
+    avg_index <- sapply(avg_index, FisherZ)
+    
+    # pool coefficients (which is just the average)
+    avg_index <- mean(avg_index)
+    
+    # transform coefficients back to r scale
+    avg_index <- FisherZInv(avg_index)
+    
+    # transform r squared scale
+    avg_index <- (avg_index)^2
+    
+    # add to table
+    table_scotwales_prs_cph[k,3] <- avg_index
+    
+    # C-index
+    avg_index <- c(cindex_list_prs_cph[[k]][[1]],
+                   cindex_list_prs_cph[[k]][[2]],
+                   cindex_list_prs_cph[[k]][[3]],
+                   cindex_list_prs_cph[[k]][[4]],
+                   cindex_list_prs_cph[[k]][[5]])
+    
+    # transform to correlation scale (sqrt)
+    avg_index <- sapply(avg_index, sqrt)
+    
+    # transform using Fischer's Z
+    avg_index <- sapply(avg_index, FisherZ)
+    
+    # pool coefficients (which is just the average)
+    avg_index <- mean(avg_index)
+    
+    # transform coefficients back to r scale
+    avg_index <- FisherZInv(avg_index)
+    
+    # transform r squared scale
+    avg_index <- (avg_index)^2
+    
+    # add to table
+    table_scotwales_prs_cph[k,2] <- avg_index
+
+}
+
+table_scotwales_prs_cph$Disease <- names(R2_results_prs_cph)
+
+### save
+save(rsq_list_prs_cph,
+     cindex_list_prs_cph,
+     table_scotwales_prs_cph,
+     file = paste0(path, "/results/incident disease/R2_models_nov_09_2022_scotwales_PRS_cph.RData"))
+
+```
+
+## Run exposome + PRS + clinical risk factor models
+
+```{r run_models_clinical_factors, eval=TRUE}
+
+# make index of diseases with at least 1 significant exposure
+sig_exposures <- sapply(exposures_list, length)
+sig_exposures <- which(sig_exposures != 0)
+
+# make list of diseases with at least 1 significant exposure
+sig_diseases <- disease_list[sig_exposures]
+
+# list to store model results
+R2_results_clin <- as.list(seq(1, length(disease_list)))
+names(R2_results_clin) <- disease_list
+
+# list to store sample sizes
+sample_sizes <- as.list(seq(1, length(disease_list)))
+names(sample_sizes) <- disease_list
+
+# make model exposures
+model_exposures <- lapply(clinical_vars, paste, collapse = " + ")
+
+# run all models
+for (k in sig_exposures) {
+  
+    # subset data
+    data <- lapply(all_data_ncd, identify_prev_cases_list[[k]])
+    
+    # make sub-list for model results
+    R2_results_clin[[k]] <- as.list(seq(1, length(data)))
+    
+    # run model in each imputed dataset
+    for (j in seq_along(data)) {
+        
+        R2_results_clin[[k]][[j]] <-
+            coxph(as.formula(
+                paste0(
+                    surv_list[[k]],
+                    model_exposures[[k]])
+            ), data = data[[j]])
+        
+    }
+    
+    # record sample size
+    rm(data)
+    
+    cat("\r", paste("completed:", paste(k, length(R2_results_clin), sep = "/")))
+}
+
+
+# subset to only models that were run
+exclude <- which(sapply(R2_results_clin, is.numeric))
+R2_results_clin <- R2_results_clin[-exclude]
+
+# create table_clin for results
+table_clin <- data.frame(matrix(ncol = 5, nrow = length(R2_results_clin)))
+colnames(table_clin) <- c("Disease", "C-index", "R-squared", "Cases", "Sample size")
+
+# get R2 and C-index for all models
+for (k in seq_along(R2_results_clin)) {
+
+    # get r-squared across imputations
+    avg_rsq <- c(coxr2(R2_results_clin[[k]][[1]])$rsq,
+                 coxr2(R2_results_clin[[k]][[2]])$rsq,
+                 coxr2(R2_results_clin[[k]][[3]])$rsq,
+                 coxr2(R2_results_clin[[k]][[4]])$rsq,
+                 coxr2(R2_results_clin[[k]][[5]])$rsq)
+    
+    # transform to correlation scale (sqrt)
+    avg_rsq <- sapply(avg_rsq, sqrt)
+    
+    # transform using Fischer's Z
+    avg_rsq <- sapply(avg_rsq, FisherZ)
+    
+    # pool coefficients (which is just the average)
+    avg_rsq <- mean(avg_rsq)
+    
+    # transform coefficients back to r scale
+    avg_rsq <- FisherZInv(avg_rsq)
+    
+    # transform r squared scale
+    avg_rsq <- (avg_rsq)^2
+    
+    # add to table_clin
+    table_clin[k,3] <- avg_rsq
+    
+    
+    # get c-index across imputations
+    avg_index <- c(summary(R2_results_clin[[k]][[1]])$concordance[1],
+                   summary(R2_results_clin[[k]][[2]])$concordance[1],
+                   summary(R2_results_clin[[k]][[3]])$concordance[1],
+                   summary(R2_results_clin[[k]][[4]])$concordance[1],
+                   summary(R2_results_clin[[k]][[5]])$concordance[1])
+    
+    # transform to correlation scale (sqrt)
+    avg_index <- sapply(avg_index, sqrt)
+    
+    # transform using Fischer's Z
+    avg_index <- sapply(avg_index, FisherZ)
+    
+    # pool coefficients (which is just the average)
+    avg_index <- mean(avg_index)
+    
+    # transform coefficients back to r scale
+    avg_index <- FisherZInv(avg_index)
+    
+    # transform r squared scale
+    avg_index <- (avg_index)^2
+    
+    # add to table_clin
+    table_clin[k,2] <- avg_index
+
+
+}
+
+table_clin$Disease <- names(R2_results_clin)
+
+# add in number of cases and sample sizes
+for (k in seq_along(R2_results_clin)) {
+
+    table_clin[k,4] <- R2_results_clin[[k]][[1]]$nevent
+    table_clin[k,5] <- R2_results_clin[[k]][[1]]$n
+}
+
+
+### save
+save(R2_results_clin,
+     table_clin,
+     file = paste0(path, "/results/incident disease/R2_models_nov_09_2022_clinical_factors.RData"))
+
+```
+
+## Check proportional hazards for exposome + PRS + clinicl risk factor models
+
+```{r ph_check_clin}
+load(paste0(path, "/results/incident disease/R2_models_nov_09_2022_clinical_factors.RData"))
+
+sig_exposures <- sapply(exposures_list, length)
+sig_exposures <- which(sig_exposures != 0)
+cph_identify_prev <- identify_prev_cases_list[sig_exposures]
+surv_list <- surv_list[sig_exposures]
+model_exposures <- lapply(exposures_list, paste, collapse = " + ")
+model_exposures <- model_exposures[sig_exposures]
+
+j <- 1
+
+test <- as.list(seq_along(cph_identify_prev))
+for (k in 1:length(cph_identify_prev)) {
+    data <- lapply(all_data_ncd, cph_identify_prev[[k]])
+    test[[k]] <- cox.zph(R2_results_clin[[k]][[j]])
+    rm(data)
+    cat("\r", paste("completed:", paste(k, length(R2_results_clin), sep = "/")))
+}
+
+names(test) <- disease_list[sig_exposures]
+
+# save
+save(test,
+     file = paste0(path, "/results/incident disease/cph_check_nov_09_2022_clinical.RData"))
+
+# return to full surv_list
+surv_list <- surv_list_copy
+
+```
+
+## Check residuals for exposome + PRS + clinicl risk factor models
+
+```{r ph_residuals_clin}
+
+# load(paste0(path, "/results/incident disease/cph_check_sept_01_2022_prs.RData"))
+
+### find variables with low p-value from coxzph test
+cph_var <- sapply(test, function(x){rownames(as.data.frame(x$table))[which(as.data.frame(x$table)$p < 0.00001)]})
+cph_var <- lapply(cph_var, function(x) {x <- x[x != "GLOBAL"]})
+
+
+### check schoenfield residuals for each
+
+# residuals **could be skewed for age - test further
+for (k in 1:length(cph_var$`All-cause mortality`)) {
+plot(test$`All-cause mortality`, var = cph_var$`All-cause mortality`[k], resid = TRUE)
+}
+
+# residuals look fine
+for (k in 1:length(cph_var$`Prostate cancer`)) {
+plot(test$`Prostate cancer`, var = cph_var$`Prostate cancer`[k], resid = TRUE)
+}
+
+# residuals look fine
+plot(test$`Type II diabetes`, var = cph_var$`Type II diabetes`, resid = TRUE)
+
+# residuals look fine
+for (k in 1:length(cph_var$`Ischemic heart disease`)) {
+plot(test$`Ischemic heart disease`, var = cph_var$`Ischemic heart disease`[k], resid = TRUE)
+}
+
+# residuals look fine
+for (k in 1:length(cph_var$`Emphysema, COPD`)) {
+plot(test$`Emphysema, COPD`, var = cph_var$`Emphysema, COPD`[k], resid = TRUE)
+}
+
+# residuals look fine
+for (k in 1:length(cph_var$`Chronic liver diseases`)) {
+plot(test$`Chronic liver diseases`, var = cph_var$`Chronic liver diseases`[k], resid = TRUE)
+}
+
+# residuals **could be skewed for baseline_cvd
+for (k in 1:length(cph_var$`Chronic kidney diseases`)) {
+plot(test$`Chronic kidney diseases`, var = cph_var$`Chronic kidney diseases`[k], resid = TRUE)
+}
+
+# residuals look fine
+plot(test$`Rheumatoid arthritis`, var = cph_var$`Rheumatoid arthritis`, resid = TRUE)
+
+# residuals **could be skewed for BMI
+plot(test$Osteoarthritis, var = cph_var$Osteoarthritis, resid = TRUE)
+
+# two variables to correct:
+## all-cause mortality - age_scaled
+
+```
+
+## Re-run exposome + PRS + clinicl risk factor models with time interaction
+
+```{r ph_run_models_clin}
+
+indicator <- c(
+    Cs(
+        ACM_event_indicator,
+        colon_cancer_event,
+        lung_cancer_event,
+        eso_cancer_event,
+        liver_cancer_event,
+        pancreatic_cancer_event,
+        brain_cancer_event,
+        leukemia_event,
+        lymphoma_event,
+        breast_cancer_event,
+        ovarian_cancer_event,
+        prostate_cancer_event,
+        diabetes_event,
+        CVD_event,
+        cerebro_event,
+        COPD_event,
+        liver_event,
+        kidney_event,
+        all_dementia_event,
+        vasc_dementia_event,
+        alzheimers_event,
+        parkinsons_event,
+        rheumatoid_event,
+        macular_event,
+        osteoporosis_event,
+        osteoarthritis_event
+    )
+)
+
+surv_time <- c(
+    Cs(
+        ACM_survival_time,
+        colon_cancer_survival_time,
+        lung_cancer_survival_time,
+        eso_cancer_survival_time,
+        liver_cancer_survival_time,
+        pancreatic_cancer_survival_time,
+        brain_cancer_survival_time,
+        leukemia_survival_time,
+        lymphoma_survival_time,
+        breast_cancer_survival_time,
+        ovarian_cancer_survival_time,
+        prostate_cancer_survival_time,
+        diabetes_survival_time,
+        CVD_survival_time,
+        cerebro_survival_time,
+        COPD_survival_time,
+        liver_survival_time,
+        kidney_survival_time,
+        all_dementia_survival_time,
+        vasc_dementia_survival_time,
+        alzheimers_survival_time,
+        parkinsons_survival_time,
+        rheumatoid_survival_time,
+        macular_survival_time,
+        osteoporosis_survival_time,
+        osteoarthritis_survival_time
+    )
+)
+
+# get list of outcomes to redo with time interaction
+redo <- which(names(R2_results_clin) %in% c("All-cause mortality"))
+
+# make index of diseases with at least 1 significant exposure
+sig_exposures <- sapply(exposures_list, length)
+sig_exposures <- which(sig_exposures != 0)
+cph_exposures_list <- clinical_vars[sig_exposures]
+cph_identify_prev <- identify_prev_cases_list[sig_exposures]
+surv_list_time <- surv_list_tt[sig_exposures]
+cph_indicator <- indicator[sig_exposures]
+cph_surv <- surv_time[sig_exposures]
+ph.test <- as.list(seq(1, length(R2_results_clin)))
+
+# make model exposures
+time_int_var <- as.list(seq(1, length(R2_results_clin)))
+names(time_int_var) <- disease_list[sig_exposures]
+
+# subset to vars with bad residuals
+time_int_var$`All-cause mortality` <- c("age_scaled")
+
+for (k in redo) {
+    time_int_var[[k]] <- paste0(time_int_var[[k]], ":Start_time")
+}
+
+for (k in seq_along(time_int_var)[-redo]) {
+    time_int_var[[k]] <- vector()
+}
+
+time_int_var <- lapply(time_int_var, function(x) paste(x, collapse = " + "))
+model_exposures <- lapply(cph_exposures_list, paste, collapse = " + ")
+
+
+library(magrittr)
+library(Greg)
+
+# copy old R2 results
+R2_results_clin_cph <- R2_results_clin
+
+# redo interaction models
+for (k in redo) {
+  
+    # subset data
+    data <- all_data_ncd
+    data <- lapply(data, cph_identify_prev[[k]])
+    
+    # timesplit function
+    data <- lapply(data, function(x){
+        # reduce data to just colnames of model variables to improve runtime with timesplit
+        x <- x[c(cph_exposures_list[[k]], cph_indicator[k], cph_surv[k], "recruitment_age", "age_scaled", "sex")]
+        # turn survival time to years to be on same scale as age
+        x$time <- as.numeric(x[[cph_surv[k]]] / 365.25)
+        # timesplit data
+        x <- x %>% 
+            timeSplitter(by = 2,  
+                         event_var = cph_indicator[k],
+                         event_start_status = 0,
+                         time_var = "time",
+                         time_related_vars = "recruitment_age")
+        return(x)
+    })
+    
+    # make sub-list for model results
+    R2_results_clin_cph[[k]] <- as.list(seq(1, length(data)))
+    ph.test[[k]] <- as.list(seq(1, length(data)))
+    # run model in each imputed dataset
+    for (j in seq_along(data)) {
+
+        R2_results_clin_cph[[k]][[j]] <-
+            coxph(as.formula(
+                paste(
+                    paste0(
+                        surv_list_time[[k]],
+                        model_exposures[[k]]),
+                    time_int_var[[k]], sep = " + ")
+                ), data = data[[j]])
+        
+        # test ph assumption, stop if not fixed
+        ph.test[[k]][[j]] <- cox.zph(R2_results_clin_cph[[k]][[j]])
+        # trial <- any(as.data.frame(ph.test$table)$p < 0.00001)
+        # if (trial == TRUE) {
+            # print(ph.test)
+            # stop("non-proportional hazards not fixed")
+        # }
+    }
+    
+    # remove
+    rm(data)
+    invisible(gc())
+    
+    cat("\r", paste("completed:", paste(k, length(R2_results_clin_cph), sep = "/")))
+}
+
+# create table_clin_cph for results
+table_clin_cph <- data.frame(matrix(ncol = 5, nrow = length(R2_results_clin_cph)))
+colnames(table_clin_cph) <- c("Disease", "C-index", "R-squared", "Cases", "Sample size")
+
+# get R2 and C-index for all models
+for (k in seq_along(R2_results_clin_cph)) {
+
+    # get r-squared across imputations
+    avg_rsq <- c(coxr2(R2_results_clin_cph[[k]][[1]])$rsq,
+                 coxr2(R2_results_clin_cph[[k]][[2]])$rsq,
+                 coxr2(R2_results_clin_cph[[k]][[3]])$rsq,
+                 coxr2(R2_results_clin_cph[[k]][[4]])$rsq,
+                 coxr2(R2_results_clin_cph[[k]][[5]])$rsq)
+    
+    # transform to correlation scale (sqrt)
+    avg_rsq <- sapply(avg_rsq, sqrt)
+    
+    # transform using Fischer's Z
+    avg_rsq <- sapply(avg_rsq, FisherZ)
+    
+    # pool coefficients (which is just the average)
+    avg_rsq <- mean(avg_rsq)
+    
+    # transform coefficients back to r scale
+    avg_rsq <- FisherZInv(avg_rsq)
+    
+    # transform r squared scale
+    avg_rsq <- (avg_rsq)^2
+    
+    # add to table_clin_cph
+    table_clin_cph[k,3] <- avg_rsq
+    
+    
+    # get c-index across imputations
+    avg_index <- c(summary(R2_results_clin_cph[[k]][[1]])$concordance[1],
+                   summary(R2_results_clin_cph[[k]][[2]])$concordance[1],
+                   summary(R2_results_clin_cph[[k]][[3]])$concordance[1],
+                   summary(R2_results_clin_cph[[k]][[4]])$concordance[1],
+                   summary(R2_results_clin_cph[[k]][[5]])$concordance[1])
+    
+    # transform to correlation scale (sqrt)
+    avg_index <- sapply(avg_index, sqrt)
+    
+    # transform using Fischer's Z
+    avg_index <- sapply(avg_index, FisherZ)
+    
+    # pool coefficients (which is just the average)
+    avg_index <- mean(avg_index)
+    
+    # transform coefficients back to r scale
+    avg_index <- FisherZInv(avg_index)
+    
+    # transform r squared scale
+    avg_index <- (avg_index)^2
+    
+    # add to table_clin_cph
+    table_clin_cph[k,2] <- avg_index
+
+
+}
+
+table_clin_cph$Disease <- names(R2_results_clin_cph)
+
+# add in number of cases and sample sizes
+for (k in seq_along(R2_results_clin_cph)[-redo]) {
+
+    table_clin_cph[k,4] <- R2_results_clin_cph[[k]][[1]]$nevent
+    table_clin_cph[k,5] <- R2_results_clin_cph[[k]][[1]]$n
+}
+
+# use old table for new time split models, since sample will be in millions
+for (k in seq_along(R2_results_clin_cph)[redo]) {
+
+    table_clin_cph[k,4] <- table_exp[k,4]
+    table_clin_cph[k,5] <- table_exp[k,5]
+}
+
+
+### save
+save(R2_results_clin_cph,
+     ph.test,
+     table_clin_cph,
+     file = paste0(path, "/results/incident disease/R2_models_nov_09_2022_clinical_factors_cph.RData"))
+
+```
+
+## Validate exposome + PRS + clinical risk factor model in Scotland/Wales dataset 
+
+```{r prediction_clinical, eval=TRUE}
+
+# subset surv list
+indicator_val <- indicator[sig_exposures]
+surv_time_val <- surv_time[sig_exposures]
+
+# subset prev cases function list
+identify_prev_cases_list_val <- identify_prev_cases_list[sig_exposures]
+
+# get prediction values for each disease
+pred_list <- as.list(seq_along(R2_results_clin))
+cindex_list_clin <- as.list(seq_along(R2_results_clin))
+rsq_list_clin <- as.list(seq_along(R2_results_clin))
+
+table_scotwales_clin <- data.frame(matrix(ncol = 5, nrow = length(cindex_list_clin)))
+colnames(table_scotwales_clin) <- c("Disease", "C-index", "R-squared", "Cases", "Sample size")
+
+
+for (k in seq_along(pred_list)) {
+    
+    # subset data
+    data <- scotwales_ncd
+    data <- lapply(data, identify_prev_cases_list_val[[k]])
+    
+    # make sub-list for model results
+    pred_list[[k]] <- as.list(seq(1, length(data)))
+    cindex_list_clin[[k]] <- as.list(seq(1, length(data)))
+    rsq_list_clin[[k]] <- as.list(seq(1, length(data)))
+    
+    # run model in each imputed dataset
+    for (j in seq_along(data)) {
+        
+        # get linear predictors using scotwales data
+        pred_list[[k]][[j]] <-
+            predict(R2_results_clin[[k]][[j]],
+                    newdata = data[[j]])
+        
+        # Surv object in scotwales
+        yrep <- Surv(data[[j]][[surv_time_val[k]]], data[[j]][[indicator_val[k]]])
+        # calculate concordance outcomes using linear predictors and Surv object
+        rs.corr <- rcorr.cens(x = pred_list[[k]][[j]], S = yrep)
+        # take Dxy, negate, and then get C using formula Dxy=2*(C−0.5)
+        cindex_list_clin[[k]][[j]] <- (-rs.corr[2]/2) + 0.5
+        
+        # Get R-squared using predicted values from scotwales data
+        cox <- coxph(yrep ~ pred_list[[k]][[j]], data = data[[j]])
+        rsq_list_clin[[k]][[j]] <- coxr2(cox)
+        
+    }
+    
+    table_scotwales_clin[k,4] <- as.numeric(table(data[[1]][indicator_val[k]])[2])
+    table_scotwales_clin[k,5] <- nrow(data[[1]])
+    
+    # record sample size
+    rm(data)
+    
+    cat("\r", paste("completed:", paste(k, length(pred_list), sep = "/")))
+    
+}
+
+### For further discussion of Dxy calculation, see comment here from Harrell on using linear predictors with rcorr.cens: https://stats.stackexchange.com/questions/48298/computing-c-index-for-an-external-validation-of-a-cox-ph-model-with-r#comment93976_48369
+
+
+# get C-index for all models
+for (k in seq_along(cindex_list_clin)) {
+    
+    # Rsq
+    avg_index <- c(rsq_list_clin[[k]][[1]]$rsq,
+                   rsq_list_clin[[k]][[2]]$rsq,
+                   rsq_list_clin[[k]][[3]]$rsq,
+                   rsq_list_clin[[k]][[4]]$rsq,
+                   rsq_list_clin[[k]][[5]]$rsq)
+    
+    # transform to correlation scale (sqrt)
+    avg_index <- sapply(avg_index, sqrt)
+    
+    # transform using Fischer's Z
+    avg_index <- sapply(avg_index, FisherZ)
+    
+    # pool coefficients (which is just the average)
+    avg_index <- mean(avg_index)
+    
+    # transform coefficients back to r scale
+    avg_index <- FisherZInv(avg_index)
+    
+    # transform r squared scale
+    avg_index <- (avg_index)^2
+    
+    # add to table
+    table_scotwales_clin[k,3] <- avg_index
+    
+    # C-index
+    avg_index <- c(cindex_list_clin[[k]][[1]],
+                   cindex_list_clin[[k]][[2]],
+                   cindex_list_clin[[k]][[3]],
+                   cindex_list_clin[[k]][[4]],
+                   cindex_list_clin[[k]][[5]])
+    
+    # transform to correlation scale (sqrt)
+    avg_index <- sapply(avg_index, sqrt)
+    
+    # transform using Fischer's Z
+    avg_index <- sapply(avg_index, FisherZ)
+    
+    # pool coefficients (which is just the average)
+    avg_index <- mean(avg_index)
+    
+    # transform coefficients back to r scale
+    avg_index <- FisherZInv(avg_index)
+    
+    # transform r squared scale
+    avg_index <- (avg_index)^2
+    
+    # add to table
+    table_scotwales_clin[k,2] <- avg_index
+
+}
+
+table_scotwales_clin$Disease <- names(R2_results_clin)
+
+### save
+save(rsq_list_clin,
+     cindex_list_clin,
+     table_scotwales_clin,
+     file = paste0(path, "/results/incident disease/R2_models_nov_09_2022_scotwales_clinical.RData"))
+
+```
+
+## Validate exposome + PRS + clinical risk factor model in Scotland/Wales dataset - adding time interaction results
+
+```{r prediction_clin_cph, eval=TRUE}
+
+# get index of outcomes to redo with time interaction
+redo <- which(names(R2_results_clin_cph) %in% c("All-cause mortality"))
+
+# subset surv list
+indicator_val <- indicator[sig_exposures]
+surv_time_val <- surv_time[sig_exposures]
+
+# subset prev cases function list
+identify_prev_cases_list_val <- identify_prev_cases_list[sig_exposures]
+cph_exposures_list <- clinical_vars[sig_exposures]
+cph_indicator <- indicator[sig_exposures]
+
+# list for prediction values for each disease
+pred_list <- as.list(seq_along(R2_results_clin_cph))
+cindex_list_clin_cph <- cindex_list_clin
+rsq_list_clin_cph <- rsq_list_clin
+
+table_scotwales_clin_cph <- table_scotwales_clin
+
+
+for (k in redo) {
+    
+    # subset data
+    data <- scotwales_ncd
+    data <- lapply(data, identify_prev_cases_list_val[[k]])
+    data2 <- data
+    
+    # timesplit function
+    data <- lapply(data, function(x){
+        # reduce data to just colnames of model variables to improve runtime with timesplit
+        x <- x[c(cph_exposures_list[[k]], cph_indicator[k], cph_surv[k], "recruitment_age", "age_scaled", "sex")]
+        # turn survival time to years to be on same scale as age
+        x$time <- as.numeric(x[[cph_surv[k]]] / 365.25)
+        # timesplit data
+        x <- x %>% 
+            timeSplitter(by = 2,  
+                         event_var = cph_indicator[k],
+                         event_start_status = 0,
+                         time_var = "time",
+                         time_related_vars = "recruitment_age")
+            return(x)
+        })
+    
+    # make sub-list for model results
+    pred_list[[k]] <- as.list(seq(1, length(data)))
+    cindex_list_clin_cph[[k]] <- as.list(seq(1, length(data)))
+    rsq_list_clin_cph[[k]] <- as.list(seq(1, length(data)))
+    
+    # run model in each imputed dataset
+    for (j in seq_along(data)) {
+        
+        # get linear predictors using scotwales data
+        pred_list[[k]][[j]] <-
+            predict(R2_results_clin_cph[[k]][[j]],
+                    newdata = data[[j]])
+    
+            # Surv object in scotwales using interval time for cph interaction
+            yrep <- Surv(data[[j]][["Start_time"]], data[[j]][["Stop_time"]], data[[j]][[indicator_val[k]]])
+            # Get R-squared using predicted values from scotwales data
+            cox <- coxph(yrep ~ pred_list[[k]][[j]], data = data[[j]])
+            cindex_list_clin_cph[[k]][[j]] <- summary(cox)$concordance[1]
+            rsq_list_clin_cph[[k]][[j]] <- coxr2(cox)
+    }
+    
+    
+    table_scotwales_clin_cph[k,4] <- as.numeric(table(data2[[1]][indicator_val[k]])[2])
+    table_scotwales_clin_cph[k,5] <- nrow(data2[[1]])
+    
+    # record sample size
+    rm(data, data2)
+    
+    cat("\r", paste("completed:", paste(k, length(pred_list), sep = "/")))
+    
+}
+
+### For further discussion of Dxy calculation, see comment here from Harrell on using linear predictors with rcorr.cens: https://stats.stackexchange.com/questions/48298/computing-c-index-for-an-external-validation-of-a-cox-ph-model-with-r#comment93976_48369
+
+
+# get C-index for all models
+for (k in seq_along(cindex_list_clin_cph)) {
+    
+    # Rsq
+    avg_index <- c(rsq_list_clin_cph[[k]][[1]]$rsq,
+                   rsq_list_clin_cph[[k]][[2]]$rsq,
+                   rsq_list_clin_cph[[k]][[3]]$rsq,
+                   rsq_list_clin_cph[[k]][[4]]$rsq,
+                   rsq_list_clin_cph[[k]][[5]]$rsq)
+    
+    # transform to correlation scale (sqrt)
+    avg_index <- sapply(avg_index, sqrt)
+    
+    # transform using Fischer's Z
+    avg_index <- sapply(avg_index, FisherZ)
+    
+    # pool coefficients (which is just the average)
+    avg_index <- mean(avg_index)
+    
+    # transform coefficients back to r scale
+    avg_index <- FisherZInv(avg_index)
+    
+    # transform r squared scale
+    avg_index <- (avg_index)^2
+    
+    # add to table
+    table_scotwales_clin_cph[k,3] <- avg_index
+    
+    # C-index
+    avg_index <- c(cindex_list_clin_cph[[k]][[1]],
+                   cindex_list_clin_cph[[k]][[2]],
+                   cindex_list_clin_cph[[k]][[3]],
+                   cindex_list_clin_cph[[k]][[4]],
+                   cindex_list_clin_cph[[k]][[5]])
+    
+    # transform to correlation scale (sqrt)
+    avg_index <- sapply(avg_index, sqrt)
+    
+    # transform using Fischer's Z
+    avg_index <- sapply(avg_index, FisherZ)
+    
+    # pool coefficients (which is just the average)
+    avg_index <- mean(avg_index)
+    
+    # transform coefficients back to r scale
+    avg_index <- FisherZInv(avg_index)
+    
+    # transform r squared scale
+    avg_index <- (avg_index)^2
+    
+    # add to table
+    table_scotwales_clin_cph[k,2] <- avg_index
+
+}
+
+
+### save
+save(rsq_list_clin_cph,
+     cindex_list_clin_cph,
+     table_scotwales_clin_cph,
+     file = paste0(path, "/results/incident disease/R2_models_nov_09_2022_scotwales_clin_cph.RData"))
+
+```
+
+## Create combined table of all R^2 and C-index results - England participants
+
+```{r combined_table, eval=FALSE}
+
+load(paste0(path, "/results/incident disease/R2_models_aug_25_2022_age_sex.RData"))
+load(paste0(path, "/results/incident disease/R2_models_nov_09_2022_exposome_cph.RData"))
+load(paste0(path, "/results/incident disease/R2_models_nov_09_2022_PRS_cph.RData"))
+load(paste0(path, "/results/incident disease/R2_models_nov_09_2022_clinical_factors_cph.RData"))
+
+
+colnames(table_as) <- paste(colnames(table_as), "_ageSex") 
+colnames(table_as)[1] <- "Disease"
+
+colnames(table_exp_cph) <- paste(colnames(table_exp_cph), "_exp")
+colnames(table_exp_cph)[1] <- "Disease"
+
+colnames(table_prs_cph) <- paste(colnames(table_prs_cph), "_PRS")
+colnames(table_prs_cph)[1] <- "Disease"
+
+colnames(table_clin_cph) <- paste(colnames(table_clin_cph), "_clinical") 
+colnames(table_clin_cph)[1] <- "Disease"
+
+table_combined <-
+    merge(table_as,
+          table_exp_cph,
+          by = "Disease",
+          all.x = TRUE,
+          all.y = FALSE)
+
+table_combined <-
+    merge(table_combined,
+          table_prs_cph,
+          by = "Disease",
+          all.x = TRUE,
+          all.y = FALSE)
+
+table_combined <-
+    merge(table_combined,
+          table_clin_cph,
+          by = "Disease",
+          all.x = TRUE,
+          all.y = FALSE)
+
+new_order <- colnames(table_combined)[c(1,2,6,10,14,3,7,11,15,4,8,12,16,5,9,13,17)]
+row_order <- order(table_combined$`C-index _exp`, decreasing = TRUE)
+table_combined <- table_combined[row_order, new_order]
+
+# make combined exposome + PRS table
+colnames(table_combined) <- c("Disease", 
+                              "C-index age + sex",
+                              "C-index exposome", 
+                              "C-index exposome + PRS", 
+                              "C-index exposome + PRS + clinical",
+                              "R2 age + sex", 
+                              "R2 exposome", 
+                              "R2 exposome + PRS",
+                              "R2 exposome + PRS + clinical",
+                              "Cases",
+                              "Cases exposome",
+                              "Cases exposome + PRS",
+                              "Cases exposome + PRS + clinical",
+                              "Sample",
+                              "Sample exposome",
+                              "Sample exposome + PRS",
+                              "Sample exposome + PRS + clinical")
+
+table_combined_red <- table_combined
+table_combined_red$Cases <- paste(format(table_combined$`Cases exposome + PRS + clinical`, big.mark = ","), format(table_combined$Cases, big.mark = ","), sep = " - ")
+table_combined_red$Sample <- paste(format(table_combined$`Sample exposome + PRS + clinical`, big.mark = ","), format(table_combined$Sample, big.mark = ","), sep = " - ")
+
+table_combined_red <- table_combined_red[c(1:10,14)]
+
+library(flextable)
+table_combinedfl <- 
+    flextable(table_combined_red) %>%
+    add_header_row(top = TRUE, values = "Table 2. Multi-omics model performance in English UK Biobank participants", colwidths = 11)
+
+table_combinedfl <- 
+    colformat_double(x = table_combinedfl,
+                     j = c(1:9),
+                     digits = 4)
+
+table_combinedfl <- 
+    colformat_double(x = table_combinedfl,
+                     j = c(10:11),
+                     big.mark = ",",
+                     digits = 0)
+
+
+library(officer)
+sect_properties <- prop_section(
+  page_size = page_size(orient = "landscape"),
+  type = "continuous",
+  page_margins = page_mar()
+)
+
+# save
+save_as_docx(table_combinedfl, pr_section = sect_properties, path = paste0(path, "/output/tables/rsq_all_England_nov_09_2022_cph.docx"))
+
+```
+
+## Create combined table of all R^2 and C-index results - Validation datset
+
+```{r combined_table_validation}
+
+load(paste0(path, "/results/incident disease/R2_models_aug_25_2022_scotwales_age_sex.RData"))
+load(paste0(path, "/results/incident disease/R2_models_nov_09_2022_scotwales_exposome_cph.RData"))
+load(paste0(path, "/results/incident disease/R2_models_nov_09_2022_scotwales_PRS_cph.RData"))
+load(paste0(path, "/results/incident disease/R2_models_aug_28_2022_scotwales_clinical_factors.RData"))
+
+### validation
+colnames(table_scotwales_as) <- paste(colnames(table_scotwales_as), "_ageSex") 
+colnames(table_scotwales_as)[1] <- "Disease"
+
+colnames(table_scotwales_exp_cph) <- paste(colnames(table_scotwales_exp_cph), "_exp")
+colnames(table_scotwales_exp_cph)[1] <- "Disease"
+
+colnames(table_scotwales_prs_cph) <- paste(colnames(table_scotwales_prs_cph), "_PRS")
+colnames(table_scotwales_prs_cph)[1] <- "Disease"
+
+colnames(table_scotwales_clin_cph) <- paste(colnames(table_scotwales_clin_cph), "_clin")
+colnames(table_scotwales_clin_cph)[1] <- "Disease"
+
+table_combined_sw <-
+    merge(table_scotwales_as,
+          table_scotwales_exp_cph,
+          by = "Disease",
+          all.x = TRUE,
+          all.y = FALSE)
+
+table_combined_sw <-
+    merge(table_combined_sw,
+          table_scotwales_prs_cph,
+          by = "Disease",
+          all.x = TRUE,
+          all.y = FALSE)
+
+table_combined_sw <-
+    merge(table_combined_sw,
+          table_scotwales_clin_cph,
+          by = "Disease",
+          all.x = TRUE,
+          all.y = FALSE)
+
+new_order <- colnames(table_combined_sw)[c(1,2,6,10,14,3,7,11,15,4,8,12,16,5,9,13,17)]
+row_order <- order(table_combined_sw$`C-index _exp`, decreasing = TRUE)
+table_combined_sw <- table_combined_sw[row_order, new_order]
+
+# make combined exposome + PRS table
+colnames(table_combined_sw) <- c("Disease", 
+                                 "C-index age + sex",
+                                 "C-index exposome", 
+                                 "C-index exposome + PRS", 
+                                 "C-index exposome + PRS + clinical",
+                                 "R2 age + sex", 
+                                 "R2 exposome", 
+                                 "R2 exposome + PRS",
+                                 "R2 exposome + PRS + clinical",
+                                 "Cases",
+                                 "Cases exposome",
+                                 "Cases exposome + PRS",
+                                 "Cases exposome + PRS + clinical",
+                                 "Sample",
+                                 "Sample exposome",
+                                 "Sample exposome + PRS",
+                                 "Sample exposome + PRS + clinical")
+
+table_combined_sw_red <- table_combined_sw[c(1:10,14)]
+
+library(flextable)
+table_combined_swfl <- 
+    flextable(table_combined_sw_red) %>%
+    add_header_row(top = TRUE, values = "Table 3. Multi-omics model performance in Scottish/Welsh UK Biobank participants", colwidths = 11)
+
+table_combined_swfl <- 
+    colformat_double(x = table_combined_swfl,
+                     j = c(1:9),
+                     digits = 4)
+
+table_combined_swfl <- 
+    colformat_double(x = table_combined_swfl,
+                     j = c(10:11),
+                     big.mark = ",",
+                     digits = 0)
+
+library(officer)
+sect_properties <- prop_section(
+  page_size = page_size(orient = "landscape"),
+  type = "continuous",
+  page_margins = page_mar()
+)
+
+# save
+save_as_docx(table_combined_swfl, pr_section = sect_properties, path = paste0(path, "/output/tables/rsq_all_scotwales_nov_09_2022_cph.docx"))
+
+```
+
+## Run ANOVA using exposome + PRS + clinical risk factor models
+
+```{r chisq_prep_clinical}
+
+### clinical model
+
+data <- all_data_ncd[[1]]
+data2 <- scotwales_ncd[[1]]
+
+# list of mortality + outcomes with c-index > 0.80
+disease_index <- c(
+    "All-cause mortality",
+    "Lung cancer",
+    "Emphysema, COPD",
+    "All-cause dementia",
+    "Vascular dementia",
+    "Alzheimer's disease",
+    "Type II diabetes",
+    "Osteoporosis",
+    "Chronic liver diseases",
+    "Chronic kidney diseases"
+)
+    
+# index of these diseases
+cdis <- which(disease_list %in% disease_index)
+
+library(miceadds)
+library(DescTools)
+
+# set necessary options for rms
+options(contrasts=c("contr.treatment", "contr.treatment"))
+
+# function to extra variable proportion of chisq explained
+anova_df <- function(x) {
+
+    for (k in cdis) {
+        
+        model_list <- as.list(seq_along(x))
+        
+        for (i in seq_along(x)){
+            model_exposures <- paste(clinical_vars[[k]], collapse = " + ")
+            data <- identify_prev_cases_list[[k]](x[[i]])
+            S <- Surv(data[[surv_time[k]]], data[[indicator[k]]])
+            model_list[[i]] <- cph(as.formula(
+                paste("S ~ age_scaled + sex + ",
+                      model_exposures)),
+                x = TRUE, y = TRUE, data = data)
+            
+            # df of anova results per variable
+            df <- as.data.frame(anova(model_list[[i]]))
+            # df <- df[c(1:(nrow(df)-1)), ]
+            df$Variable <- rownames(df)
+            
+            if (i == 1) {
+                dw <- df[c(4,2,1)]
+            } else {
+                dw <- merge(
+                    dw, 
+                    df[c(1,4)],
+                    by = "Variable"
+                )
+            }
+        }
+        
+        if (k == 1) {
+
+            csub <- which(grepl("Chi-Square", colnames(dw)))
+            totals <- unlist(dw[which(dw$Variable == "TOTAL"), csub])
+            
+            # get percentage of total variation
+            for (j in 1:nrow(dw)) {
+                dw$pctexp[j] <- sum(dw[j,csub])/sum(totals)
+            }
+            # add group for disease
+            dw$group <- disease_list[k]
+            # duplicate
+            rw <- dw
+            
+            # make df of anova results by category
+            df2 <- data.frame(matrix(nrow = 4, ncol = 2))
+            colnames(df2) <- c("Category", "pctexp")
+            df2$Category <- c("age, sex", "exposome", "PRS", "clinical factors")
+            
+            # get % explained for age + sex
+            df2$pctexp[which(df2$Category == "age, sex")] <- 
+                sum(dw[which(dw$Variable %in% c("age_scaled", "sex")), csub])/sum(totals)
+            
+            # get % explained for exposome
+            df2$pctexp[which(df2$Category == "exposome")] <- 
+                sum(dw[which(dw$Variable %in% exposures_list[[k]]), csub])/sum(totals)
+            
+            # get % explained for PRS
+            df2$pctexp[which(df2$Category == "PRS")] <- 
+                sum(dw[which(dw$Variable %in% PRS_list), csub])/sum(totals)
+            
+            # get % explained for clinical
+            clin_only <- clinical_vars[[k]][clinical_vars[[k]] %nin% c(PRS_list, exposures_list[[k]])]
+            df2$pctexp[which(df2$Category == "clinical factors")] <- sum(dw[which(dw$Variable %in% clin_only), csub])/sum(totals)
+            
+            df2$group <- disease_list[k]
+            df2$Category <- factor(df2$Category, 
+                                   levels = c("PRS",
+                                              "exposome", 
+                                              "clinical factors", 
+                                              "age, sex"))
+            
+            # duplicate
+            rw2 <- df2
+            
+        } else {
+            
+            csub <- which(grepl("Chi-Square", colnames(dw)))
+            totals <- unlist(dw[which(dw$Variable == "TOTAL"), csub])
+            
+            # get percentage of total variation
+            for (j in 1:nrow(dw)) {
+                dw$pctexp[j] <- sum(dw[j,csub])/sum(totals)
+            }
+            # add group for disease
+            dw$group <- disease_list[k]
+            # rbind
+            rw <- rbind(rw, dw)
+            
+            # make df of anova results by category
+            df2 <- data.frame(matrix(nrow = 4, ncol = 2))
+            colnames(df2) <- c("Category", "pctexp")
+            df2$Category <- c("age, sex", "exposome", "PRS", "clinical factors")
+            
+            # get % explained for age + sex
+            df2$pctexp[which(df2$Category == "age, sex")] <- 
+                sum(dw[which(dw$Variable %in% c("age_scaled", "sex")), csub])/sum(totals)
+            
+            # get % explained for exposome
+            df2$pctexp[which(df2$Category == "exposome")] <- 
+                sum(dw[which(dw$Variable %in% exposures_list[[k]]), csub])/sum(totals)
+            
+            # get % explained for PRS
+            df2$pctexp[which(df2$Category == "PRS")] <- 
+                sum(dw[which(dw$Variable %in% PRS_list), csub])/sum(totals)
+            
+            # get % explained for clinical
+            clin_only <- clinical_vars[[k]][clinical_vars[[k]] %nin% c(PRS_list, exposures_list[[k]])]
+            df2$pctexp[which(df2$Category == "clinical factors")] <- sum(dw[which(dw$Variable %in% clin_only), csub])/sum(totals)
+            
+            df2$group <- disease_list[k]
+            df2$Category <- factor(df2$Category, 
+                                   levels = c("PRS",
+                                              "exposome", 
+                                              "clinical factors", 
+                                              "age, sex"))
+            # rbind
+            rw2 <- rbind(rw2, df2)
+        }
+        cat("\r", paste("completed:", paste(which(cdis == k), length(cdis), sep = "/")))
+    }
+    
+    # list of two df results
+    rw_list <- list(
+        "var" = rw,
+        "cat" = rw2
+    )
+    
+    return(rw_list)
+}
+
+
+# run model
+plots <- anova_df(all_data_ncd)
+
+# save
+save(plots,
+     file = paste0(path, "/results/incident disease/chisq_models_nov_09_2022_clinical.RData"))
+
+# set as factor
+plots$cat$group <- factor(plots$cat$group, levels = disease_index)
+
+# add labels
+plots$cat$Category <- as.character(plots$cat$Category)
+plots$cat$Category[seq(1, 40, 4)] <- "Age and sex"
+plots$cat$Category[seq(2, 40, 4)] <- "Exposome"
+plots$cat$Category[seq(3, 40, 4)] <- "PRS"
+plots$cat$Category[seq(4, 40, 4)] <- "Clinical factors"
+plots$cat$Category <- factor(plots$cat$Category, levels = c(
+    "PRS",
+    "Exposome",
+    "Clinical factors",
+    "Age and sex"
+))
+
+```
+
+## Run ANOVA using exposome + PRS models
+
+```{r chisq_prep_prs}
+### exposome + PRS model
+
+# list of mortality + outcomes with c-index > 0.80
+disease_index <- c(
+    "All-cause mortality",
+    "Lung cancer",
+    "Emphysema, COPD",
+    "All-cause dementia",
+    "Vascular dementia",
+    "Alzheimer's disease",
+    "Chronic liver diseases"
+)
+    
+
+PRS_index <- which(disease_list %in% PRS_disease_list)
+
+# index of these diseases
+cdis <- which(disease_list %in% disease_index)
+comb_vars <- exposures_list
+comb_vars[PRS_index] <- PRS_exposures
+
+anova_df_prs <- function(x) {
+
+    for (k in cdis) {
+        
+        model_list <- as.list(seq_along(x))
+        
+        for (i in seq_along(x)){
+            model_exposures <- paste(comb_vars[[k]], collapse = " + ")
+            data <- identify_prev_cases_list[[k]](x[[i]])
+            S <- Surv(data[[surv_time[k]]], data[[indicator[k]]])
+            model_list[[i]] <- cph(as.formula(paste("S ~ age_scaled + sex + ",
+                                                    model_exposures)),
+                                   x = TRUE, y = TRUE, data = data)
+
+            # df of anova results per variable
+            df <- as.data.frame(anova(model_list[[i]]))
+            # df <- df[c(1:(nrow(df)-1)), ]
+            df$Variable <- rownames(df)
+            
+            if (i == 1) {
+                dw <- df[c(4,2,1)]
+            } else {
+                dw <- merge(
+                    dw, 
+                    df[c(1,4)],
+                    by = "Variable"
+                )
+            }
+        }
+        
+        if (k == 1) {
+
+            csub <- which(grepl("Chi-Square", colnames(dw)))
+            totals <- unlist(dw[which(dw$Variable == "TOTAL"), csub])
+            
+            # get percentage of total variation
+            for (j in 1:nrow(dw)) {
+                dw$pctexp[j] <- sum(dw[j,csub])/sum(totals)
+            }
+            # add group for disease
+            dw$group <- disease_list[k]
+            # duplicate
+            rw <- dw
+            
+            # make df of anova results by category
+            df2 <- data.frame(matrix(nrow = 3, ncol = 2))
+            colnames(df2) <- c("Category", "pctexp")
+            df2$Category <- c("age, sex", "exposome", "PRS")
+            
+            # get % explained for age + sex
+            df2$pctexp[which(df2$Category == "age, sex")] <- 
+                sum(dw[which(dw$Variable %in% c("age_scaled", "sex")), csub])/sum(totals)
+            
+            # get % explained for exposome
+            df2$pctexp[which(df2$Category == "exposome")] <- 
+                sum(dw[which(dw$Variable %in% exposures_list[[k]]), csub])/sum(totals)
+            
+            # get % explained for PRS
+            df2$pctexp[which(df2$Category == "PRS")] <- 
+                sum(dw[which(dw$Variable %in% PRS_list), csub])/sum(totals)
+            
+            df2$group <- disease_list[k]
+            df2$Category <- factor(df2$Category, 
+                                   levels = c("PRS",
+                                              "exposome", 
+                                              "age, sex"))
+            
+            # duplicate
+            rw2 <- df2
+            
+        } else {
+            
+            csub <- which(grepl("Chi-Square", colnames(dw)))
+            totals <- unlist(dw[which(dw$Variable == "TOTAL"), csub])
+            
+            # get percentage of total variation
+            for (j in 1:nrow(dw)) {
+                dw$pctexp[j] <- sum(dw[j,csub])/sum(totals)
+            }
+            # add group for disease
+            dw$group <- disease_list[k]
+            # rbind
+            rw <- rbind(rw, dw)
+            
+            # make df of anova results by category
+            df2 <- data.frame(matrix(nrow = 3, ncol = 2))
+            colnames(df2) <- c("Category", "pctexp")
+            df2$Category <- c("age, sex", "exposome", "PRS")
+            
+            # get % explained for age + sex
+            df2$pctexp[which(df2$Category == "age, sex")] <- 
+                sum(dw[which(dw$Variable %in% c("age_scaled", "sex")), csub])/sum(totals)
+            
+            # get % explained for exposome
+            df2$pctexp[which(df2$Category == "exposome")] <- 
+                sum(dw[which(dw$Variable %in% exposures_list[[k]]), csub])/sum(totals)
+            
+            # get % explained for PRS
+            df2$pctexp[which(df2$Category == "PRS")] <- 
+                sum(dw[which(dw$Variable %in% PRS_list), csub])/sum(totals)
+            
+            df2$group <- disease_list[k]
+            df2$Category <- factor(df2$Category, 
+                                   levels = c("PRS",
+                                              "exposome", 
+                                              "age, sex"))
+            # rbind
+            rw2 <- rbind(rw2, df2)
+        }
+        cat("\r", paste("completed:", paste(which(cdis == k), length(cdis), sep = "/")))
+    }
+    
+    # list of two df results
+    rw_list <- list(
+        "var" = rw,
+        "cat" = rw2
+    )
+    
+    return(rw_list)
+}
+
+# run model
+plots2 <- anova_df_prs(all_data_ncd)
+
+# save
+save(plots2,
+     file = paste0(path, "/results/incident disease/chisq_models_nov_09_2022_prs.RData"))
+
+plots2$cat$group <- factor(plots2$cat$group, levels = disease_index)
+
+# add labels
+plots2$cat$Category <- as.character(plots2$cat$Category)
+plots2$cat$Category[seq(1, 21, 3)] <- "Age and sex"
+plots2$cat$Category[seq(2, 21, 3)] <- "Exposome"
+plots2$cat$Category[seq(3, 21, 3)] <- "PRS"
+plots2$cat$Category <- factor(plots2$cat$Category, levels = c(
+    "PRS",
+    "Exposome",
+    "Age and sex"
+))
+
+```
+
+## Calculate partial R^2 across models
+
+```{r partial_r2_clinical}
+
+disease_index <- c(
+    "All-cause mortality",
+    "Lung cancer",
+    "Emphysema, COPD",
+    "All-cause dementia",
+    "Vascular dementia",
+    "Alzheimer's disease",
+    "Type II diabetes",
+    "Osteoporosis",
+    "Chronic liver diseases",
+    "Chronic kidney diseases"
+)
+
+# function to calculate partial R^2
+partialr2 <- function(x) {
+    
+    bar_mat <- x[c(1,6:9)]
+    bar_mat$partial_R2_exp <- 1 - ((1 - bar_mat$`R2 exposome`) / (1 - bar_mat$`R2 age + sex`))
+    bar_mat$partial_R2_prs <- 1 - ((1 - bar_mat$`R2 exposome + PRS`) / (1 - bar_mat$`R2 exposome`))
+    bar_mat$partial_R2_clin <- 
+        ifelse(!is.na(bar_mat$partial_R2_prs),
+               1 - ((1 - bar_mat$`R2 exposome + PRS + clinical`) / (1 - bar_mat$`R2 exposome + PRS`)),
+               1 - ((1 - bar_mat$`R2 exposome + PRS + clinical`) / (1 - bar_mat$`R2 exposome`))
+        )
+    
+    for (k in seq_along(disease_index)){
+        
+        if (k == 1) {
+            
+            mat <- as.data.frame(matrix(nrow = 4, ncol = 3))
+            colnames(mat) <- c("Model", "R\u00B2", "Partial R\u00B2")
+            mat$Model <- c("Age, sex", "+Exposome", "+PRS", "+Clinical")
+            mat$"R\u00B2" <- as.numeric(bar_mat[which(bar_mat$Disease == disease_index[k]), 2:5])
+            mat$"Partial R\u00B2" <- c(NA, as.numeric(bar_mat[which(bar_mat$Disease == disease_index[k]), 6:8]))
+            
+            matw <- mat
+            
+        } else {
+            
+            mat <- as.data.frame(matrix(nrow = 4, ncol = 3))
+            colnames(mat) <- c("Model", "R\u00B2", "Partial R\u00B2")
+            mat$Model <- c("Age, sex", "+Exposome", "+PRS", "+Clinical")
+            mat$"R\u00B2" <- as.numeric(bar_mat[which(bar_mat$Disease == disease_index[k]), 2:5])
+            mat$"Partial R\u00B2" <- c(NA, as.numeric(bar_mat[which(bar_mat$Disease == disease_index[k]), 6:8]))
+            
+            matw <- cbind(matw, mat)
+        }
+    }
+    
+    mats <- list(
+        total = bar_mat,
+        partial = matw
+    )
+    return(mats)
+
+}
+
+# run on table of R^2 results from validation data
+partials <- partialr2(table_combined_sw_red)
+
+# create table
+ptable <- as.data.frame(partials$partial)
+mcols <- which(grepl("Model",names(ptable)))
+mcols <- mcols[-1]
+ptable <- ptable[-mcols]
+headers <- colnames(partials$partial)[-mcols]
+
+for (k in 1:length(colnames(ptable))) {
+    headers[k] <- paste0(headers[k], paste0(rep("\r", k), collapse = ""), collapse = "")
+}
+colnames(ptable) <- headers
+nums <- sapply(ptable, is.numeric)
+nums <- as.numeric(nums)
+nums <- which(nums == 1)
+ptable[nums] <- format(round(ptable[nums], digits = 4), nsmall = 4)
+for (k in nums) {
+    ptable[[k]][which(ptable[[k]] == "    NA")] <- "-"
+}
+
+```
+
+## Create Fig. 8 plots - model composition and partial R^2 
+
+```{r combined_plot}
+
+# partial R2 table
+pt <- 
+    flextable(ptable) %>% 
+    add_header_row(top = TRUE, values = c("", disease_index), colwidths = c(1, rep(2, 10)))  %>% 
+    add_header_row(top = TRUE, values = "Partial R\u00B2 across outcomes - Scottish/Welsh validation set", colwidths = 21) %>% 
+    align(align = "left", part = "all") %>% 
+    align(align = "center", part = "header", i = 2) %>% 
+    align(align = "center", part = "body", j = seq(2,21))
+
+
+pt <- vline(
+    pt,
+    j = c(1, seq(3,20,2)),
+    part = "body"
+)
+
+ptr <- pt %>%
+    as_raster()
+
+gg2 <- ggplot() +
+    theme_void() +
+    annotation_custom(rasterGrob(ptr), xmin = -Inf, xmax = Inf, ymin = -Inf, ymax = Inf)
+
+
+# clinical model
+g1 <- ggplot(plots$cat, aes(x = group, y = pctexp, fill = Category)) + 
+    geom_bar(position = "fill", stat = "identity") +
+    scale_fill_viridis(discrete = T, direction = -1) +
+    theme_classic() +
+    ylab("") +
+    xlab("") +
+    theme(axis.text.x = element_text(angle = 45, hjust = 1, size = 10)) +
+    scale_y_continuous(expand = expansion(mult = c(0.025, 0.05)))
+
+
+# exposome, PRS model
+g2 <- ggplot(plots2$cat, aes(x = group, y = pctexp, fill = Category)) + 
+    geom_bar(position = "fill", stat = "identity") +
+    # scale_fill_manual(values = viridis(4)[c(4,3,1)]) +
+    scale_fill_viridis(discrete = T, direction = -1) +
+    theme_classic() +
+    ylab("Relative proportion of total \u03C7\u00B2") +
+    xlab("") +
+    theme(axis.text.x = element_text(angle = 45, hjust = 1, size = 10)) +
+    scale_y_continuous(expand = expansion(mult = c(0.025, 0.05)))
+
+g1t <- g1 +
+    theme(axis.text.x = element_text(angle = 45, 
+                                     hjust = 1, size = 13, face = "bold"),
+          axis.text.y = element_text(size = 11),
+          axis.title.y = element_text(size = 16, 
+                                      margin = margin(r = 20), face = "bold"),
+          legend.text = element_text(size = 12),
+          legend.title = element_blank(),
+          legend.position = "bottom") 
+    
+g2t <- g2 +
+    theme(axis.text.x = element_text(angle = 45, 
+                                     hjust = 1, size = 14, face = "bold"),
+          axis.text.y = element_text(size = 11),
+          axis.title.y = element_text(size = 16, 
+                                      margin = margin(r = 20), face = "bold"),
+          legend.text = element_text(size = 12),
+          legend.title = element_blank(),
+          legend.position = "bottom") 
+
+library(cowplot)
+
+# create plot and save
+setwd(paste0(path, "/output/incident disease"))
+jpeg("chisq_partial_R2_nov_09_2022.jpeg",
+    width = 16,
+    height = 12,
+    units = "in",
+    res = 1200)
+
+x <- plot_grid(g2t, g1t, ncol = 2, nrow = 1, rel_widths = c(1,1.35), rel_heights = c(1,1.1), labels = c("", "b"), label_size = 18, align = "v",
+               axis = "b")
+
+plot_grid(NULL, x, NULL,
+          NULL, gg2, NULL, 
+          ncol = 3,
+          nrow = 2,
+          labels = c("a", "", "", "c", "", ""),
+          label_size = 18,
+          hjust = -1.5,
+          vjust = c(1.5, 1.5, 1.5, 5, 1.5, 1.5),
+          axis = "l",
+          align = "v",
+          rel_heights = c(1.8, 1),
+          rel_widths = c(0.1, 1.8, 0.05)
+)
+dev.off()
+
+```
+
+## Make pretty exposure labels
+
+```{r pretty_labels}
+
+pretty_lables <- function(x) {
+    
+    x$pretty_labels <- x$Variable
+    # make pretty labels for plot
+    # this section will need to be tweaked for each new set of results
+    x$pretty_labels <-
+        gsub("_England", "", 
+             x$pretty_labels, 
+             fixed = TRUE)
+    x$pretty_labels <-
+        gsub("_", " ",
+             x$pretty_labels,
+             fixed = TRUE)
+    x$pretty_labels <-
+        gsub("hshld", "household", 
+             x$pretty_labels, 
+             fixed = TRUE)
+    x$pretty_labels <-
+        gsub("freq", "frequency", 
+             x$pretty_labels, 
+             fixed = TRUE)
+    x$pretty_labels <-
+        gsub("prop", "prop.",
+             x$pretty_labels,
+             fixed = TRUE)
+    x$pretty_labels <- 
+        gsub("pack", "smoking pack",
+             x$pretty_labels,
+             fixed = TRUE)
+    x$pretty_labels <- 
+        gsub("tobacco", "tobacco use",
+             x$pretty_labels,
+             fixed = TRUE)
+    x$pretty_labels <- 
+        gsub("environ", "environment",
+             x$pretty_labels,
+             fixed = TRUE)
+    x$pretty_labels <- 
+        gsub("10yrs", "10 yrs",
+             x$pretty_labels,
+             fixed = TRUE)
+    
+    x$pretty_labels[x$Variable == "worry_embarassment"] <- 
+        "worry after embarassment"
+    
+    x$pretty_labels[x$Variable == "psychiatrist_visit_mental_health"] <- 
+        "psychiatrist visit for MH"
+    x$pretty_labels[x$Variable == "doctor_visit_mental_health"] <- 
+        "doctor visit for MH"
+    
+    x$pretty_labels[x$Variable == "maternal_smoking"] <- 
+        "maternal smoking around birth"
+    
+    x$pretty_labels[x$Variable == "open_fire_heat"] <- 
+        "uses open fire for heating"
+    x$pretty_labels[x$Variable == "gas_hob_heat"] <- 
+        "uses gas hob for heating"
+    x$pretty_labels[x$Variable == "gas_fire_heat"] <- 
+        "uses gas fire for heating"
+    
+    x$pretty_labels[x$Variable == "mobile_phone_duration"] <- 
+        "years using mobile phone"
+    x$pretty_labels[x$Variable == "mobile_phone_2yrs"] <- 
+        "mobile phone use now vs. 2 yrs ago"
+    
+    x$pretty_labels[x$Variable == "sex_age_first"] <- 
+        "age first sexual intercourse"
+    
+    x$pretty_labels[x$Variable == "easy_wake"] <- 
+        "easy to wake in the morning"
+    
+    x$pretty_labels[x$Variable == "hshld_vehicles"] <- 
+        "no. household vehicles"
+    
+    x$pretty_labels[x$Variable == "hshld_number"] <- 
+        "no. people living in household"
+    
+    x$pretty_labels[x$Variable == "own_or_rent"] <- 
+        "home ownership"
+    
+    x$pretty_labels[x$Variable == "air_pollution_PC1"] <- 
+        "air pollution"
+    
+    x$pretty_labels[x$Variable == "greenspace_PC1"] <- 
+        "greenspace"
+    
+    return(x)
+    
+}
+
+```
+
+## Create Fig. 7 and supplementary figures - importance per exposure for each disease
+
+```{r exposome_chisq_per_outcome}
+
+# list of mortality + outcomes with c-index > 0.80
+disease_index <- c(
+    "All-cause mortality",
+    "Lung cancer",
+    "Emphysema, COPD",
+    "All-cause dementia",
+    "Vascular dementia",
+    "Alzheimer's disease",
+    "Type II diabetes",
+    "Osteoporosis",
+    "Chronic liver diseases",
+    "Chronic kidney diseases"
+)
+    
+# index of these diseases
+cdis <- which(disease_list %in% disease_index)
+
+# function to extra variable proportion of chisq explained
+anova_df_exp <- function(x) {
+
+    df_list <- as.list(rep(1, length(disease_list)))
+    
+     for (k in cdis) {
+        
+        model_list <- as.list(seq_along(x))
+        
+        for (i in seq_along(x)){
+            model_exposures <- paste(exposures_list[[k]], collapse = " + ")
+            data <- identify_prev_cases_list[[k]](x[[i]])
+            S <- Surv(data[[surv_time[k]]], data[[indicator[k]]])
+            model_list[[i]] <- cph(as.formula(paste("S ~ age_scaled + sex + ",
+                                                    model_exposures)),
+                                   x = TRUE, y = TRUE, data = data)
+
+            # df of anova results per variable
+            df <- as.data.frame(anova(model_list[[i]]))
+            # df <- df[c(1:(nrow(df)-1)), ]
+            df$Variable <- rownames(df)
+            
+            if (i == 1) {
+                dw <- df[c(4,2,1)]
+            } else {
+                dw <- merge(
+                    dw, 
+                    df[c(1,4)],
+                    by = "Variable"
+                )
+            }
+        }
+        
+        csub <- which(grepl("Chi-Square", colnames(dw)))
+        totals <- unlist(dw[which(dw$Variable == "TOTAL"), csub])
+        
+        # get percentage of total variation
+        for (j in 1:nrow(dw)) {
+            dw$pctexp[j] <- sum(dw[j,csub])/sum(totals)
+        }
+        # add group for disease
+        dw$group <- disease_list[k]
+        # duplicate
+        rw <- dw
+        
+        #rename
+        df_list[[k]] <- dw
+        
+        cat("\r", paste("completed:", 
+                        paste(which(cdis == k), length(cdis), sep = "/")))
+     }
+    names(df_list) <- disease_list
+    exclude <- which(sapply(df_list, is.numeric))
+    df_list <- df_list[-exclude]
+    return(df_list)
+}    
+    
+# run model
+plots3 <- anova_df_exp(all_data_ncd)
+
+# save
+save(plots3,
+     file = paste0(path, "/results/incident disease/chisq_models_nov_09_2022_exposome_indiv.RData"))
+
+load(paste0(path, "/results/incident disease/chisq_models_nov_09_2022_exposome_indiv.RData"))
+
+# make pretty labels
+plots3 <- lapply(plots3, pretty_lables)
+
+# formatting
+plots3 <- lapply(plots3, function(x){
+    
+    names(x)[3:7] <- c("chisq1","chisq2","chisq3","chisq4","chisq5")
+    x <- x[which(x$pretty_labels != "TOTAL"), ]
+    x <- merge(x,
+              subset(categories, select = c("Variable", "Category")),
+              by = "Variable",
+              all.x = TRUE,
+              all.y = FALSE)
+    x$Category[which(x$Variable == "age_scaled")] <- "Age and sex"
+    x$Category[which(x$Variable == "sex")] <- "Age and sex"
+    x <- x[order(x$pctexp, decreasing = TRUE), ]
+    var_order <- x$pretty_labels
+    x$pretty_labels <- factor(x$pretty_labels, levels = var_order)
+
+    return(x)
+})
+
+
+######### exposome plots
+
+## mortality
+
+library(ggforce)
+library(ggsci)
+
+load(paste0(path,"/results/color_palette.RData"))
+# color_map$color[which(color_map$sequence == "Age and sex")] <- 
+    # color_map$color[which(color_map$sequence == "General health")]
+
+mort <- plots3[[disease_index[1]]]
+
+color_map$sequence[which(color_map$sequence == "Medications")] <- "Supplements"
+color_map$color[which(color_map$sequence == "Supplements")] <- 
+    color_map$color[which(color_map$sequence == "Urine biomarkers")]
+
+pal <- merge(mort, 
+             color_map, 
+             by.x = "Category",
+             by.y = "sequence", 
+             all = T)
+
+pal <- pal[which(!is.na(pal$Variable)), ]
+pal$color[which(pal$Category == "Age and sex")] <- "#756CD8"
+
+pal <- unique(pal$color)
+
+g3a <- ggplot(mort, aes(x = pretty_labels, y = pctexp, fill = Category)) + 
+    geom_bar(position = "dodge", stat = "identity") +
+    scale_fill_manual(values = pal) +
+    theme_classic() +
+    ylab("Proportion of total \u03C7\u00B2") +
+    xlab("") +
+    scale_y_continuous(expand = expansion(mult = c(0.02, 0.1)),
+                       limits = c(0,0.2), breaks = seq(0,0.2, by = 0.05)) +
+    scale_x_discrete(expand = expansion(mult = c(0.025, 0.01))) +
+    theme(axis.text.x = element_text(angle = 45, hjust = 1, size = 6),
+          axis.title.y = element_text(face = "bold", margin = margin(r = 20)),
+          legend.position = "none"
+          )
+
+# try scaling y-axis
+g3abc <- ggplot(mort, aes(x = pretty_labels, y = sqrt(pctexp), fill = Category)) + 
+    geom_bar(position = "dodge", stat = "identity") +
+    scale_fill_manual(values = pal) +
+    theme_classic() +
+    ylab("Proportion of total \u03C7\u00B2 (square root)") +
+    xlab("") +
+    scale_y_continuous(expand = expansion(mult = c(0.02, 0.1))) +
+    scale_x_discrete(expand = expansion(mult = c(0.025, 0.01))) +
+    theme(axis.text.x = element_text(angle = 45, hjust = 1, size = 6),
+          axis.title.y = element_text(face = "bold", margin = margin(r = 20)),
+          legend.text = element_text( size = 10),
+          legend.title = element_text( size = 12),
+          legend.key.width = unit(0.4, "cm"),
+          legend.key.height = unit(0.4, "cm")
+    )
+    
+
+g3ab <- ggplot(mort, aes(x = pretty_labels, y = pctexp, fill = Category)) + 
+    geom_bar(position = "dodge", stat = "identity") +
+    scale_fill_manual(values = pal) +
+    theme_classic() +
+    ylab("") +
+    xlab("") +
+    theme(axis.text.x = element_text(angle = 45, hjust = 1, size = 6),
+          legend.text = element_text( size = 10),
+          legend.title = element_text( size = 12),
+          legend.key.width = unit(0.4, "cm"),
+          legend.key.height = unit(0.4, "cm")) +
+    scale_y_continuous(expand = expansion(mult = c(0.02, 0.1)),
+                       limits = c(0,0.00832), breaks = seq(0,0.008, by = 0.002)) +
+    scale_x_discrete(expand = expansion(mult = c(0.025, 0.01)),
+                     limits = mort$pretty_labels[mort$pretty_labels %nin% c("age scaled", "sex", "smoking status", "smoking pack years prop.")])
+    
+
+# save two-plot version
+setwd(paste0(path, "/output/incident disease"))
+jpeg("exposome_mortality_chisq_nov_09_2022.jpeg",
+    width = 16,
+    height = 7,
+    units = "in",
+    res = 1200)
+
+plot_grid(NULL, g3a, g3ab, nrow = 1, ncol = 3, rel_widths = c(0.03,1,1.3), labels = c("", "a", "b"))
+
+dev.off()
+
+# save single plot version
+setwd(paste0(path, "/output/incident disease"))
+jpeg("exposome_mortality_chisq_nov_09_2022_nosplit.jpeg",
+    width = 10,
+    height = 7,
+    units = "in",
+    res = 1200)
+
+g3abc
+
+dev.off()
+
+
+## lung cancer
+lung <- plots3[[disease_index[2]]]
+
+g3b <- ggplot(lung, aes(x = pretty_labels, y = pctexp, fill = Category)) + 
+    geom_bar(position = "dodge", stat = "identity") +
+    scale_fill_manual(values = pal) +
+    theme_classic() +
+    ylab("Proportion of total \u03C7\u00B2") +
+    xlab(paste(disease_index[2], "model exposures")) +
+    theme(axis.text.x = element_text(angle = 45, hjust = 1, size = 6.5),
+          legend.text = element_text( size = 10),
+          legend.title = element_text( size = 12),
+          legend.key.width = unit(0.4, "cm"),
+          legend.key.height = unit(0.4, "cm")) +
+    scale_y_continuous(expand = expansion(mult = c(0.02, 0.1))) +
+    scale_x_discrete(expand = expansion(mult = c(0.025, 0.01)))
+
+## COPD
+copd <- plots3[[disease_index[2]]]
+
+g3c <- ggplot(copd, aes(x = pretty_labels, y = pctexp, fill = Category)) + 
+    geom_bar(position = "dodge", stat = "identity") +
+    scale_fill_manual(values = pal) +
+    theme_classic() +
+    ylab("Proportion of total \u03C7\u00B2") +
+    xlab(paste(disease_index[3], "model exposures")) +
+    theme(axis.text.x = element_text(angle = 45, hjust = 1, size = 6.5),
+          legend.text = element_text( size = 10),
+          legend.title = element_text( size = 12),
+          legend.key.width = unit(0.4, "cm"),
+          legend.key.height = unit(0.4, "cm")) +
+    scale_y_continuous(expand = expansion(mult = c(0.02, 0.1))) +
+    scale_x_discrete(expand = expansion(mult = c(0.025, 0.01)))
+
+## all-cause dementia
+adem <- plots3[[disease_index[4]]]
+
+g3d <- ggplot(adem, aes(x = pretty_labels, y = pctexp, fill = Category)) + 
+    geom_bar(position = "dodge", stat = "identity") +
+    scale_fill_manual(values = pal) +
+    theme_classic() +
+    ylab("Proportion of total \u03C7\u00B2") +
+    xlab(paste(disease_index[4], "model exposures")) +
+    theme(axis.text.x = element_text(angle = 45, hjust = 1, size = 6.5),
+          legend.text = element_text( size = 10),
+          legend.title = element_text( size = 12),
+          legend.key.width = unit(0.4, "cm"),
+          legend.key.height = unit(0.4, "cm")) +
+    scale_y_continuous(expand = expansion(mult = c(0.02, 0.1))) +
+    scale_x_discrete(expand = expansion(mult = c(0.025, 0.01)))
+
+## vascular dementia
+vdem <- plots3[[disease_index[5]]]
+
+g3e <- ggplot(vdem, aes(x = pretty_labels, y = pctexp, fill = Category)) + 
+    geom_bar(position = "dodge", stat = "identity") +
+    scale_fill_manual(values = pal) +
+    theme_classic() +
+    ylab("Proportion of total \u03C7\u00B2") +
+    xlab(paste(disease_index[5], "model exposures")) +
+    theme(axis.text.x = element_text(angle = 45, hjust = 1, size = 6.5),
+          legend.text = element_text( size = 10),
+          legend.title = element_text( size = 12),
+          legend.key.width = unit(0.4, "cm"),
+          legend.key.height = unit(0.4, "cm")) +
+    scale_y_continuous(expand = expansion(mult = c(0.02, 0.1))) +
+    scale_x_discrete(expand = expansion(mult = c(0.025, 0.01)))
+
+## AD
+AD <- plots3[[disease_index[6]]]
+
+g3f <- ggplot(AD, aes(x = pretty_labels, y = pctexp, fill = Category
+)) + 
+    geom_bar(position = "dodge", stat = "identity") +
+    scale_fill_manual(values = pal) +
+    theme_classic() +
+    ylab("Proportion of total \u03C7\u00B2") +
+    xlab(paste(disease_index[6], "model exposures")) +
+    theme(axis.text.x = element_text(angle = 45, hjust = 1, size = 6.5),
+          legend.text = element_text( size = 10),
+          legend.title = element_text( size = 12),
+          legend.key.width = unit(0.4, "cm"),
+          legend.key.height = unit(0.4, "cm")) +
+    scale_y_continuous(expand = expansion(mult = c(0.02, 0.1))) +
+    scale_x_discrete(expand = expansion(mult = c(0.025, 0.01)))
+
+## T2D
+t2d <- plots3[[disease_index[7]]]
+
+g3g <- ggplot(t2d, aes(x = pretty_labels, y = pctexp, fill = Category)) + 
+    geom_bar(position = "dodge", stat = "identity") +
+    scale_fill_manual(values = pal) +
+    theme_classic() +
+    ylab("Proportion of total \u03C7\u00B2") +
+    xlab(paste(disease_index[7], "model exposures")) +
+    theme(axis.text.x = element_text(angle = 45, hjust = 1, size = 6.5),
+          legend.text = element_text( size = 10),
+          legend.title = element_text( size = 12),
+          legend.key.width = unit(0.4, "cm"),
+          legend.key.height = unit(0.4, "cm")) +
+    scale_y_continuous(expand = expansion(mult = c(0.02, 0.1))) +
+    scale_x_discrete(expand = expansion(mult = c(0.025, 0.01)))
+
+## osteoporosis
+osteo <- plots3[[disease_index[8]]]
+
+g3h <- ggplot(osteo, aes(x = pretty_labels, y = pctexp, fill = Category)) + 
+    geom_bar(position = "dodge", stat = "identity") +
+    scale_fill_manual(values = pal) +
+    theme_classic() +
+    ylab("Proportion of total \u03C7\u00B2") +
+    xlab(paste(disease_index[8], "model exposures")) +
+    theme(axis.text.x = element_text(angle = 45, hjust = 1, size = 6.5),
+          legend.text = element_text( size = 10),
+          legend.title = element_text( size = 12),
+          legend.key.width = unit(0.4, "cm"),
+          legend.key.height = unit(0.4, "cm")) +
+    scale_y_continuous(expand = expansion(mult = c(0.02, 0.1))) +
+    scale_x_discrete(expand = expansion(mult = c(0.025, 0.01)))
+
+## chronic liver disease
+cld <- plots3[[disease_index[9]]]
+
+g3i <- ggplot(cld, aes(x = pretty_labels, y = pctexp, fill = Category)) + 
+    geom_bar(position = "dodge", stat = "identity") +
+    scale_fill_manual(values = pal) +
+    theme_classic() +
+    ylab("Proportion of total \u03C7\u00B2") +
+    xlab(paste(disease_index[9], "model exposures")) +
+    theme(axis.text.x = element_text(angle = 45, hjust = 1, size = 6.5),
+          legend.text = element_text( size = 10),
+          legend.title = element_text( size = 12),
+          legend.key.width = unit(0.4, "cm"),
+          legend.key.height = unit(0.4, "cm")) +
+    scale_y_continuous(expand = expansion(mult = c(0.02, 0.1))) +
+    scale_x_discrete(expand = expansion(mult = c(0.025, 0.01)))
+
+## chronic kidney disease
+ckd <- plots3[[disease_index[10]]]
+
+g3j <- ggplot(ckd, aes(x = pretty_labels, y = pctexp, fill = Category)) + 
+    geom_bar(position = "dodge", stat = "identity") +
+    scale_fill_manual(values = pal) +
+    theme_classic() +
+    ylab("Proportion of total \u03C7\u00B2") +
+    xlab(paste(disease_index[10], "model exposures")) +
+    theme(axis.text.x = element_text(angle = 45, hjust = 1, size = 6.5),
+          legend.text = element_text( size = 10),
+          legend.title = element_text( size = 12),
+          legend.key.width = unit(0.4, "cm"),
+          legend.key.height = unit(0.4, "cm")) +
+    scale_y_continuous(expand = expansion(mult = c(0.02, 0.1))) +
+    scale_x_discrete(expand = expansion(mult = c(0.025, 0.01)))
+
+
+# save plots
+ggsave(g3b, filename = paste0(paste0(paste0(path, "/output/incident disease/3. exposome chi-square per disease/exposome_"), gsub(" ", "_", disease_index[2])), "_chisq_nov_09_2022.png"), width = 9, height = 6)
+
+ggsave(g3c, filename = paste0(paste0(paste0(path, "/output/incident disease/3. exposome chi-square per disease/exposome_"), gsub(" ", "_", disease_index[3])), "_chisq_nov_09_2022.png"), width = 9, height = 6)
+
+ggsave(g3d, filename = paste0(paste0(paste0(path, "/output/incident disease/3. exposome chi-square per disease/exposome_"), gsub(" ", "_", disease_index[4])), "_chisq_nov_09_2022.png"), width = 9, height = 6)
+
+ggsave(g3e, filename = paste0(paste0(paste0(path, "/output/incident disease/3. exposome chi-square per disease/exposome_"), gsub(" ", "_", disease_index[5])), "_chisq_nov_09_2022.png"), width = 9, height = 6)
+
+ggsave(g3f, filename = paste0(paste0(paste0(path, "/output/incident disease/3. exposome chi-square per disease/exposome_"), gsub(" ", "_", disease_index[6])), "_chisq_nov_09_2022.png"), width = 9, height = 6)
+
+ggsave(g3g, filename = paste0(paste0(paste0(path, "/output/incident disease/3. exposome chi-square per disease/exposome_"), gsub(" ", "_", disease_index[7])), "_chisq_nov_09_2022.png"), width = 9, height = 6)
+
+ggsave(g3h, filename = paste0(paste0(paste0(path, "/output/incident disease/3. exposome chi-square per disease/exposome_"), gsub(" ", "_", disease_index[8])), "_chisq_nov_09_2022.png"), width = 9, height = 6)
+
+ggsave(g3i, filename = paste0(paste0(paste0(path, "/output/incident disease/3. exposome chi-square per disease/exposome_"), gsub(" ", "_", disease_index[9])), "_chisq_nov_09_2022.png"), width = 9, height = 6)
+
+ggsave(g3j, filename = paste0(paste0(paste0(path, "/output/incident disease/3. exposome chi-square per disease/exposome_"), gsub(" ", "_", disease_index[10])), "_chisq_nov_09_2022.png"), width = 9, height = 6)
+
+```

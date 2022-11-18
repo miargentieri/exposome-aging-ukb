@@ -1,0 +1,2927 @@
+
+### coding incident chronic disease diagnoses by ICD codes
+
+```{r packages}
+library(tidyr)
+library(dplyr)
+library(readr)
+```
+
+## ICD-10
+
+```{r ICD-10, results='hide', eval=FALSE}
+
+# import list of ICD-10 codes from UKB website: https://biobank.ctsu.ox.ac.uk/crystal/coding.cgi?id=19&nl=1 
+ICD10list3d <- read_delim("/path/to/file/icd10_coding19.tsv", 
+    "\t", 
+    escape_double = FALSE, 
+    trim_ws = TRUE)
+
+# make character vector with just ICD codes
+ICD10list3d <- as.vector(ICD10list3d$coding)
+
+### defining chronic diseases by ICD 10 codes --------------------------------------------------
+
+# colorectal cancer (C18-C20)
+prefix <- "C18"
+suffix <- sprintf('%0.1d', 0:9)
+seq <- paste0(prefix, suffix)
+seq1 <- paste0("C19", suffix)
+seq2 <- paste0("C20", suffix)
+
+colon_cancer <- c("C18", "C19", "C20", seq, seq1, seq2)
+colon_cancer_icd10 <- ICD10list3d[which(ICD10list3d %in% colon_cancer)]
+
+# lung cancer (C33-34)
+prefix <- "C33"
+suffix <- sprintf('%0.1d', 0:9)
+seq <- paste0(prefix, suffix)
+seq1 <- paste0("C34", suffix)
+
+lung_cancer <- c("C33", "C34", seq, seq1)
+lung_cancer_icd10 <- ICD10list3d[which(ICD10list3d %in% lung_cancer)]
+
+# esophageal cancer (C15)
+prefix <- "C15"
+suffix <- sprintf('%0.1d', 0:9)
+seq <- paste0(prefix, suffix)
+
+eso_cancer <- c("C15", seq)
+eso_cancer_icd10 <- ICD10list3d[which(ICD10list3d %in% eso_cancer)]
+
+# liver cancer (C22)
+prefix <- "C22"
+suffix <- sprintf('%0.1d', 0:9)
+seq <- paste0(prefix, suffix)
+
+liver_cancer <- c("C22", seq)
+liver_cancer_icd10 <- ICD10list3d[which(ICD10list3d %in% liver_cancer)]
+
+# pancreatic cancer (C25)
+prefix <- "C25"
+suffix <- sprintf('%0.1d', 0:9)
+seq <- paste0(prefix, suffix)
+
+pancreatic_cancer <- c("C25", seq)
+pancreatic_cancer_icd10 <- ICD10list3d[which(ICD10list3d %in% pancreatic_cancer)]
+
+# brain cancer (C71)
+prefix <- "C71"
+suffix <- sprintf('%0.1d', 0:9)
+seq <- paste0(prefix, suffix)
+
+brain_cancer <- c("C71", seq)
+brain_cancer_icd10 <- ICD10list3d[which(ICD10list3d %in% brain_cancer)]
+
+# leukemia (C91-C95)
+prefix <- "C"
+suffix <- seq(91,95)
+seq <- paste0(prefix, suffix)
+
+prefix <- "C"
+suffix <- seq(910,959)
+seq2 <- paste0(prefix, suffix)
+
+leukemia <- c(seq, seq2)
+leukemia_icd10 <- ICD10list3d[which(ICD10list3d %in% leukemia)]
+
+# lymphoma (C81-C86, C88)
+prefix <- "C"
+suffix <- seq(81,86)
+seq <- paste0(prefix, suffix)
+
+prefix <- "C"
+suffix <- seq(810,869)
+seq2 <- paste0(prefix, suffix)
+
+prefix <- "C88"
+suffix <- sprintf('%0.1d', 0:9)
+seq3 <- paste0(prefix, suffix)
+
+lymphoma <- c(seq, seq2, "C88", seq3)
+lymphoma_icd10 <- ICD10list3d[which(ICD10list3d %in% lymphoma)]
+
+# breast cancer (C50)
+prefix <- "C50"
+suffix <- sprintf('%0.1d', 0:9)
+seq <- paste0(prefix, suffix)
+
+breast_cancer <- c("C50", seq)
+breast_cancer_icd10 <- ICD10list3d[which(ICD10list3d %in% breast_cancer)]
+
+# ovarian cancer (C56)
+prefix <- "C56"
+suffix <- sprintf('%0.1d', 0:9)
+seq <- paste0(prefix, suffix)
+
+ovarian_cancer <- c("C56", seq)
+ovarian_cancer_icd10 <- ICD10list3d[which(ICD10list3d %in% ovarian_cancer)]
+
+# prostate cancer (C61)
+prefix <- "C61"
+suffix <- sprintf('%0.1d', 0:9)
+seq <- paste0(prefix, suffix)
+
+prostate_cancer <- c("C61", seq)
+prostate_cancer_icd10 <- ICD10list3d[which(ICD10list3d %in% prostate_cancer)]
+
+
+
+# type II diabetes (E11)
+prefix <- "E"
+suffix <- seq(110,119)
+seq <- paste0(prefix, suffix)
+
+diabetes <- c("E11", seq)
+diabetes_icd10 <- ICD10list3d[which(ICD10list3d %in% diabetes)]
+
+
+# ischemic heart diseases (I20–I25)
+prefix <- "I"
+suffix <- seq(20,25)
+seq <- paste0(prefix, suffix)
+
+prefix <- "I"
+suffix <- seq(200,259)
+seq2 <- paste0(prefix, suffix)
+
+cardio <- c(seq, seq2)
+cardio_icd10 <- ICD10list3d[which(ICD10list3d %in% cardio)]
+
+
+#cerebrovascular disease (I60–I69)
+prefix <- "I"
+suffix <- seq(60,69)
+seq <- paste0(prefix, suffix)
+
+prefix <- "I"
+suffix <- seq(600,699)
+seq2 <- paste0(prefix, suffix)
+
+cerebro <- c(seq, 
+             seq2)
+cerebro_icd10 <- ICD10list3d[which(ICD10list3d %in% cerebro)]
+
+
+# COPD and emphysema (J43–J44)
+prefix <- "J"
+suffix <- seq(43,44)
+seq <- paste0(prefix, suffix)
+
+prefix <- "J"
+suffix <- seq(430,449)
+seq2 <- paste0(prefix, suffix)
+
+copd <- c(seq, 
+          seq2)
+copd_icd10 <- ICD10list3d[which(ICD10list3d %in% copd)]
+
+
+# chronic liver disease (K70, K73-K74)
+prefix <- "K"
+suffix <- seq(73,74)
+seq <- paste0(prefix, suffix)
+
+prefix <- "K"
+suffix <- seq(700,709)
+seq2 <- paste0(prefix, suffix)
+
+prefix <- "K"
+suffix <- seq(730,749)
+seq3 <- paste0(prefix, suffix)
+
+liver <- c("K70", 
+           seq, 
+           seq2, 
+           seq3)
+liver_icd10 <- ICD10list3d[which(ICD10list3d %in% liver)]
+
+
+# chronic kidney disease (N18)
+prefix <- "N"
+suffix <- seq(180,189)
+seq <- paste0(prefix, suffix)
+
+kidney <- c("N18", seq)
+kidney_icd10 <- ICD10list3d[which(ICD10list3d %in% kidney)]
+
+
+# all-cause dementia (A81.0, F00-F03, F05.1, F10.6, G30-G31, I67.3)
+prefix <- "F"
+suffix <- sprintf('%0.3d', 0:9)
+seq <- paste0(prefix, suffix)
+
+prefix <- "F0"
+suffix <- sprintf('%0.d', 10:39)
+seq2 <- paste0(prefix, suffix)
+
+all_dementia <- c("A810", "F00", "F01", "F02", "F03", seq, seq2, "F051", "F106", "I673")
+all_dementia_icd10 <- ICD10list3d[which(ICD10list3d %in% all_dementia)]
+
+# vascular dementia (F01, I67.3)
+prefix <- "F0"
+suffix <- sprintf('%0.d', 10:19)
+seq <- paste0(prefix, suffix)
+
+vasc_dementia <- c("F01", seq, "I673")
+vasc_dementia_icd10 <- ICD10list3d[which(ICD10list3d %in% vasc_dementia)]
+
+# Alzheimer's (F00, G30)
+prefix <- "F"
+suffix <- sprintf('%0.3d', 0:9)
+seq <- paste0(prefix, suffix)
+
+prefix <- "G"
+suffix <- seq(300,309)
+seq2 <- paste0(prefix, suffix)
+
+alzheimers <- c("F00", seq, "G30", seq2)
+alzheimers_icd10 <- ICD10list3d[which(ICD10list3d %in% alzheimers)]
+
+# Parkinsons (G20-G22)
+prefix <- "G"
+suffix <- seq(200,229)
+seq <- paste0(prefix, suffix)
+
+parkinsons <- c("G20", "G21", "G22", seq)
+parkinsons_icd10 <- ICD10list3d[which(ICD10list3d %in% parkinsons)]
+
+
+# rheumatoid arthritis (M05-06)
+prefix <- "M05"
+suffix <- seq(0,9)
+seq <- paste0(prefix, suffix)
+
+prefix <- "M06"
+suffix <- seq(0,9)
+seq2 <- paste0(prefix, suffix)
+
+rheumatoid <- c("M05",
+                seq,
+                "M06",
+                seq2)
+rheumatoid_icd10 <- ICD10list3d[which(ICD10list3d %in% rheumatoid)]
+
+
+# macular degeneration (H35.3)
+macular <- "H353"
+macular_icd10 <- ICD10list3d[which(ICD10list3d %in% macular)]
+
+
+# osteoporosis (M80-M81)
+prefix <- "M8"
+suffix <- sprintf('%0.2d', 00:19)
+seq <- paste0(prefix, suffix)
+
+osteoporosis <- c("M80",
+                  "M81",
+                  seq)
+osteoporosis_icd10 <- ICD10list3d[which(ICD10list3d %in% osteoporosis)]
+
+
+# osteoarthritis (M15-M19)
+prefix <- "M"
+suffix <- seq(15,19)
+seq <- paste0(prefix, suffix)
+
+prefix <- "M1"
+suffix <- sprintf('%0.2d', 50:99)
+seq2 <- paste0(prefix, suffix)
+
+osteoarthritis <- c(seq, seq2)
+osteoarthritis_icd10 <- ICD10list3d[which(ICD10list3d %in% osteoarthritis)]
+
+
+## clinical endophenotypes
+
+# hypertension (I10–I15)
+prefix <- "I"
+suffix <- seq(10,15)
+seq <- paste0(prefix, suffix)
+
+prefix <- "I"
+suffix <- seq(100,159)
+seq2 <- paste0(prefix, suffix)
+
+hypertension <- c(seq, seq2)
+hypertension_icd10 <- ICD10list3d[which(ICD10list3d %in% hypertension)]
+
+# obesity (E66)
+prefix <- "E66"
+suffix <- sprintf('%0.1d', 0:9)
+seq <- paste0(prefix, suffix)
+
+obesity <- c("E66", seq)
+obesity_icd10 <- ICD10list3d[which(ICD10list3d %in% obesity)]
+
+# dyslipidemia (E78)
+prefix <- "E78"
+suffix <- sprintf('%0.1d', 0:9)
+seq <- paste0(prefix, suffix)
+
+dyslipidemia <- c("E78", seq)
+dyslipidemia_icd10 <- ICD10list3d[which(ICD10list3d %in% dyslipidemia)]
+
+
+# create list of all NCD codes
+icd10_include <- c(colon_cancer_icd10,
+                   lung_cancer_icd10,
+                   eso_cancer_icd10,
+                   liver_cancer_icd10,
+                   pancreatic_cancer_icd10,
+                   brain_cancer_icd10,
+                   leukemia_icd10,
+                   lymphoma_icd10,
+                   breast_cancer_icd10,
+                   ovarian_cancer_icd10,
+                   prostate_cancer_icd10,
+                   diabetes_icd10,
+                   cardio_icd10,
+                   cerebro_icd10,
+                   copd_icd10,
+                   liver_icd10, 
+                   kidney_icd10,
+                   all_dementia_icd10,
+                   vasc_dementia_icd10,
+                   alzheimers_icd10,
+                   parkinsons_icd10,
+                   rheumatoid_icd10,
+                   macular_icd10,
+                   osteoporosis_icd10,
+                   osteoarthritis_icd10,
+                   hypertension_icd10,
+                   obesity_icd10,
+                   dyslipidemia_icd10)
+
+
+```
+
+## ICD-9
+
+```{r ICD-9}
+icd9list <- read_delim("/path/to/file/icd9_coding87.tsv", 
+    "\t", 
+    escape_double = FALSE, 
+    trim_ws = TRUE)
+
+# colorectal cancer (C18-C20)
+prefix <- "153"
+suffix <- sprintf('%0.1d', 0:9)
+seq <- paste0(prefix, suffix)
+seq1 <- paste0("154", suffix)
+
+colon_cancer <- c("153", "154", seq, seq1)
+colon_cancer_icd9 <- icd9list$coding[which(icd9list$coding %in% colon_cancer)]
+
+# lung cancer (C33-34)
+prefix <- "162"
+suffix <- sprintf('%0.1d', 0:9)
+seq <- paste0(prefix, suffix)
+
+lung_cancer <- c("162", seq)
+lung_cancer_icd9 <- icd9list$coding[which(icd9list$coding %in% lung_cancer)]
+
+# esophageal cancer (C15)
+prefix <- "150"
+suffix <- sprintf('%0.1d', 0:9)
+seq <- paste0(prefix, suffix)
+
+eso_cancer <- c("150", seq)
+eso_cancer_icd9 <- icd9list$coding[which(icd9list$coding %in% eso_cancer)]
+
+# liver cancer (C22)
+prefix <- "155"
+suffix <- sprintf('%0.1d', 0:9)
+seq <- paste0(prefix, suffix)
+
+liver_cancer <- c("155", seq)
+liver_cancer_icd9 <- icd9list$coding[which(icd9list$coding %in% liver_cancer)]
+
+# pancreatic cancer (C25)
+prefix <- "157"
+suffix <- sprintf('%0.1d', 0:9)
+seq <- paste0(prefix, suffix)
+
+pancreatic_cancer <- c("157", seq)
+pancreatic_cancer_icd9 <- icd9list$coding[which(icd9list$coding %in% pancreatic_cancer)]
+
+# brain cancer (C71)
+prefix <- "191"
+suffix <- sprintf('%0.1d', 0:9)
+seq <- paste0(prefix, suffix)
+
+brain_cancer <- c("191", seq)
+brain_cancer_icd9 <- icd9list$coding[which(icd9list$coding %in% brain_cancer)]
+
+# leukemia (C91-C95)
+seq <- seq(204,208)
+seq2 <- seq(2040,2089)
+
+leukemia <- c(seq, seq2)
+leukemia_icd9 <- icd9list$coding[which(icd9list$coding %in% leukemia)]
+
+# lymphoma (C81-C86, C88)
+seq <- seq(201,203)
+seq2 <- seq(2010,2039)
+
+lymphoma <- c(seq, seq2)
+lymphoma_icd9 <- icd9list$coding[which(icd9list$coding %in% lymphoma)]
+
+# breast cancer (C50)
+seq <- seq(174,175)
+seq2 <- seq(1740,1759)
+
+breast_cancer <- c(seq, seq2)
+breast_cancer_icd9 <- icd9list$coding[which(icd9list$coding %in% breast_cancer)]
+
+# ovarian cancer (C56)
+prefix <- "183"
+suffix <- sprintf('%0.1d', 0:9)
+seq <- paste0(prefix, suffix)
+
+ovarian_cancer <- c("183", seq)
+ovarian_cancer_icd9 <- icd9list$coding[which(icd9list$coding %in% ovarian_cancer)]
+
+# prostate cancer (C61)
+prefix <- "185"
+suffix <- sprintf('%0.1d', 0:9)
+seq <- paste0(prefix, suffix)
+
+prostate_cancer <- c("185", seq)
+prostate_cancer_icd9 <- icd9list$coding[which(icd9list$coding %in% prostate_cancer)]
+
+
+
+# type II diabetes (E11)
+prefix <- "250"
+suffix <- sprintf('%0.1d', 0:9)
+seq <- paste0(prefix, suffix)
+
+list <- as.list(rep(1, length(seq)))
+for (k in seq_along(seq)) {
+    list[[k]] <- paste0(seq[k], sprintf('%0.1d', 0:9))
+}
+
+list <- unlist(list)
+
+diabetes <- c("250",
+              seq,
+              list)
+diabetes_icd9 <- icd9list$coding[which(icd9list$coding %in% diabetes)]
+
+
+# ischemic heart diseases (I20–I25)
+seq <- seq(410,414)
+seq2 <- seq(4100,4149)
+
+cardio <- c(seq, seq2)
+cardio_icd9 <- icd9list$coding[which(icd9list$coding %in% cardio)]
+
+
+#cerebrovascular disease (I60–I69)
+seq <- seq(430,438)
+seq2 <- seq(4300,4389)
+
+cerebro <- c(seq, seq2)
+cerebro_icd9 <- icd9list$coding[which(icd9list$coding %in% cerebro)]
+
+
+# COPD and emphysema (J43–J44)
+prefix <- "492"
+suffix <- sprintf('%0.1d', 0:9)
+seq <- paste0(prefix, suffix)
+
+prefix <- "496"
+suffix <- sprintf('%0.1d', 0:9)
+seq2 <- paste0(prefix, suffix)
+
+copd <- c("492", "496", seq, seq2)
+copd_icd9 <- icd9list$coding[which(icd9list$coding %in% copd)]
+
+
+# chronic liver disease (K70, K73-K74)
+prefix <- "571"
+suffix <- sprintf('%0.1d', 0:9)
+seq <- paste0(prefix, suffix)
+
+liver <- c("571", 
+           seq)
+liver_icd9 <- icd9list$coding[which(icd9list$coding %in% liver)]
+
+
+# chronic kidney disease (N18)
+prefix <- "585"
+suffix <- sprintf('%0.1d', 0:9)
+seq <- paste0(prefix, suffix)
+
+kidney <- c("585", seq)
+kidney_icd9 <- icd9list$coding[which(icd9list$coding %in% kidney)]
+
+
+# all-cause dementia
+all_dementia_icd9 <- c("3310",
+                       "2904",
+                       "3311",
+                       "2902",
+                       "2903",
+                       "2912",
+                       "2941",
+                       "3312",
+                       "3315")
+
+# vascular dementia (F01, I67.3)
+vasc_dementia_icd9 <- c("2904")
+
+# Alzheimer's (F00, G30)
+alzheimers_icd9 <- c("3310")
+
+# Parkinsons (G20-G22)
+prefix <- "332"
+suffix <- sprintf('%0.1d', 0:9)
+seq <- paste0(prefix, suffix)
+
+parkinsons <- c("332", seq)
+parkinsons_icd9 <- icd9list$coding[which(icd9list$coding %in% parkinsons)]
+
+
+# rheumatoid arthritis (M05-06)
+prefix <- "714"
+suffix <- sprintf('%0.1d', 0:9)
+seq <- paste0(prefix, suffix)
+
+list <- as.list(rep(1, length(seq)))
+for (k in seq_along(seq)) {
+    list[[k]] <- paste0(seq[k], sprintf('%0.1d', 0:9))
+}
+
+list <- unlist(list)
+
+rheumatoid <- c("714",
+                seq,
+                list)
+rheumatoid_icd9 <- icd9list$coding[which(icd9list$coding %in% rheumatoid)]
+
+
+# macular degeneration (H35.3)
+macular <- "3625"
+macular_icd9 <- icd9list$coding[which(icd9list$coding %in% macular)]
+
+
+# osteoporosis (M80-M81)
+prefix <- "7330"
+suffix <- sprintf('%0.1d', 0:9)
+seq <- paste0(prefix, suffix)
+
+osteoporosis <- c("7330",
+                  seq)
+osteoporosis_icd9 <- icd9list$coding[which(icd9list$coding %in% osteoporosis)]
+
+
+# osteoarthritis (M15-M19)
+prefix <- "715"
+suffix <- sprintf('%0.1d', 0:9)
+seq <- paste0(prefix, suffix)
+
+list <- as.list(rep(1, length(seq)))
+for (k in seq_along(seq)) {
+    list[[k]] <- paste0(seq[k], sprintf('%0.1d', 0:9))
+}
+
+list <- unlist(list)
+
+osteoarthritis <- c("715",
+                    seq,
+                    list)
+osteoarthritis_icd9 <- icd9list$coding[which(icd9list$coding %in% osteoarthritis)]
+
+
+## clinical endophenotypes
+
+# hypertension (I10–I15)
+seq <- seq(401,405)
+seq2 <- seq(4010,4059)
+
+hypertension <- c(seq, seq2)
+hypertension_icd9 <- icd9list$coding[which(icd9list$coding %in% hypertension)]
+
+# obesity (E66)
+obesity_icd9 <- "2780"
+
+# dyslipidemia (E78)
+prefix <- "272"
+suffix <- sprintf('%0.1d', 0:9)
+seq <- paste0(prefix, suffix)
+
+list <- as.list(rep(1, length(seq)))
+for (k in seq_along(seq)) {
+    list[[k]] <- paste0(seq[k], sprintf('%0.1d', 0:9))
+}
+
+list <- unlist(list)
+
+dyslipidemia <- c("272",
+                  seq,
+                  list)
+
+dyslipidemia_icd9 <- icd9list$coding[which(icd9list$coding %in% dyslipidemia)]
+
+
+# create list of all NCD codes
+icd9_include <- c(colon_cancer_icd9,
+                  lung_cancer_icd9,
+                  eso_cancer_icd9,
+                  liver_cancer_icd9,
+                  pancreatic_cancer_icd9,
+                  brain_cancer_icd9,
+                  leukemia_icd9,
+                  lymphoma_icd9,
+                  breast_cancer_icd9,
+                  ovarian_cancer_icd9,
+                  prostate_cancer_icd9,
+                  diabetes_icd9,
+                  cardio_icd9,
+                  cerebro_icd9,
+                  copd_icd9,
+                  liver_icd9, 
+                  kidney_icd9,
+                  all_dementia_icd9,
+                  vasc_dementia_icd9,
+                  alzheimers_icd9,
+                  parkinsons_icd9,
+                  rheumatoid_icd9,
+                  macular_icd9,
+                  osteoporosis_icd9,
+                  osteoarthritis_icd9,
+                  hypertension_icd9,
+                  obesity_icd9,
+                  dyslipidemia_icd9)
+
+```
+
+## Merge ICD-10/ICD-9
+
+```{r merge_icd}
+
+# any NCD indicator
+icd_include <- c(icd10_include,
+                 icd9_include)
+
+
+# disease-specific indicators
+colon_cancer_icd <- c(colon_cancer_icd9,
+                      colon_cancer_icd10)
+
+lung_cancer_icd <- c(lung_cancer_icd9,
+                     lung_cancer_icd10)
+
+eso_cancer_icd <- c(eso_cancer_icd9,
+                     eso_cancer_icd10)
+
+liver_cancer_icd <- c(liver_cancer_icd9,
+                      liver_cancer_icd10)
+
+pancreatic_cancer_icd <- c(pancreatic_cancer_icd9,
+                           pancreatic_cancer_icd10)
+
+brain_cancer_icd <- c(brain_cancer_icd9,
+                      brain_cancer_icd10)
+
+leukemia_icd <- c(leukemia_icd9,
+                  leukemia_icd10)
+
+lymphoma_icd <- c(lymphoma_icd9,
+                  lymphoma_icd10)
+
+breast_cancer_icd <- c(breast_cancer_icd9,
+                       breast_cancer_icd10)
+
+ovarian_cancer_icd <- c(ovarian_cancer_icd9,
+                        ovarian_cancer_icd10)
+
+prostate_cancer_icd <- c(prostate_cancer_icd9,
+                         prostate_cancer_icd10)
+
+diabetes_icd <- c(diabetes_icd9,
+                  diabetes_icd10)
+
+cardio_icd <- c(cardio_icd9,
+                cardio_icd10)
+
+cerebro_icd <- c(cerebro_icd9,
+                 cerebro_icd10)
+
+copd_icd <- c(copd_icd9,
+              copd_icd10)
+
+liver_icd <- c(liver_icd9,
+               liver_icd10)
+
+kidney_icd <- c(kidney_icd9,
+                kidney_icd10)
+
+all_dementia_icd <- c(all_dementia_icd9,
+                      all_dementia_icd10)
+
+vasc_dementia_icd <- c(vasc_dementia_icd9,
+                       vasc_dementia_icd10)
+
+alzheimers_icd <- c(alzheimers_icd9,
+                    alzheimers_icd10)
+
+parkinsons_icd <- c(parkinsons_icd9,
+                    parkinsons_icd10)
+
+rheumatoid_icd <- c(rheumatoid_icd9,
+                    rheumatoid_icd10)
+
+macular_icd <- c(macular_icd9,
+                 macular_icd10)
+
+osteoporosis_icd <- c(osteoporosis_icd9,
+                      osteoporosis_icd10)
+
+osteoarthritis_icd <- c(osteoarthritis_icd9,
+                        osteoarthritis_icd10)
+
+hypertension_icd <- c(hypertension_icd9,
+                      hypertension_icd10)
+
+obesity_icd <- c(obesity_icd9,
+                 obesity_icd10)
+
+dyslipidemia_icd <- c(dyslipidemia_icd9,
+                      dyslipidemia_icd10)
+
+```
+
+## Import exposure data
+
+```{r make_dataset, eval=FALSE}
+
+# import updated ICD10 dataset
+dat <- readRDS("/Users/austin.argentieri/OneDrive - Nexus365/DPhil Research/UKB/Datasets/9. Fifth raw dataset from UKB/ukb51932.rds")
+
+# import main UKB dataset
+dat2 <- readRDS("/Users/austin.argentieri/OneDrive - Nexus365/DPhil Research/UKB/Datasets/5. Recoded datasets/ukb_full_recoded_dataset_may_21_2022.rds")
+
+# ICD 10 all codes
+prefix <- "f.41270.0."
+suffix <- seq(0,242)
+ICD10_all <- paste0(prefix, suffix)
+
+# ICD 10 all dates
+prefix <- "f.41280.0."
+suffix <- seq(0,242)
+ICD10_dates <- paste0(prefix, suffix)
+
+# ICD 9 all codes
+prefix <- "f.41271.0."
+suffix <- seq(0,46)
+ICD9_all <- paste0(prefix, suffix)
+
+# ICD 9 all dates
+prefix <- "f.41281.0."
+suffix <- seq(0,46)
+ICD9_dates <- paste0(prefix, suffix)
+
+# ICD 9/10 combined
+ICD_all <- c(ICD9_all, ICD10_all)
+ICD_dates <- c(ICD9_dates, ICD10_dates)
+
+dat <- subset(dat, 
+              select = c("f.eid",
+                         ICD_all,
+                         ICD_dates
+              ))
+
+dat2 <- subset(dat2, 
+               select = c("eid",
+                          "recruitment_date",
+                          "recruitment_centre"
+               ))
+
+dat <- merge(
+    dat, 
+    dat2,
+    by.x = "f.eid",
+    by.y = "eid",
+    all = FALSE,
+    sort = FALSE
+)
+
+# save dataset with just ICD data
+save(dat, file = "/path/to/file/ICD_data_aug_04_2022.RData")
+```
+
+## Import mortality cause of death data
+
+```{r cod_vars}
+
+load("/path/to/file/ICD_data_aug_04_2022.RData")
+
+# import mortality data
+mort <- read_delim("/path/to/file/mortality_may_04_2022.txt",
+    "\t", escape_double = FALSE, trim_ws = TRUE)
+
+
+# import cause of death (COD) data. 
+# more info here: http://biobank.ndph.ox.ac.uk/showcase/showcase/docs/DeathLinkage.pdf.
+dat_COD <- read_delim("/path/to/file/mortality_cause_may_04_2022.txt", # cause of death table. 
+    "\t", 
+    escape_double = FALSE, 
+    trim_ws = TRUE)
+
+### prepare cause of death data
+
+### transform COD data from long format (with multiple rows per eid) 
+### to wide format (multiple columns and one row per eid)
+dat_COD <-
+    pivot_wider(dat_COD,
+                # any new value in "ins_index" or "arr_index" becomes a new column
+                names_from = c(ins_index,
+                               arr_index),
+                # populate new columns with corresponding value from COD column
+                values_from = cause_icd10) 
+
+# remove level variable (it's redundant to the arr_index information)
+dat_COD <- subset(dat_COD,
+                  select = -c(level))
+
+### the dataset now has two rows for each eid: 
+### instance index = 0 data are all in one row and instance = 1 are all on second
+### now we collapse the two rows for each eid into one row
+
+# prepare dataset
+dat_COD <- sapply(dat_COD, as.character) # data need to be character class for transpose function
+dat_COD[is.na(dat_COD)] <- "" # NA values will cause errors in the transpose
+dat_COD <- as.data.frame(dat_COD) # convert back to df
+
+# transpose dataset by merging all rows with a unique eid into one row
+dat_COD %>%
+    group_by(eid) %>%
+    summarise_all(
+        funs(trimws(paste(., collapse = "")))) -> dat_COD
+
+dat_COD[dat_COD == ""] <- NA # convert empty cells back to NA
+
+### replace column names
+
+# new column names
+prefix <- "cause_icd.0."
+suffix <- seq(0,14)
+ICD10_0 <- paste0(prefix, suffix)
+
+# old names to replace
+prefix <- "0_"
+suffix <- seq(0,14)
+replace1 <- paste0(prefix, suffix)
+
+# new column names
+prefix <- "cause_icd.1."
+suffix <- seq(0,9)
+ICD10_1 <- paste0(prefix, suffix)
+
+# old names to replace
+prefix <- "1_"
+suffix <- seq(0,9)
+replace2 <- paste0(prefix, suffix)
+
+# loop to replace instance = 0 column names
+for(j in seq_along(replace1)){
+  names(dat_COD)[names(dat_COD) == replace1[j]] <- ICD10_0[j]
+}
+
+# loop to replace instance = 1 column names
+for(j in seq_along(replace2)){
+  names(dat_COD)[names(dat_COD) == replace2[j]] <- ICD10_1[j] 
+}
+
+# reorder columns in ascending order
+col_order <- c("eid", ICD10_0, ICD10_1)
+dat_COD <- dat_COD[, col_order]
+
+
+### prepare death date data 
+
+# remove duplicate date of death record row for any participant (e.g., where "ins_index = 1"). 
+# date in ins_index = 1 shows the same date so it is redundant
+mort <- mort[which(mort$ins_index == '0'), ]
+
+# check how date is formatted for correct as.Date formatting
+head(mort$date_of_death) 
+
+# set as date
+mort$date_of_death <- as.Date(mort$date_of_death, 
+                              format = "%d/%m/%Y")
+
+# check for any formatting errors
+head(mort$date_of_death) 
+
+
+### merge date and cause of death data 
+mort <- merge(dat_COD, 
+              mort, 
+              by = "eid", 
+              all = FALSE) # Note: this will delete 10 participants that have a date of death but no cause of death
+
+### merge ICD data and mortality data
+
+dat <- merge(dat, 
+             mort, 
+             by.x = "f.eid", 
+             by.y = "eid",
+             all = TRUE) 
+
+
+### create mortality event indicators by primary or secondary cause of death
+mort_ICD <- c(ICD10_0, ICD10_1)
+
+
+### Primary or secondary cause indicators ----------------------------------------------------------------
+
+### All NCD mort indicator 
+
+dat$NCD_mort_any <- as.numeric(
+  rowSums(
+    sapply(dat[mort_ICD], "%in%", icd_include),
+    na.rm = TRUE) > 0)
+
+
+### Colon cancer mort indicator 
+
+dat$colon_cancer_mort_any <- as.numeric(
+  rowSums(
+    sapply(dat[mort_ICD], "%in%", colon_cancer_icd),
+    na.rm = TRUE) > 0)
+
+### Lung cancer mort indicator 
+
+dat$lung_cancer_mort_any <- as.numeric(
+  rowSums(
+    sapply(dat[mort_ICD], "%in%", lung_cancer_icd),
+    na.rm = TRUE) > 0)
+
+### eso cancer mort indicator 
+
+dat$eso_cancer_mort_any <- as.numeric(
+  rowSums(
+    sapply(dat[mort_ICD], "%in%", eso_cancer_icd),
+    na.rm = TRUE) > 0)
+
+### liver cancer mort indicator 
+
+dat$liver_cancer_mort_any <- as.numeric(
+  rowSums(
+    sapply(dat[mort_ICD], "%in%", liver_cancer_icd),
+    na.rm = TRUE) > 0)
+
+### pancreatic cancer mort indicator 
+
+dat$pancreatic_cancer_mort_any <- as.numeric(
+  rowSums(
+    sapply(dat[mort_ICD], "%in%", pancreatic_cancer_icd),
+    na.rm = TRUE) > 0)
+
+### leukemia cancer mort indicator 
+
+dat$leukemia_mort_any <- as.numeric(
+  rowSums(
+    sapply(dat[mort_ICD], "%in%", leukemia_icd),
+    na.rm = TRUE) > 0)
+
+### Breast cancer mort indicator 
+
+dat$breast_cancer_mort_any <- as.numeric(
+  rowSums(
+    sapply(dat[mort_ICD], "%in%", breast_cancer_icd),
+    na.rm = TRUE) > 0)
+
+### Prostate cancer mort indicator 
+
+dat$prostate_cancer_mort_any <- as.numeric(
+  rowSums(
+    sapply(dat[mort_ICD], "%in%", prostate_cancer_icd),
+    na.rm = TRUE) > 0)
+
+### Diabetes mort indicator 
+
+dat$diabetes_mort_any <- as.numeric(
+  rowSums(
+    sapply(dat[mort_ICD], "%in%", diabetes_icd),
+    na.rm = TRUE) > 0)
+
+### CVD mort indicator 
+
+dat$CVD_mort_any <- as.numeric(
+  rowSums(
+    sapply(dat[mort_ICD], "%in%", cardio_icd),
+    na.rm = TRUE) > 0)
+
+### Cerebrovacsular mort indicator 
+
+dat$cerebro_mort_any <- as.numeric(
+  rowSums(
+    sapply(dat[mort_ICD], "%in%", cerebro_icd),
+    na.rm = TRUE) > 0)
+
+### COPD mort indicator 
+
+dat$COPD_mort_any <- as.numeric(
+  rowSums(
+    sapply(dat[mort_ICD], "%in%", copd_icd),
+    na.rm = TRUE) > 0)
+
+### Liver disease mort indicator 
+
+dat$liver_mort_any <- as.numeric(
+  rowSums(
+    sapply(dat[mort_ICD], "%in%", liver_icd),
+    na.rm = TRUE) > 0)
+
+### Kidney disease mort indicator 
+
+dat$kidney_mort_any <- as.numeric(
+  rowSums(
+    sapply(dat[mort_ICD], "%in%", kidney_icd),
+    na.rm = TRUE) > 0)
+
+### All-cause dementia mort indicator 
+
+dat$all_dementia_mort_any <- as.numeric(
+  rowSums(
+    sapply(dat[mort_ICD], "%in%", all_dementia_icd),
+    na.rm = TRUE) > 0)
+
+### Vascular dementia mort indicator 
+
+dat$vasc_dementia_mort_any <- as.numeric(
+  rowSums(
+    sapply(dat[mort_ICD], "%in%", vasc_dementia_icd),
+    na.rm = TRUE) > 0)
+
+### Alzheimer's disease mort indicator
+
+dat$alzheimers_mort_any <- as.numeric(
+  rowSums(
+    sapply(dat[mort_ICD], "%in%", alzheimers_icd),
+    na.rm = TRUE) > 0)
+
+### Parkinson's disease mort indicator
+
+dat$parkinsons_mort_any <- as.numeric(
+  rowSums(
+    sapply(dat[mort_ICD], "%in%", parkinsons_icd),
+    na.rm = TRUE) > 0)
+
+### Rheumatoid arthritis mort indicator
+
+dat$rheumatoid_mort_any <- as.numeric(
+  rowSums(
+    sapply(dat[mort_ICD], "%in%", rheumatoid_icd),
+    na.rm = TRUE) > 0)
+
+### macular degeneration mort indicator
+
+dat$macular_mort_any <- as.numeric(
+  rowSums(
+    sapply(dat[mort_ICD], "%in%", macular_icd),
+    na.rm = TRUE) > 0)
+
+### osteoporosis mort indicator
+
+dat$osteoporosis_mort_any <- as.numeric(
+  rowSums(
+    sapply(dat[mort_ICD], "%in%", osteoporosis_icd),
+    na.rm = TRUE) > 0)
+
+### osteoarthritis mort indicator
+
+dat$osteoarthritis_mort_any <- as.numeric(
+  rowSums(
+    sapply(dat[mort_ICD], "%in%", osteoarthritis_icd),
+    na.rm = TRUE) > 0)
+
+
+```
+
+## Create disease diagnosis indicators and survival variables
+
+``` {r make_variables}
+
+library(Hmisc)
+
+# ICD 10 all codes
+prefix <- "f.41270.0."
+suffix <- seq(0,242)
+ICD10_all <- paste0(prefix, suffix)
+
+# ICD 10 all dates
+prefix <- "f.41280.0."
+suffix <- seq(0,242)
+ICD10_dates <- paste0(prefix, suffix)
+
+# ICD 9 all codes
+prefix <- "f.41271.0."
+suffix <- seq(0,46)
+ICD9_all <- paste0(prefix, suffix)
+
+# ICD 9 all dates
+prefix <- "f.41281.0."
+suffix <- seq(0,46)
+ICD9_dates <- paste0(prefix, suffix)
+
+# ICD 9/10 combined
+ICD_all <- c(ICD9_all, ICD10_all)
+ICD_dates <- c(ICD9_dates, ICD10_dates)
+
+
+# make recruitment center a factor
+dat$recruitment_centre <- factor(dat$recruitment_centre)
+
+# remove 1 participant with NA for recruitment centre and date
+dat <- dat[which(!is.na(dat$recruitment_centre)), ]
+
+### Event indicators -------------------------------------------------------------------
+
+### NCD event indicator
+
+# total # of NCD diagnoses per participant
+dat$NCD_number_diagnoses <- as.numeric(
+  rowSums(
+    sapply(dat[ICD_all], "%in%", icd_include),
+    na.rm = TRUE))
+
+# indicator for any NCD diagnosis
+dat$NCD_event <- as.numeric(
+  rowSums(
+    sapply(dat[ICD_all], "%in%", icd_include),
+    na.rm = TRUE) > 0)
+
+### Colorectal cancer event indicator
+
+dat$colon_cancer_event <- as.numeric(
+  rowSums(
+    sapply(dat[ICD_all], "%in%", colon_cancer_icd),
+    na.rm = TRUE) > 0)
+
+### Lung cancer event indicator
+
+dat$lung_cancer_event <- as.numeric(
+  rowSums(
+    sapply(dat[ICD_all], "%in%", lung_cancer_icd),
+    na.rm = TRUE) > 0)
+
+### eso cancer event indicator
+
+dat$eso_cancer_event <- as.numeric(
+  rowSums(
+    sapply(dat[ICD_all], "%in%", eso_cancer_icd),
+    na.rm = TRUE) > 0)
+
+### liver cancer event indicator
+
+dat$liver_cancer_event <- as.numeric(
+  rowSums(
+    sapply(dat[ICD_all], "%in%", liver_cancer_icd),
+    na.rm = TRUE) > 0)
+
+### pancreatic cancer event indicator
+
+dat$pancreatic_cancer_event <- as.numeric(
+  rowSums(
+    sapply(dat[ICD_all], "%in%", pancreatic_cancer_icd),
+    na.rm = TRUE) > 0)
+
+### brain cancer event indicator
+
+dat$brain_cancer_event <- as.numeric(
+  rowSums(
+    sapply(dat[ICD_all], "%in%", brain_cancer_icd),
+    na.rm = TRUE) > 0)
+
+### leukemia event indicator
+
+dat$leukemia_event <- as.numeric(
+  rowSums(
+    sapply(dat[ICD_all], "%in%", leukemia_icd),
+    na.rm = TRUE) > 0)
+
+### lymphoma event indicator
+
+dat$lymphoma_event <- as.numeric(
+  rowSums(
+    sapply(dat[ICD_all], "%in%", lymphoma_icd),
+    na.rm = TRUE) > 0)
+
+### Breast cancer event indicator
+
+dat$breast_cancer_event <- as.numeric(
+  rowSums(
+    sapply(dat[ICD_all], "%in%", breast_cancer_icd),
+    na.rm = TRUE) > 0)
+
+### Ovarian cancer event indicator
+
+dat$ovarian_cancer_event <- as.numeric(
+  rowSums(
+    sapply(dat[ICD_all], "%in%", ovarian_cancer_icd),
+    na.rm = TRUE) > 0)
+
+### Prostate cancer event indicator
+
+dat$prostate_cancer_event <- as.numeric(
+  rowSums(
+    sapply(dat[ICD_all], "%in%", prostate_cancer_icd),
+    na.rm = TRUE) > 0)
+
+### Diabetes event indicator
+
+dat$diabetes_event <- as.numeric(
+  rowSums(
+    sapply(dat[ICD_all], "%in%", diabetes_icd),
+    na.rm = TRUE) > 0)
+
+### CVD event indicator
+
+dat$CVD_event <- as.numeric(
+  rowSums(
+    sapply(dat[ICD_all], "%in%", cardio_icd),
+    na.rm = TRUE) > 0)
+
+### Hypertension event indicator
+
+dat$hypertension_event <- as.numeric(
+  rowSums(
+    sapply(dat[ICD_all], "%in%", hypertension_icd),
+    na.rm = TRUE) > 0)
+
+### Obesity event indicator
+
+dat$obesity_event <- as.numeric(
+  rowSums(
+    sapply(dat[ICD_all], "%in%", obesity_icd),
+    na.rm = TRUE) > 0)
+
+### dyslipidemia event indicator
+
+dat$dyslipidemia_event <- as.numeric(
+  rowSums(
+    sapply(dat[ICD_all], "%in%", dyslipidemia_icd),
+    na.rm = TRUE) > 0)
+
+### Cerebrovacsular event indicator
+
+dat$cerebro_event <- as.numeric(
+  rowSums(
+    sapply(dat[ICD_all], "%in%", cerebro_icd),
+    na.rm = TRUE) > 0)
+
+### COPD event indicator
+
+dat$COPD_event <- as.numeric(
+  rowSums(
+    sapply(dat[ICD_all], "%in%", copd_icd),
+    na.rm = TRUE) > 0)
+
+### Liver disease event indicator
+
+dat$liver_event <- as.numeric(
+  rowSums(
+    sapply(dat[ICD_all], "%in%", liver_icd),
+    na.rm = TRUE) > 0)
+
+### Kidney disease event indicator
+
+dat$kidney_event <- as.numeric(
+  rowSums(
+    sapply(dat[ICD_all], "%in%", kidney_icd),
+    na.rm = TRUE) > 0)
+
+### All-cause dementia event indicator
+
+dat$all_dementia_event <- as.numeric(
+  rowSums(
+    sapply(dat[ICD_all], "%in%", all_dementia_icd),
+    na.rm = TRUE) > 0)
+
+### Vascular dementia event indicator
+
+dat$vasc_dementia_event <- as.numeric(
+  rowSums(
+    sapply(dat[ICD_all], "%in%", vasc_dementia_icd),
+    na.rm = TRUE) > 0)
+
+### Alzheimer's disease event indicator
+
+dat$alzheimers_event <- as.numeric(
+  rowSums(
+    sapply(dat[ICD_all], "%in%", alzheimers_icd),
+    na.rm = TRUE) > 0)
+
+### Parkinson's disease event indicator
+
+dat$parkinsons_event <- as.numeric(
+  rowSums(
+    sapply(dat[ICD_all], "%in%", parkinsons_icd),
+    na.rm = TRUE) > 0)
+
+### Rheumatoid arthritis event indicator
+
+dat$rheumatoid_event <- as.numeric(
+  rowSums(
+    sapply(dat[ICD_all], "%in%", rheumatoid_icd),
+    na.rm = TRUE) > 0)
+
+### Macular degeneration event indicator
+
+dat$macular_event <- as.numeric(
+  rowSums(
+    sapply(dat[ICD_all], "%in%", macular_icd),
+    na.rm = TRUE) > 0)
+
+### Osteoporosis arthritis event indicator
+
+dat$osteoporosis_event <- as.numeric(
+  rowSums(
+    sapply(dat[ICD_all], "%in%", osteoporosis_icd),
+    na.rm = TRUE) > 0)
+
+### osteoarthritis arthritis event indicator
+
+dat$osteoarthritis_event <- as.numeric(
+  rowSums(
+    sapply(dat[ICD_all], "%in%", osteoarthritis_icd),
+    na.rm = TRUE) > 0)
+
+### Diagnosis dates ---------------------------------------------------
+
+
+### NCD diagnosis dates
+
+prefix <- "NCD.dates.0."
+suffix <- seq(0,length(ICD_all)-1)
+NCD_dates <- paste0(prefix, suffix)
+
+# find all diagnosis dates that match a diagnosis
+matches_NCD <- as.data.frame(sapply(dat[ICD_all], "%in%", icd_include))
+dat[NCD_dates] <- dat[ICD_dates]
+
+# convert all non-NCD diagnosis dates to NA
+for(k in seq_along(NCD_dates)) {
+dat[[NCD_dates[k]]][which(matches_NCD[k] == FALSE)] <- NA
+}
+
+# get earliest NCD diagnosis date if there are multiple
+dat$NCD_date <- do.call(pmin, c(dat[NCD_dates], na.rm = TRUE))
+
+rm(matches_NCD)
+dat <- dat[which(names(dat) %nin% NCD_dates)]
+
+### Colon cancer diagnosis dates
+
+prefix <- "colon_cancer.dates.0."
+suffix <- seq(0,length(ICD_all)-1)
+colon_cancer_dates <- paste0(prefix, suffix)
+
+# find all diagnosis dates that match a diagnosis
+matches_colon_cancer <- as.data.frame(sapply(dat[ICD_all], "%in%", colon_cancer_icd))
+dat[colon_cancer_dates] <- dat[ICD_dates]
+
+# convert all non-colon_cancer diagnosis dates to NA
+for(k in seq_along(colon_cancer_dates)) {
+dat[[colon_cancer_dates[k]]][which(matches_colon_cancer[k] == FALSE)] <- NA
+}
+
+# get earliest diagnosis date if there are multiple
+dat$colon_cancer_date <- do.call(pmin, c(dat[colon_cancer_dates], na.rm = TRUE))
+
+rm(matches_colon_cancer)
+dat <- dat[which(names(dat) %nin% colon_cancer_dates)]
+
+### Lung cancer diagnosis dates
+
+prefix <- "lung_cancer.dates.0."
+suffix <- seq(0,length(ICD_all)-1)
+lung_cancer_dates <- paste0(prefix, suffix)
+
+# find all diagnosis dates that match a diagnosis
+matches_lung_cancer <- as.data.frame(sapply(dat[ICD_all], "%in%", lung_cancer_icd))
+dat[lung_cancer_dates] <- dat[ICD_dates]
+
+# convert all non-lung_cancer diagnosis dates to NA
+for(k in seq_along(lung_cancer_dates)) {
+dat[[lung_cancer_dates[k]]][which(matches_lung_cancer[k] == FALSE)] <- NA
+}
+
+# get earliest diagnosis date if there are multiple
+dat$lung_cancer_date <- do.call(pmin, c(dat[lung_cancer_dates], na.rm = TRUE))
+
+rm(matches_lung_cancer)
+dat <- dat[which(names(dat) %nin% lung_cancer_dates)]
+
+### eso cancer diagnosis dates
+
+prefix <- "eso_cancer.dates.0."
+suffix <- seq(0,length(ICD_all)-1)
+eso_cancer_dates <- paste0(prefix, suffix)
+
+# find all diagnosis dates that match a diagnosis
+matches_eso_cancer <- as.data.frame(sapply(dat[ICD_all], "%in%", eso_cancer_icd))
+dat[eso_cancer_dates] <- dat[ICD_dates]
+
+# convert all non-eso_cancer diagnosis dates to NA
+for(k in seq_along(eso_cancer_dates)) {
+dat[[eso_cancer_dates[k]]][which(matches_eso_cancer[k] == FALSE)] <- NA
+}
+
+# get earliest diagnosis date if there are multiple
+dat$eso_cancer_date <- do.call(pmin, c(dat[eso_cancer_dates], na.rm = TRUE))
+
+rm(matches_eso_cancer)
+dat <- dat[which(names(dat) %nin% eso_cancer_dates)]
+
+### liver cancer diagnosis dates
+
+prefix <- "liver_cancer.dates.0."
+suffix <- seq(0,length(ICD_all)-1)
+liver_cancer_dates <- paste0(prefix, suffix)
+
+# find all diagnosis dates that match a diagnosis
+matches_liver_cancer <- as.data.frame(sapply(dat[ICD_all], "%in%", liver_cancer_icd))
+dat[liver_cancer_dates] <- dat[ICD_dates]
+
+# convert all non-liver_cancer diagnosis dates to NA
+for(k in seq_along(liver_cancer_dates)) {
+dat[[liver_cancer_dates[k]]][which(matches_liver_cancer[k] == FALSE)] <- NA
+}
+
+# get earliest diagnosis date if there are multiple
+dat$liver_cancer_date <- do.call(pmin, c(dat[liver_cancer_dates], na.rm = TRUE))
+
+rm(matches_liver_cancer)
+dat <- dat[which(names(dat) %nin% liver_cancer_dates)]
+
+### pancreatic cancer diagnosis dates
+
+prefix <- "pancreatic_cancer.dates.0."
+suffix <- seq(0,length(ICD_all)-1)
+pancreatic_cancer_dates <- paste0(prefix, suffix)
+
+# find all diagnosis dates that match a diagnosis
+matches_pancreatic_cancer <- as.data.frame(sapply(dat[ICD_all], "%in%", pancreatic_cancer_icd))
+dat[pancreatic_cancer_dates] <- dat[ICD_dates]
+
+# convert all non-pancreatic_cancer diagnosis dates to NA
+for(k in seq_along(pancreatic_cancer_dates)) {
+dat[[pancreatic_cancer_dates[k]]][which(matches_pancreatic_cancer[k] == FALSE)] <- NA
+}
+
+# get earliest diagnosis date if there are multiple
+dat$pancreatic_cancer_date <- do.call(pmin, c(dat[pancreatic_cancer_dates], na.rm = TRUE))
+
+rm(matches_pancreatic_cancer)
+dat <- dat[which(names(dat) %nin% pancreatic_cancer_dates)]
+
+### brain cancer diagnosis dates
+
+prefix <- "brain_cancer.dates.0."
+suffix <- seq(0,length(ICD_all)-1)
+brain_cancer_dates <- paste0(prefix, suffix)
+
+# find all diagnosis dates that match a diagnosis
+matches_brain_cancer <- as.data.frame(sapply(dat[ICD_all], "%in%", brain_cancer_icd))
+dat[brain_cancer_dates] <- dat[ICD_dates]
+
+# convert all non-brain_cancer diagnosis dates to NA
+for(k in seq_along(brain_cancer_dates)) {
+dat[[brain_cancer_dates[k]]][which(matches_brain_cancer[k] == FALSE)] <- NA
+}
+
+# get earliest diagnosis date if there are multiple
+dat$brain_cancer_date <- do.call(pmin, c(dat[brain_cancer_dates], na.rm = TRUE))
+
+rm(matches_brain_cancer)
+dat <- dat[which(names(dat) %nin% brain_cancer_dates)]
+
+### leukemia diagnosis dates
+
+prefix <- "leukemia.dates.0."
+suffix <- seq(0,length(ICD_all)-1)
+leukemia_dates <- paste0(prefix, suffix)
+
+# find all diagnosis dates that match a diagnosis
+matches_leukemia <- as.data.frame(sapply(dat[ICD_all], "%in%", leukemia_icd))
+dat[leukemia_dates] <- dat[ICD_dates]
+
+# convert all non-leukemia diagnosis dates to NA
+for(k in seq_along(leukemia_dates)) {
+dat[[leukemia_dates[k]]][which(matches_leukemia[k] == FALSE)] <- NA
+}
+
+# get earliest diagnosis date if there are multiple
+dat$leukemia_date <- do.call(pmin, c(dat[leukemia_dates], na.rm = TRUE))
+
+rm(matches_leukemia)
+dat <- dat[which(names(dat) %nin% leukemia_dates)]
+
+### lymphoma diagnosis dates
+
+prefix <- "lymphoma.dates.0."
+suffix <- seq(0,length(ICD_all)-1)
+lymphoma_dates <- paste0(prefix, suffix)
+
+# find all diagnosis dates that match a diagnosis
+matches_lymphoma <- as.data.frame(sapply(dat[ICD_all], "%in%", lymphoma_icd))
+dat[lymphoma_dates] <- dat[ICD_dates]
+
+# convert all non-lymphoma diagnosis dates to NA
+for(k in seq_along(lymphoma_dates)) {
+dat[[lymphoma_dates[k]]][which(matches_lymphoma[k] == FALSE)] <- NA
+}
+
+# get earliest diagnosis date if there are multiple
+dat$lymphoma_date <- do.call(pmin, c(dat[lymphoma_dates], na.rm = TRUE))
+
+rm(matches_lymphoma)
+dat <- dat[which(names(dat) %nin% lymphoma_dates)]
+
+### Breast cancer diagnosis dates
+
+prefix <- "breast_cancer.dates.0."
+suffix <- seq(0,length(ICD_all)-1)
+breast_cancer_dates <- paste0(prefix, suffix)
+
+# find all diagnosis dates that match a diagnosis
+matches_breast_cancer <- as.data.frame(sapply(dat[ICD_all], "%in%", breast_cancer_icd))
+dat[breast_cancer_dates] <- dat[ICD_dates]
+
+# convert all non-breast_cancer diagnosis dates to NA
+for(k in seq_along(breast_cancer_dates)) {
+dat[[breast_cancer_dates[k]]][which(matches_breast_cancer[k] == FALSE)] <- NA
+}
+
+# get earliest diagnosis date if there are multiple
+dat$breast_cancer_date <- do.call(pmin, c(dat[breast_cancer_dates], na.rm = TRUE))
+
+rm(matches_breast_cancer)
+dat <- dat[which(names(dat) %nin% breast_cancer_dates)]
+
+### ovarian cancer diagnosis dates
+
+prefix <- "ovarian_cancer.dates.0."
+suffix <- seq(0,length(ICD_all)-1)
+ovarian_cancer_dates <- paste0(prefix, suffix)
+
+# find all diagnosis dates that match a diagnosis
+matches_ovarian_cancer <- as.data.frame(sapply(dat[ICD_all], "%in%", ovarian_cancer_icd))
+dat[ovarian_cancer_dates] <- dat[ICD_dates]
+
+# convert all non-ovarian_cancer diagnosis dates to NA
+for(k in seq_along(ovarian_cancer_dates)) {
+dat[[ovarian_cancer_dates[k]]][which(matches_ovarian_cancer[k] == FALSE)] <- NA
+}
+
+# get earliest diagnosis date if there are multiple
+dat$ovarian_cancer_date <- do.call(pmin, c(dat[ovarian_cancer_dates], na.rm = TRUE))
+
+rm(matches_ovarian_cancer)
+dat <- dat[which(names(dat) %nin% ovarian_cancer_dates)]
+
+### Prostate cancer diagnosis dates
+
+prefix <- "prostate_cancer.dates.0."
+suffix <- seq(0,length(ICD_all)-1)
+prostate_cancer_dates <- paste0(prefix, suffix)
+
+# find all diagnosis dates that match a diagnosis
+matches_prostate_cancer <- as.data.frame(sapply(dat[ICD_all], "%in%", prostate_cancer_icd))
+dat[prostate_cancer_dates] <- dat[ICD_dates]
+
+# convert all non-prostate_cancer diagnosis dates to NA
+for(k in seq_along(prostate_cancer_dates)) {
+dat[[prostate_cancer_dates[k]]][which(matches_prostate_cancer[k] == FALSE)] <- NA
+}
+
+# get earliest diagnosis date if there are multiple
+dat$prostate_cancer_date <- do.call(pmin, c(dat[prostate_cancer_dates], na.rm = TRUE))
+
+rm(matches_prostate_cancer)
+dat <- dat[which(names(dat) %nin% prostate_cancer_dates)]
+
+### Diabetes diagnosis dates
+
+prefix <- "diabetes.dates.0."
+suffix <- seq(0,length(ICD_all)-1)
+diabetes_dates <- paste0(prefix, suffix)
+
+# find all diagnosis dates that match a diagnosis
+matches_diabetes <- as.data.frame(sapply(dat[ICD_all], "%in%", diabetes_icd))
+dat[diabetes_dates] <- dat[ICD_dates]
+
+# convert all non-diabetes diagnosis dates to NA
+for(k in seq_along(diabetes_dates)) {
+dat[[diabetes_dates[k]]][which(matches_diabetes[k] == FALSE)] <- NA
+}
+
+# get earliest diagnosis date if there are multiple
+dat$diabetes_date <- do.call(pmin, c(dat[diabetes_dates], na.rm = TRUE))
+
+rm(matches_diabetes)
+dat <- dat[which(names(dat) %nin% diabetes_dates)]
+
+### CVD diagnosis dates
+
+prefix <- "CVD.dates.0."
+suffix <- seq(0,length(ICD_all)-1)
+CVD_dates <- paste0(prefix, suffix)
+
+# find all diagnosis dates that match a diagnosis
+matches_cvd <- as.data.frame(sapply(dat[ICD_all], "%in%", cardio_icd))
+dat[CVD_dates] <- dat[ICD_dates]
+
+# convert all non-CVD diagnosis dates to NA
+for(k in seq_along(CVD_dates)) {
+dat[[CVD_dates[k]]][which(matches_cvd[k] == FALSE)] <- NA
+}
+
+# get earliest diagnosis date if there are multiple
+dat$CVD_date <- do.call(pmin, c(dat[CVD_dates], na.rm = TRUE))
+
+rm(matches_cvd)
+dat <- dat[which(names(dat) %nin% CVD_dates)]
+
+### Hypertension diagnosis dates
+
+prefix <- "hypertension.dates.0."
+suffix <- seq(0,length(ICD_all)-1)
+hypertension_dates <- paste0(prefix, suffix)
+
+# find all diagnosis dates that match a diagnosis
+matches_hypertension <- as.data.frame(sapply(dat[ICD_all], "%in%", hypertension_icd))
+dat[hypertension_dates] <- dat[ICD_dates]
+
+# convert all non-hypertension diagnosis dates to NA
+for(k in seq_along(hypertension_dates)) {
+dat[[hypertension_dates[k]]][which(matches_hypertension[k] == FALSE)] <- NA
+}
+
+# get earliest diagnosis date if there are multiple
+dat$hypertension_date <- do.call(pmin, c(dat[hypertension_dates], na.rm = TRUE))
+
+rm(matches_hypertension)
+dat <- dat[which(names(dat) %nin% hypertension_dates)]
+
+### obesity diagnosis dates
+
+prefix <- "obesity.dates.0."
+suffix <- seq(0,length(ICD_all)-1)
+obesity_dates <- paste0(prefix, suffix)
+
+# find all diagnosis dates that match a diagnosis
+matches_obesity <- as.data.frame(sapply(dat[ICD_all], "%in%", obesity_icd))
+dat[obesity_dates] <- dat[ICD_dates]
+
+# convert all non-obesity diagnosis dates to NA
+for(k in seq_along(obesity_dates)) {
+dat[[obesity_dates[k]]][which(matches_obesity[k] == FALSE)] <- NA
+}
+
+# get earliest diagnosis date if there are multiple
+dat$obesity_date <- do.call(pmin, c(dat[obesity_dates], na.rm = TRUE))
+
+rm(matches_obesity)
+dat <- dat[which(names(dat) %nin% obesity_dates)]
+
+### dyslipidemia diagnosis dates
+
+prefix <- "dyslipidemia.dates.0."
+suffix <- seq(0,length(ICD_all)-1)
+dyslipidemia_dates <- paste0(prefix, suffix)
+
+# find all diagnosis dates that match a diagnosis
+matches_dyslipidemia <- as.data.frame(sapply(dat[ICD_all], "%in%", dyslipidemia_icd))
+dat[dyslipidemia_dates] <- dat[ICD_dates]
+
+# convert all non-dyslipidemia diagnosis dates to NA
+for(k in seq_along(dyslipidemia_dates)) {
+dat[[dyslipidemia_dates[k]]][which(matches_dyslipidemia[k] == FALSE)] <- NA
+}
+
+# get earliest diagnosis date if there are multiple
+dat$dyslipidemia_date <- do.call(pmin, c(dat[dyslipidemia_dates], na.rm = TRUE))
+
+rm(matches_dyslipidemia)
+dat <- dat[which(names(dat) %nin% dyslipidemia_dates)]
+
+### Cerebrovascular diagnosis dates
+
+prefix <- "cerebro.dates.0."
+suffix <- seq(0,length(ICD_all)-1)
+cerebro_dates <- paste0(prefix, suffix)
+
+# find all diagnosis dates that match a diagnosis
+matches_cerebro <- as.data.frame(sapply(dat[ICD_all], "%in%", cerebro_icd))
+dat[cerebro_dates] <- dat[ICD_dates]
+
+# convert all non-cerebro diagnosis dates to NA
+for(k in seq_along(cerebro_dates)) {
+dat[[cerebro_dates[k]]][which(matches_cerebro[k] == FALSE)] <- NA
+}
+
+# get earliest diagnosis date if there are multiple
+dat$cerebro_date <- do.call(pmin, c(dat[cerebro_dates], na.rm = TRUE))
+
+rm(matches_cerebro)
+dat <- dat[which(names(dat) %nin% cerebro_dates)]
+
+### COPD diagnosis dates
+
+prefix <- "COPD.dates.0."
+suffix <- seq(0,length(ICD_all)-1)
+COPD_dates <- paste0(prefix, suffix)
+
+# find all diagnosis dates that match a diagnosis
+matches_copd <- as.data.frame(sapply(dat[ICD_all], "%in%", copd_icd))
+dat[COPD_dates] <- dat[ICD_dates]
+
+# convert all non-cerebro diagnosis dates to NA
+for(k in seq_along(COPD_dates)) {
+dat[[COPD_dates[k]]][which(matches_copd[k] == FALSE)] <- NA
+}
+
+# get earliest diagnosis date if there are multiple
+dat$COPD_date <- do.call(pmin, c(dat[COPD_dates], na.rm = TRUE))
+
+rm(matches_copd)
+dat <- dat[which(names(dat) %nin% COPD_dates)]
+
+### Liver diagnosis dates
+
+prefix <- "liver.dates.0."
+suffix <- seq(0,length(ICD_all)-1)
+liver_dates <- paste0(prefix, suffix)
+
+# find all diagnosis dates that match a diagnosis
+matches_liver <- as.data.frame(sapply(dat[ICD_all], "%in%", liver_icd))
+dat[liver_dates] <- dat[ICD_dates]
+
+# convert all non-cerebro diagnosis dates to NA
+for(k in seq_along(liver_dates)) {
+dat[[liver_dates[k]]][which(matches_liver[k] == FALSE)] <- NA
+}
+
+# get earliest diagnosis date if there are multiple
+dat$liver_date <- do.call(pmin, c(dat[liver_dates], na.rm = TRUE))
+
+rm(matches_liver)
+dat <- dat[which(names(dat) %nin% liver_dates)]
+
+### Kidney diagnosis dates
+
+prefix <- "kidney.dates.0."
+suffix <- seq(0,length(ICD_all)-1)
+kidney_dates <- paste0(prefix, suffix)
+
+# find all diagnosis dates that match a diagnosis
+matches_kidney <- as.data.frame(sapply(dat[ICD_all], "%in%", kidney_icd))
+dat[kidney_dates] <- dat[ICD_dates]
+
+# convert all non-cerebro diagnosis dates to NA
+for(k in seq_along(kidney_dates)) {
+dat[[kidney_dates[k]]][which(matches_kidney[k] == FALSE)] <- NA
+}
+
+# get earliest diagnosis date if there are multiple
+dat$kidney_date <- do.call(pmin, c(dat[kidney_dates], na.rm = TRUE))
+
+rm(matches_kidney)
+dat <- dat[which(names(dat) %nin% kidney_dates)]
+
+### All-cause dementia diagnosis dates
+
+prefix <- "all_dementia.dates.0."
+suffix <- seq(0,length(ICD_all)-1)
+all_dementia_dates <- paste0(prefix, suffix)
+
+# find all diagnosis dates that match a diagnosis
+matches_all_dementia <- as.data.frame(sapply(dat[ICD_all], "%in%", all_dementia_icd))
+dat[all_dementia_dates] <- dat[ICD_dates]
+
+# convert all non-cerebro diagnosis dates to NA
+for(k in seq_along(all_dementia_dates)) {
+dat[[all_dementia_dates[k]]][which(matches_all_dementia[k] == FALSE)] <- NA
+}
+
+# get earliest diagnosis date if there are multiple
+dat$all_dementia_date <- do.call(pmin, c(dat[all_dementia_dates], na.rm = TRUE))
+
+rm(matches_all_dementia)
+dat <- dat[which(names(dat) %nin% all_dementia_dates)]
+
+### Vascular dementia diagnosis dates
+
+prefix <- "vasc_dementia.dates.0."
+suffix <- seq(0,length(ICD_all)-1)
+vasc_dementia_dates <- paste0(prefix, suffix)
+
+# find all diagnosis dates that match a diagnosis
+matches_vasc_dementia <- as.data.frame(sapply(dat[ICD_all], "%in%", vasc_dementia_icd))
+dat[vasc_dementia_dates] <- dat[ICD_dates]
+
+# convert all non-cerebro diagnosis dates to NA
+for(k in seq_along(vasc_dementia_dates)) {
+dat[[vasc_dementia_dates[k]]][which(matches_vasc_dementia[k] == FALSE)] <- NA
+}
+
+# get earliest diagnosis date if there are multiple
+dat$vasc_dementia_date <- do.call(pmin, c(dat[vasc_dementia_dates], na.rm = TRUE))
+
+rm(matches_vasc_dementia)
+dat <- dat[which(names(dat) %nin% vasc_dementia_dates)]
+
+### Alzheimer's diagnosis dates
+
+prefix <- "alzheimers.dates.0."
+suffix <- seq(0,length(ICD_all)-1)
+alzheimers_dates <- paste0(prefix, suffix)
+
+# find all diagnosis dates that match a diagnosis
+matches_alzheimers <- as.data.frame(sapply(dat[ICD_all], "%in%", alzheimers_icd))
+dat[alzheimers_dates] <- dat[ICD_dates]
+
+# convert all non-cerebro diagnosis dates to NA
+for(k in seq_along(alzheimers_dates)) {
+dat[[alzheimers_dates[k]]][which(matches_alzheimers[k] == FALSE)] <- NA
+}
+
+# get earliest diagnosis date if there are multiple
+dat$alzheimers_date <- do.call(pmin, c(dat[alzheimers_dates], na.rm = TRUE))
+
+rm(matches_alzheimers)
+dat <- dat[which(names(dat) %nin% alzheimers_dates)]
+
+### Parkinson's diagnosis dates
+
+prefix <- "parkinsons.dates.0."
+suffix <- seq(0,length(ICD_all)-1)
+parkinsons_dates <- paste0(prefix, suffix)
+
+# find all diagnosis dates that match a diagnosis
+matches_parkinsons <- as.data.frame(sapply(dat[ICD_all], "%in%", parkinsons_icd))
+dat[parkinsons_dates] <- dat[ICD_dates]
+
+# convert all non-cerebro diagnosis dates to NA
+for(k in seq_along(parkinsons_dates)) {
+dat[[parkinsons_dates[k]]][which(matches_parkinsons[k] == FALSE)] <- NA
+}
+
+# get earliest diagnosis date if there are multiple
+dat$parkinsons_date <- do.call(pmin, c(dat[parkinsons_dates], na.rm = TRUE))
+
+rm(matches_parkinsons)
+dat <- dat[which(names(dat) %nin% parkinsons_dates)]
+
+### Rheumatoid arthritis diagnosis dates 
+
+prefix <- "rheumatoid.dates.0."
+suffix <- seq(0,length(ICD_all)-1)
+rheumatoid_dates <- paste0(prefix, suffix)
+
+# find all diagnosis dates that match a diagnosis
+matches_rheumatoid <- as.data.frame(sapply(dat[ICD_all], "%in%", rheumatoid_icd))
+dat[rheumatoid_dates] <- dat[ICD_dates]
+
+# convert all non-cerebro diagnosis dates to NA
+for(k in seq_along(rheumatoid_dates)) {
+dat[[rheumatoid_dates[k]]][which(matches_rheumatoid[k] == FALSE)] <- NA
+}
+
+# get earliest diagnosis date if there are multiple
+dat$rheumatoid_date <- do.call(pmin, c(dat[rheumatoid_dates], na.rm = TRUE))
+
+rm(matches_rheumatoid)
+dat <- dat[which(names(dat) %nin% rheumatoid_dates)]
+
+### macular degeneration diagnosis dates 
+
+prefix <- "macular.dates.0."
+suffix <- seq(0,length(ICD_all)-1)
+macular_dates <- paste0(prefix, suffix)
+
+# find all diagnosis dates that match a diagnosis
+matches_macular <- as.data.frame(sapply(dat[ICD_all], "%in%", macular_icd))
+dat[macular_dates] <- dat[ICD_dates]
+
+# convert all non-cerebro diagnosis dates to NA
+for(k in seq_along(macular_dates)) {
+dat[[macular_dates[k]]][which(matches_macular[k] == FALSE)] <- NA
+}
+
+# get earliest diagnosis date if there are multiple
+dat$macular_date <- do.call(pmin, c(dat[macular_dates], na.rm = TRUE))
+
+rm(matches_macular)
+dat <- dat[which(names(dat) %nin% macular_dates)]
+
+### osteoporosis arthritis diagnosis dates-
+
+prefix <- "osteoporosis.dates.0."
+suffix <- seq(0,length(ICD_all)-1)
+osteoporosis_dates <- paste0(prefix, suffix)
+
+# find all diagnosis dates that match a diagnosis
+matches_osteoporosis <- as.data.frame(sapply(dat[ICD_all], "%in%", osteoporosis_icd))
+dat[osteoporosis_dates] <- dat[ICD_dates]
+
+# convert all non-cerebro diagnosis dates to NA
+for(k in seq_along(osteoporosis_dates)) {
+dat[[osteoporosis_dates[k]]][which(matches_osteoporosis[k] == FALSE)] <- NA
+}
+
+# get earliest diagnosis date if there are multiple
+dat$osteoporosis_date <- do.call(pmin, c(dat[osteoporosis_dates], na.rm = TRUE))
+
+rm(matches_osteoporosis)
+dat <- dat[which(names(dat) %nin% osteoporosis_dates)]
+
+### osteoarthritis arthritis diagnosis dates
+
+prefix <- "osteoarthritis.dates.0."
+suffix <- seq(0,length(ICD_all)-1)
+osteoarthritis_dates <- paste0(prefix, suffix)
+
+# find all diagnosis dates that match a diagnosis
+matches_osteoarthritis <- as.data.frame(sapply(dat[ICD_all], "%in%", osteoarthritis_icd))
+dat[osteoarthritis_dates] <- dat[ICD_dates]
+
+# convert all non-cerebro diagnosis dates to NA
+for(k in seq_along(osteoarthritis_dates)) {
+dat[[osteoarthritis_dates[k]]][which(matches_osteoarthritis[k] == FALSE)] <- NA
+}
+
+# get earliest diagnosis date if there are multiple
+dat$osteoarthritis_date <- do.call(pmin, c(dat[osteoarthritis_dates], na.rm = TRUE))
+
+rm(matches_osteoarthritis)
+dat <- dat[which(names(dat) %nin% osteoarthritis_dates)]
+
+### Censoring dates -------------------------------------------------------------------
+
+wales <- c(
+    # cardiff
+    "11003",
+    # wrexham
+    "11023",
+    # swansea
+    "11022"
+)
+
+scotland <- c(
+    # edinburgh
+    "11005", 
+    # glasgow
+    "11004"
+)
+
+# get all england recruitment centers 
+england <- levels(dat$recruitment_centre)[which(levels(dat$recruitment_centre) %nin% c(wales, scotland))]
+
+### NCD
+dat$NCD_censor_date <- dat$NCD_date 
+# Scotland
+dat$NCD_censor_date[which(is.na(dat$NCD_censor_date) &
+                              dat$recruitment_centre %in% scotland)] <- "2021-7-31"
+# Wales
+dat$NCD_censor_date[which(is.na(dat$NCD_censor_date) &
+                              dat$recruitment_centre %in% wales)] <- "2018-2-28"
+# England
+dat$NCD_censor_date[which(is.na(dat$NCD_censor_date) &
+                              dat$recruitment_centre %in% england)] <- "2021-9-30"
+
+# make date of death if earlier than standard censoring date
+index <- which(!is.na(dat$date_of_death) & 
+                   dat$NCD_event == 0 &
+                   dat$date_of_death < dat$NCD_censor_date)
+dat$NCD_censor_date[index] <- dat$date_of_death[index]
+
+
+### colon_cancer
+dat$colon_cancer_censor_date <- dat$colon_cancer_date 
+# Scotland
+dat$colon_cancer_censor_date[which(is.na(dat$colon_cancer_censor_date) &
+                                       dat$recruitment_centre %in% scotland)] <- "2021-7-31"
+# Wales
+dat$colon_cancer_censor_date[which(is.na(dat$colon_cancer_censor_date) &
+                                       dat$recruitment_centre %in% wales)] <- "2018-2-28"
+# England
+dat$colon_cancer_censor_date[which(is.na(dat$colon_cancer_censor_date) &
+                                       dat$recruitment_centre %in% england)] <- "2021-9-30"
+
+# make date of death if earlier than standard censoring date
+index <- which(!is.na(dat$date_of_death) & 
+                   dat$colon_cancer_event == 0 &
+                   dat$date_of_death < dat$colon_cancer_censor_date)
+dat$colon_cancer_censor_date[index] <- dat$date_of_death[index]
+
+
+### lung_cancer
+dat$lung_cancer_censor_date <- dat$lung_cancer_date 
+# Scotland
+dat$lung_cancer_censor_date[which(is.na(dat$lung_cancer_censor_date) &
+                                      dat$recruitment_centre %in% scotland)] <- "2021-7-31"
+# Wales
+dat$lung_cancer_censor_date[which(is.na(dat$lung_cancer_censor_date) &
+                                      dat$recruitment_centre %in% wales)] <- "2018-2-28"
+# England
+dat$lung_cancer_censor_date[which(is.na(dat$lung_cancer_censor_date) &
+                                      dat$recruitment_centre %in% england)] <- "2021-9-30"
+
+# make date of death if earlier than standard censoring date
+index <- which(!is.na(dat$date_of_death) & 
+                   dat$lung_cancer_event == 0 &
+                   dat$date_of_death < dat$lung_cancer_censor_date)
+dat$lung_cancer_censor_date[index] <- dat$date_of_death[index]
+
+
+### eso_cancer
+dat$eso_cancer_censor_date <- dat$eso_cancer_date 
+# Scotland
+dat$eso_cancer_censor_date[which(is.na(dat$eso_cancer_censor_date) &
+                                      dat$recruitment_centre %in% scotland)] <- "2021-7-31"
+# Wales
+dat$eso_cancer_censor_date[which(is.na(dat$eso_cancer_censor_date) &
+                                      dat$recruitment_centre %in% wales)] <- "2018-2-28"
+# England
+dat$eso_cancer_censor_date[which(is.na(dat$eso_cancer_censor_date) &
+                                      dat$recruitment_centre %in% england)] <- "2021-9-30"
+
+# make date of death if earlier than standard censoring date
+index <- which(!is.na(dat$date_of_death) & 
+                   dat$eso_cancer_event == 0 &
+                   dat$date_of_death < dat$eso_cancer_censor_date)
+dat$eso_cancer_censor_date[index] <- dat$date_of_death[index]
+
+
+### liver_cancer
+dat$liver_cancer_censor_date <- dat$liver_cancer_date 
+# Scotland
+dat$liver_cancer_censor_date[which(is.na(dat$liver_cancer_censor_date) &
+                                      dat$recruitment_centre %in% scotland)] <- "2021-7-31"
+# Wales
+dat$liver_cancer_censor_date[which(is.na(dat$liver_cancer_censor_date) &
+                                      dat$recruitment_centre %in% wales)] <- "2018-2-28"
+# England
+dat$liver_cancer_censor_date[which(is.na(dat$liver_cancer_censor_date) &
+                                      dat$recruitment_centre %in% england)] <- "2021-9-30"
+
+# make date of death if earlier than standard censoring date
+index <- which(!is.na(dat$date_of_death) & 
+                   dat$liver_cancer_event == 0 &
+                   dat$date_of_death < dat$liver_cancer_censor_date)
+dat$liver_cancer_censor_date[index] <- dat$date_of_death[index]
+
+
+### pancreatic_cancer
+dat$pancreatic_cancer_censor_date <- dat$pancreatic_cancer_date 
+# Scotland
+dat$pancreatic_cancer_censor_date[which(is.na(dat$pancreatic_cancer_censor_date) &
+                                      dat$recruitment_centre %in% scotland)] <- "2021-7-31"
+# Wales
+dat$pancreatic_cancer_censor_date[which(is.na(dat$pancreatic_cancer_censor_date) &
+                                      dat$recruitment_centre %in% wales)] <- "2018-2-28"
+# England
+dat$pancreatic_cancer_censor_date[which(is.na(dat$pancreatic_cancer_censor_date) &
+                                      dat$recruitment_centre %in% england)] <- "2021-9-30"
+
+# make date of death if earlier than standard censoring date
+index <- which(!is.na(dat$date_of_death) & 
+                   dat$pancreatic_cancer_event == 0 &
+                   dat$date_of_death < dat$pancreatic_cancer_censor_date)
+dat$pancreatic_cancer_censor_date[index] <- dat$date_of_death[index]
+
+
+### brain_cancer
+dat$brain_cancer_censor_date <- dat$brain_cancer_date 
+# Scotland
+dat$brain_cancer_censor_date[which(is.na(dat$brain_cancer_censor_date) &
+                                      dat$recruitment_centre %in% scotland)] <- "2021-7-31"
+# Wales
+dat$brain_cancer_censor_date[which(is.na(dat$brain_cancer_censor_date) &
+                                      dat$recruitment_centre %in% wales)] <- "2018-2-28"
+# England
+dat$brain_cancer_censor_date[which(is.na(dat$brain_cancer_censor_date) &
+                                      dat$recruitment_centre %in% england)] <- "2021-9-30"
+
+# make date of death if earlier than standard censoring date
+index <- which(!is.na(dat$date_of_death) & 
+                   dat$brain_cancer_event == 0 &
+                   dat$date_of_death < dat$brain_cancer_censor_date)
+dat$brain_cancer_censor_date[index] <- dat$date_of_death[index]
+
+
+### leukemia
+dat$leukemia_censor_date <- dat$leukemia_date 
+# Scotland
+dat$leukemia_censor_date[which(is.na(dat$leukemia_censor_date) &
+                                      dat$recruitment_centre %in% scotland)] <- "2021-7-31"
+# Wales
+dat$leukemia_censor_date[which(is.na(dat$leukemia_censor_date) &
+                                      dat$recruitment_centre %in% wales)] <- "2018-2-28"
+# England
+dat$leukemia_censor_date[which(is.na(dat$leukemia_censor_date) &
+                                      dat$recruitment_centre %in% england)] <- "2021-9-30"
+
+# make date of death if earlier than standard censoring date
+index <- which(!is.na(dat$date_of_death) & 
+                   dat$leukemia_event == 0 &
+                   dat$date_of_death < dat$leukemia_censor_date)
+dat$leukemia_censor_date[index] <- dat$date_of_death[index]
+
+
+### lymphoma
+dat$lymphoma_censor_date <- dat$lymphoma_date 
+# Scotland
+dat$lymphoma_censor_date[which(is.na(dat$lymphoma_censor_date) &
+                                      dat$recruitment_centre %in% scotland)] <- "2021-7-31"
+# Wales
+dat$lymphoma_censor_date[which(is.na(dat$lymphoma_censor_date) &
+                                      dat$recruitment_centre %in% wales)] <- "2018-2-28"
+# England
+dat$lymphoma_censor_date[which(is.na(dat$lymphoma_censor_date) &
+                                      dat$recruitment_centre %in% england)] <- "2021-9-30"
+
+# make date of death if earlier than standard censoring date
+index <- which(!is.na(dat$date_of_death) & 
+                   dat$lymphoma_event == 0 &
+                   dat$date_of_death < dat$lymphoma_censor_date)
+dat$lymphoma_censor_date[index] <- dat$date_of_death[index]
+
+
+### breast_cancer
+dat$breast_cancer_censor_date <- dat$breast_cancer_date 
+# Scotland
+dat$breast_cancer_censor_date[which(is.na(dat$breast_cancer_censor_date) &
+                                        dat$recruitment_centre %in% scotland)] <- "2021-7-31"
+# Wales
+dat$breast_cancer_censor_date[which(is.na(dat$breast_cancer_censor_date) &
+                                        dat$recruitment_centre %in% wales)] <- "2018-2-28"
+# England
+dat$breast_cancer_censor_date[which(is.na(dat$breast_cancer_censor_date) &
+                                        dat$recruitment_centre %in% england)] <- "2021-9-30"
+
+# make date of death if earlier than standard censoring date
+index <- which(!is.na(dat$date_of_death) & 
+                   dat$breast_cancer_event == 0 &
+                   dat$date_of_death < dat$breast_cancer_censor_date)
+dat$breast_cancer_censor_date[index] <- dat$date_of_death[index]
+
+
+### ovarian_cancer
+dat$ovarian_cancer_censor_date <- dat$ovarian_cancer_date 
+# Scotland
+dat$ovarian_cancer_censor_date[which(is.na(dat$ovarian_cancer_censor_date) &
+                                        dat$recruitment_centre %in% scotland)] <- "2021-7-31"
+# Wales
+dat$ovarian_cancer_censor_date[which(is.na(dat$ovarian_cancer_censor_date) &
+                                        dat$recruitment_centre %in% wales)] <- "2018-2-28"
+# England
+dat$ovarian_cancer_censor_date[which(is.na(dat$ovarian_cancer_censor_date) &
+                                        dat$recruitment_centre %in% england)] <- "2021-9-30"
+
+# make date of death if earlier than standard censoring date
+index <- which(!is.na(dat$date_of_death) & 
+                   dat$ovarian_cancer_event == 0 &
+                   dat$date_of_death < dat$ovarian_cancer_censor_date)
+dat$ovarian_cancer_censor_date[index] <- dat$date_of_death[index]
+
+
+### prostate_cancer
+dat$prostate_cancer_censor_date <- dat$prostate_cancer_date 
+# Scotland
+dat$prostate_cancer_censor_date[which(is.na(dat$prostate_cancer_censor_date) &
+                                          dat$recruitment_centre %in% scotland)] <- "2021-7-31"
+# Wales
+dat$prostate_cancer_censor_date[which(is.na(dat$prostate_cancer_censor_date) &
+                                          dat$recruitment_centre %in% wales)] <- "2018-2-28"
+# England
+dat$prostate_cancer_censor_date[which(is.na(dat$prostate_cancer_censor_date) &
+                                          dat$recruitment_centre %in% england)] <- "2021-9-30"
+
+# make date of death if earlier than standard censoring date
+index <- which(!is.na(dat$date_of_death) & 
+                   dat$prostate_cancer_event == 0 &
+                   dat$date_of_death < dat$prostate_cancer_censor_date)
+dat$prostate_cancer_censor_date[index] <- dat$date_of_death[index]
+
+
+### diabetes
+dat$diabetes_censor_date <- dat$diabetes_date 
+# Scotland
+dat$diabetes_censor_date[which(is.na(dat$diabetes_censor_date) &
+                              dat$recruitment_centre %in% scotland)] <- "2021-7-31"
+# Wales
+dat$diabetes_censor_date[which(is.na(dat$diabetes_censor_date) &
+                              dat$recruitment_centre %in% wales)] <- "2018-2-28"
+# England
+dat$diabetes_censor_date[which(is.na(dat$diabetes_censor_date) &
+                              dat$recruitment_centre %in% england)] <- "2021-9-30"
+
+# make date of death if earlier than standard censoring date
+index <- which(!is.na(dat$date_of_death) & 
+                   dat$diabetes_event == 0 &
+                   dat$date_of_death < dat$diabetes_censor_date)
+dat$diabetes_censor_date[index] <- dat$date_of_death[index]
+
+
+### CVD
+dat$CVD_censor_date <- dat$CVD_date 
+# Scotland
+dat$CVD_censor_date[which(is.na(dat$CVD_censor_date) &
+                              dat$recruitment_centre %in% scotland)] <- "2021-7-31"
+# Wales
+dat$CVD_censor_date[which(is.na(dat$CVD_censor_date) &
+                              dat$recruitment_centre %in% wales)] <- "2018-2-28"
+# England
+dat$CVD_censor_date[which(is.na(dat$CVD_censor_date) &
+                              dat$recruitment_centre %in% england)] <- "2021-9-30"
+
+# make date of death if earlier than standard censoring date
+index <- which(!is.na(dat$date_of_death) & 
+                   dat$CVD_event == 0 &
+                   dat$date_of_death < dat$CVD_censor_date)
+dat$CVD_censor_date[index] <- dat$date_of_death[index]
+
+
+### hypertension
+dat$hypertension_censor_date <- dat$hypertension_date 
+# Scotland
+dat$hypertension_censor_date[which(is.na(dat$hypertension_censor_date) &
+                                       dat$recruitment_centre %in% scotland)] <- "2021-7-31"
+# Wales
+dat$hypertension_censor_date[which(is.na(dat$hypertension_censor_date) &
+                                       dat$recruitment_centre %in% wales)] <- "2018-2-28"
+# England
+dat$hypertension_censor_date[which(is.na(dat$hypertension_censor_date) &
+                                       dat$recruitment_centre %in% england)] <- "2021-9-30"
+
+# make date of death if earlier than standard censoring date
+index <- which(!is.na(dat$date_of_death) & 
+                   dat$hypertension_event == 0 &
+                   dat$date_of_death < dat$hypertension_censor_date)
+dat$hypertension_censor_date[index] <- dat$date_of_death[index]
+
+
+### obesity
+dat$obesity_censor_date <- dat$obesity_date 
+# Scotland
+dat$obesity_censor_date[which(is.na(dat$obesity_censor_date) &
+                                       dat$recruitment_centre %in% scotland)] <- "2021-7-31"
+# Wales
+dat$obesity_censor_date[which(is.na(dat$obesity_censor_date) &
+                                       dat$recruitment_centre %in% wales)] <- "2018-2-28"
+# England
+dat$obesity_censor_date[which(is.na(dat$obesity_censor_date) &
+                                       dat$recruitment_centre %in% england)] <- "2021-9-30"
+
+# make date of death if earlier than standard censoring date
+index <- which(!is.na(dat$date_of_death) & 
+                   dat$obesity_event == 0 &
+                   dat$date_of_death < dat$obesity_censor_date)
+dat$obesity_censor_date[index] <- dat$date_of_death[index]
+
+
+### dyslipidemia
+dat$dyslipidemia_censor_date <- dat$dyslipidemia_date 
+# Scotland
+dat$dyslipidemia_censor_date[which(is.na(dat$dyslipidemia_censor_date) &
+                                       dat$recruitment_centre %in% scotland)] <- "2021-7-31"
+# Wales
+dat$dyslipidemia_censor_date[which(is.na(dat$dyslipidemia_censor_date) &
+                                       dat$recruitment_centre %in% wales)] <- "2018-2-28"
+# England
+dat$dyslipidemia_censor_date[which(is.na(dat$dyslipidemia_censor_date) &
+                                       dat$recruitment_centre %in% england)] <- "2021-9-30"
+
+# make date of death if earlier than standard censoring date
+index <- which(!is.na(dat$date_of_death) & 
+                   dat$dyslipidemia_event == 0 &
+                   dat$date_of_death < dat$dyslipidemia_censor_date)
+dat$dyslipidemia_censor_date[index] <- dat$date_of_death[index]
+
+
+### cerebrovascular
+dat$cerebro_censor_date <- dat$cerebro_date 
+# Scotland
+dat$cerebro_censor_date[which(is.na(dat$cerebro_censor_date) &
+                                  dat$recruitment_centre %in% scotland)] <- "2021-7-31"
+# Wales
+dat$cerebro_censor_date[which(is.na(dat$cerebro_censor_date) &
+                                  dat$recruitment_centre %in% wales)] <- "2018-2-28"
+# England
+dat$cerebro_censor_date[which(is.na(dat$cerebro_censor_date) &
+                                  dat$recruitment_centre %in% england)] <- "2021-9-30"
+
+# make date of death if earlier than standard censoring date
+index <- which(!is.na(dat$date_of_death) & 
+                   dat$cerebro_event == 0 &
+                   dat$date_of_death < dat$cerebro_censor_date)
+dat$cerebro_censor_date[index] <- dat$date_of_death[index]
+
+
+### COPD
+dat$COPD_censor_date <- dat$COPD_date 
+# Scotland
+dat$COPD_censor_date[which(is.na(dat$COPD_censor_date) &
+                               dat$recruitment_centre %in% scotland)] <- "2021-7-31"
+# Wales
+dat$COPD_censor_date[which(is.na(dat$COPD_censor_date) &
+                               dat$recruitment_centre %in% wales)] <- "2018-2-28"
+# England
+dat$COPD_censor_date[which(is.na(dat$COPD_censor_date) &
+                               dat$recruitment_centre %in% england)] <- "2021-9-30"
+
+# make date of death if earlier than standard censoring date
+index <- which(!is.na(dat$date_of_death) & 
+                   dat$COPD_event == 0 &
+                   dat$date_of_death < dat$COPD_censor_date)
+dat$COPD_censor_date[index] <- dat$date_of_death[index]
+
+
+### liver
+dat$liver_censor_date <- dat$liver_date 
+# Scotland
+dat$liver_censor_date[which(is.na(dat$liver_censor_date) &
+                                dat$recruitment_centre %in% scotland)] <- "2021-7-31"
+# Wales
+dat$liver_censor_date[which(is.na(dat$liver_censor_date) &
+                                dat$recruitment_centre %in% wales)] <- "2018-2-28"
+# England
+dat$liver_censor_date[which(is.na(dat$liver_censor_date) &
+                                dat$recruitment_centre %in% england)] <- "2021-9-30"
+
+# make date of death if earlier than standard censoring date
+index <- which(!is.na(dat$date_of_death) & 
+                   dat$liver_event == 0 &
+                   dat$date_of_death < dat$liver_censor_date)
+dat$liver_censor_date[index] <- dat$date_of_death[index]
+
+
+### kidney
+dat$kidney_censor_date <- dat$kidney_date 
+# Scotland
+dat$kidney_censor_date[which(is.na(dat$kidney_censor_date) &
+                                 dat$recruitment_centre %in% scotland)] <- "2021-7-31"
+# Wales
+dat$kidney_censor_date[which(is.na(dat$kidney_censor_date) &
+                                 dat$recruitment_centre %in% wales)] <- "2018-2-28"
+# England
+dat$kidney_censor_date[which(is.na(dat$kidney_censor_date) &
+                                 dat$recruitment_centre %in% england)] <- "2021-9-30"
+
+# make date of death if earlier than standard censoring date
+index <- which(!is.na(dat$date_of_death) & 
+                   dat$kidney_event == 0 &
+                   dat$date_of_death < dat$kidney_censor_date)
+dat$kidney_censor_date[index] <- dat$date_of_death[index]
+
+
+### all-cause dementia
+dat$all_dementia_censor_date <- dat$all_dementia_date 
+# Scotland
+dat$all_dementia_censor_date[which(is.na(dat$all_dementia_censor_date) &
+                                       dat$recruitment_centre %in% scotland)] <- "2021-7-31"
+# Wales
+dat$all_dementia_censor_date[which(is.na(dat$all_dementia_censor_date) &
+                                       dat$recruitment_centre %in% wales)] <- "2018-2-28"
+# England
+dat$all_dementia_censor_date[which(is.na(dat$all_dementia_censor_date) &
+                                       dat$recruitment_centre %in% england)] <- "2021-9-30"
+
+# make date of death if earlier than standard censoring date
+index <- which(!is.na(dat$date_of_death) & 
+                   dat$all_dementia_event == 0 &
+                   dat$date_of_death < dat$all_dementia_censor_date)
+dat$all_dementia_censor_date[index] <- dat$date_of_death[index]
+
+
+### vascular dementia
+dat$vasc_dementia_censor_date <- dat$vasc_dementia_date 
+# Scotland
+dat$vasc_dementia_censor_date[which(is.na(dat$vasc_dementia_censor_date) &
+                                        dat$recruitment_centre %in% scotland)] <- "2021-7-31"
+# Wales
+dat$vasc_dementia_censor_date[which(is.na(dat$vasc_dementia_censor_date) &
+                                        dat$recruitment_centre %in% wales)] <- "2018-2-28"
+# England
+dat$vasc_dementia_censor_date[which(is.na(dat$vasc_dementia_censor_date) &
+                                        dat$recruitment_centre %in% england)] <- "2021-9-30"
+
+# make date of death if earlier than standard censoring date
+index <- which(!is.na(dat$date_of_death) & 
+                   dat$vasc_dementia_event == 0 &
+                   dat$date_of_death < dat$vasc_dementia_censor_date)
+dat$vasc_dementia_censor_date[index] <- dat$date_of_death[index]
+
+
+### alzheimer's
+dat$alzheimers_censor_date <- dat$alzheimers_date 
+# Scotland
+dat$alzheimers_censor_date[which(is.na(dat$alzheimers_censor_date) &
+                                     dat$recruitment_centre %in% scotland)] <- "2021-7-31"
+# Wales
+dat$alzheimers_censor_date[which(is.na(dat$alzheimers_censor_date) &
+                                     dat$recruitment_centre %in% wales)] <- "2018-2-28"
+# England
+dat$alzheimers_censor_date[which(is.na(dat$alzheimers_censor_date) &
+                                     dat$recruitment_centre %in% england)] <- "2021-9-30"
+
+# make date of death if earlier than standard censoring date
+index <- which(!is.na(dat$date_of_death) & 
+                   dat$alzheimers_event == 0 &
+                   dat$date_of_death < dat$alzheimers_censor_date)
+dat$alzheimers_censor_date[index] <- dat$date_of_death[index]
+
+
+### parkinson's
+dat$parkinsons_censor_date <- dat$parkinsons_date 
+# Scotland
+dat$parkinsons_censor_date[which(is.na(dat$parkinsons_censor_date) &
+                                     dat$recruitment_centre %in% scotland)] <- "2021-7-31"
+# Wales
+dat$parkinsons_censor_date[which(is.na(dat$parkinsons_censor_date) &
+                                     dat$recruitment_centre %in% wales)] <- "2018-2-28"
+# England
+dat$parkinsons_censor_date[which(is.na(dat$parkinsons_censor_date) &
+                                     dat$recruitment_centre %in% england)] <- "2021-9-30"
+
+# make date of death if earlier than standard censoring date
+index <- which(!is.na(dat$date_of_death) & 
+                   dat$parkinsons_event == 0 &
+                   dat$date_of_death < dat$parkinsons_censor_date)
+dat$parkinsons_censor_date[index] <- dat$date_of_death[index]
+
+
+### rheumatoid
+dat$rheumatoid_censor_date <- dat$rheumatoid_date 
+# Scotland
+dat$rheumatoid_censor_date[which(is.na(dat$rheumatoid_censor_date) &
+                                     dat$recruitment_centre %in% scotland)] <- "2021-7-31"
+# Wales
+dat$rheumatoid_censor_date[which(is.na(dat$rheumatoid_censor_date) &
+                                     dat$recruitment_centre %in% wales)] <- "2018-2-28"
+# England
+dat$rheumatoid_censor_date[which(is.na(dat$rheumatoid_censor_date) &
+                                     dat$recruitment_centre %in% england)] <- "2021-9-30"
+
+# make date of death if earlier than standard censoring date
+index <- which(!is.na(dat$date_of_death) & 
+                   dat$rheumatoid_event == 0 &
+                   dat$date_of_death < dat$rheumatoid_censor_date)
+dat$rheumatoid_censor_date[index] <- dat$date_of_death[index]
+
+
+### macular
+dat$macular_censor_date <- dat$macular_date 
+# Scotland
+dat$macular_censor_date[which(is.na(dat$macular_censor_date) &
+                                  dat$recruitment_centre %in% scotland)] <- "2021-7-31"
+# Wales
+dat$macular_censor_date[which(is.na(dat$macular_censor_date) &
+                                  dat$recruitment_centre %in% wales)] <- "2018-2-28"
+# England
+dat$macular_censor_date[which(is.na(dat$macular_censor_date) &
+                                  dat$recruitment_centre %in% england)] <- "2021-9-30"
+
+# make date of death if earlier than standard censoring date
+index <- which(!is.na(dat$date_of_death) & 
+                   dat$macular_event == 0 &
+                   dat$date_of_death < dat$macular_censor_date)
+dat$macular_censor_date[index] <- dat$date_of_death[index]
+
+
+### osteoporosis
+dat$osteoporosis_censor_date <- dat$osteoporosis_date 
+# Scotland
+dat$osteoporosis_censor_date[which(is.na(dat$osteoporosis_censor_date) &
+                                       dat$recruitment_centre %in% scotland)] <- "2021-7-31"
+# Wales
+dat$osteoporosis_censor_date[which(is.na(dat$osteoporosis_censor_date) &
+                                       dat$recruitment_centre %in% wales)] <- "2018-2-28"
+# England
+dat$osteoporosis_censor_date[which(is.na(dat$osteoporosis_censor_date) &
+                                       dat$recruitment_centre %in% england)] <- "2021-9-30"
+
+# make date of death if earlier than standard censoring date
+index <- which(!is.na(dat$date_of_death) & 
+                   dat$osteoporosis_event == 0 &
+                   dat$date_of_death < dat$osteoporosis_censor_date)
+dat$osteoporosis_censor_date[index] <- dat$date_of_death[index]
+
+
+### osteoarthritis
+dat$osteoarthritis_censor_date <- dat$osteoarthritis_date 
+# Scotland
+dat$osteoarthritis_censor_date[which(is.na(dat$osteoarthritis_censor_date) &
+                                         dat$recruitment_centre %in% scotland)] <- "2021-7-31"
+# Wales
+dat$osteoarthritis_censor_date[which(is.na(dat$osteoarthritis_censor_date) &
+                                         dat$recruitment_centre %in% wales)] <- "2018-2-28"
+# England
+dat$osteoarthritis_censor_date[which(is.na(dat$osteoarthritis_censor_date) &
+                                         dat$recruitment_centre %in% england)] <- "2021-9-30"
+
+# make date of death if earlier than standard censoring date
+index <- which(!is.na(dat$date_of_death) & 
+                   dat$osteoarthritis_event == 0 &
+                   dat$date_of_death < dat$osteoarthritis_censor_date)
+dat$osteoarthritis_censor_date[index] <- dat$date_of_death[index]
+
+
+### Mortality cases -------------------------------------------------------------------
+
+## add in as incident cases any participants who have the disease listed as a cause of death but no hospital inpatient diagnosis
+## make the censoring date for these participants the date of death
+
+# any NCD diagnosis
+index <- which(dat$NCD_event == 0 & dat$NCD_mort_any == 1)
+dat$NCD_event[index] <- 1
+dat$NCD_censor_date[index] <- dat$date_of_death[index]
+
+# colon_cancer
+index <- which(dat$colon_cancer_event == 0 & dat$colon_cancer_mort_any == 1)
+dat$colon_cancer_event[index] <- 1
+dat$colon_cancer_censor_date[index] <- dat$date_of_death[index]
+
+# lung_cancer 
+index <- which(dat$lung_cancer_event == 0 & dat$lung_cancer_mort_any == 1)
+dat$lung_cancer_event[index] <- 1
+dat$lung_cancer_censor_date[index] <- dat$date_of_death[index]
+
+# eso_cancer 
+index <- which(dat$eso_cancer_event == 0 & dat$eso_cancer_mort_any == 1)
+dat$eso_cancer_event[index] <- 1
+dat$eso_cancer_censor_date[index] <- dat$date_of_death[index]
+
+# liver_cancer 
+index <- which(dat$liver_cancer_event == 0 & dat$liver_cancer_mort_any == 1)
+dat$liver_cancer_event[index] <- 1
+dat$liver_cancer_censor_date[index] <- dat$date_of_death[index]
+
+# pancreatic_cancer 
+index <- which(dat$pancreatic_cancer_event == 0 & dat$pancreatic_cancer_mort_any == 1)
+dat$pancreatic_cancer_event[index] <- 1
+dat$pancreatic_cancer_censor_date[index] <- dat$date_of_death[index]
+
+# brain_cancer 
+index <- which(dat$brain_cancer_event == 0 & dat$brain_cancer_mort_any == 1)
+dat$brain_cancer_event[index] <- 1
+dat$brain_cancer_censor_date[index] <- dat$date_of_death[index]
+
+# leukemia 
+index <- which(dat$leukemia_event == 0 & dat$leukemia_mort_any == 1)
+dat$leukemia_event[index] <- 1
+dat$leukemia_censor_date[index] <- dat$date_of_death[index]
+
+# lymphoma 
+index <- which(dat$lymphoma_event == 0 & dat$lymphoma_mort_any == 1)
+dat$lymphoma_event[index] <- 1
+dat$lymphoma_censor_date[index] <- dat$date_of_death[index]
+
+# breast_cancer 
+index <- which(dat$breast_cancer_event == 0 & dat$breast_cancer_mort_any == 1)
+dat$breast_cancer_event[index] <- 1
+dat$breast_cancer_censor_date[index] <- dat$date_of_death[index]
+
+# ovarian_cancer 
+index <- which(dat$ovarian_cancer_event == 0 & dat$ovarian_cancer_mort_any == 1)
+dat$ovarian_cancer_event[index] <- 1
+dat$ovarian_cancer_censor_date[index] <- dat$date_of_death[index]
+
+# prostate_cancer 
+index <- which(dat$prostate_cancer_event == 0 & dat$prostate_cancer_mort_any == 1)
+dat$prostate_cancer_event[index] <- 1
+dat$prostate_cancer_censor_date[index] <- dat$date_of_death[index]
+
+# diabetes 
+index <- which(dat$diabetes_event == 0 & dat$diabetes_mort_any == 1)
+dat$diabetes_event[index] <- 1
+dat$diabetes_censor_date[index] <- dat$date_of_death[index]
+
+# CVD 
+index <- which(dat$CVD_event == 0 & dat$CVD_mort_any == 1)
+dat$CVD_event[index] <- 1
+dat$CVD_censor_date[index] <- dat$date_of_death[index]
+
+# cerebro 
+index <- which(dat$cerebro_event == 0 & dat$cerebro_mort_any == 1)
+dat$cerebro_event[index] <- 1
+dat$cerebro_censor_date[index] <- dat$date_of_death[index]
+
+# COPD 
+index <- which(dat$COPD_event == 0 & dat$COPD_mort_any == 1)
+dat$COPD_event[index] <- 1
+dat$COPD_censor_date[index] <- dat$date_of_death[index]
+
+# liver 
+index <- which(dat$liver_event == 0 & dat$liver_mort_any == 1)
+dat$liver_event[index] <- 1
+dat$liver_censor_date[index] <- dat$date_of_death[index]
+
+# kidney 
+index <- which(dat$kidney_event == 0 & dat$kidney_mort_any == 1)
+dat$kidney_event[index] <- 1
+dat$kidney_censor_date[index] <- dat$date_of_death[index]
+
+# all_dementia 
+index <- which(dat$all_dementia_event == 0 & dat$all_dementia_mort_any == 1)
+dat$all_dementia_event[index] <- 1
+dat$all_dementia_censor_date[index] <- dat$date_of_death[index]
+
+# vasc_dementia 
+index <- which(dat$vasc_dementia_event == 0 & dat$vasc_dementia_mort_any == 1)
+dat$vasc_dementia_event[index] <- 1
+dat$vasc_dementia_censor_date[index] <- dat$date_of_death[index]
+
+# alzheimers 
+index <- which(dat$alzheimers_event == 0 & dat$alzheimers_mort_any == 1)
+dat$alzheimers_event[index] <- 1
+dat$alzheimers_censor_date[index] <- dat$date_of_death[index]
+
+# parkinsons 
+index <- which(dat$parkinsons_event == 0 & dat$parkinsons_mort_any == 1)
+dat$parkinsons_event[index] <- 1
+dat$parkinsons_censor_date[index] <- dat$date_of_death[index]
+
+# rheumatoid 
+index <- which(dat$rheumatoid_event == 0 & dat$rheumatoid_mort_any == 1)
+dat$rheumatoid_event[index] <- 1
+dat$rheumatoid_censor_date[index] <- dat$date_of_death[index]
+
+# osteoporosis 
+index <- which(dat$osteoporosis_event == 0 & dat$osteoporosis_mort_any == 1)
+dat$osteoporosis_event[index] <- 1
+dat$osteoporosis_censor_date[index] <- dat$date_of_death[index]
+
+# osteoarthritis 
+index <- which(dat$osteoarthritis_event == 0 & dat$osteoarthritis_mort_any == 1)
+dat$osteoarthritis_event[index] <- 1
+dat$osteoarthritis_censor_date[index] <- dat$date_of_death[index]
+
+# hypertension 
+index <- which(dat$hypertension_event == 0 & dat$hypertension_mort_any == 1)
+dat$hypertension_event[index] <- 1
+dat$hypertension_censor_date[index] <- dat$date_of_death[index]
+
+# obesity 
+index <- which(dat$obesity_event == 0 & dat$obesity_mort_any == 1)
+dat$obesity_event[index] <- 1
+dat$obesity_censor_date[index] <- dat$date_of_death[index]
+
+# dyslipidemia 
+index <- which(dat$dyslipidemia_event == 0 & dat$dyslipidemia_mort_any == 1)
+dat$dyslipidemia_event[index] <- 1
+dat$dyslipidemia_censor_date[index] <- dat$date_of_death[index]
+
+
+### Survival time -------------------------------------------------------------------
+
+# survival time = censor date - recruitment date
+
+# NCD
+dat$NCD_survival_time <- as.numeric(dat$NCD_censor_date - dat$recruitment_date)
+
+# colon_cancer
+dat$colon_cancer_survival_time <- as.numeric(dat$colon_cancer_censor_date - dat$recruitment_date)
+
+# lung_cancer
+dat$lung_cancer_survival_time <- as.numeric(dat$lung_cancer_censor_date - dat$recruitment_date)
+
+# eso_cancer
+dat$eso_cancer_survival_time <- as.numeric(dat$eso_cancer_censor_date - dat$recruitment_date)
+
+# liver_cancer
+dat$liver_cancer_survival_time <- as.numeric(dat$liver_cancer_censor_date - dat$recruitment_date)
+
+# pancreatic_cancer
+dat$pancreatic_cancer_survival_time <- as.numeric(dat$pancreatic_cancer_censor_date - dat$recruitment_date)
+
+# brain_cancer
+dat$brain_cancer_survival_time <- as.numeric(dat$brain_cancer_censor_date - dat$recruitment_date)
+
+# leukemia
+dat$leukemia_survival_time <- as.numeric(dat$leukemia_censor_date - dat$recruitment_date)
+
+# lymphoma
+dat$lymphoma_survival_time <- as.numeric(dat$lymphoma_censor_date - dat$recruitment_date)
+
+# breast_cancer
+dat$breast_cancer_survival_time <- as.numeric(dat$breast_cancer_censor_date - dat$recruitment_date)
+
+# ovarian_cancer
+dat$ovarian_cancer_survival_time <- as.numeric(dat$ovarian_cancer_censor_date - dat$recruitment_date)
+
+# prostate_cancer
+dat$prostate_cancer_survival_time <- as.numeric(dat$prostate_cancer_censor_date - dat$recruitment_date)
+
+# CVD
+dat$CVD_survival_time <- as.numeric(dat$CVD_censor_date - dat$recruitment_date)
+
+# hypertension
+dat$hypertension_survival_time <- as.numeric(dat$hypertension_censor_date - dat$recruitment_date)
+
+# obesity
+dat$obesity_survival_time <- as.numeric(dat$obesity_censor_date - dat$recruitment_date)
+
+# dyslipidemia
+dat$dyslipidemia_survival_time <- as.numeric(dat$dyslipidemia_censor_date - dat$recruitment_date)
+
+# diabetes
+dat$diabetes_survival_time <- as.numeric(dat$diabetes_censor_date - dat$recruitment_date)
+
+# cerebro
+dat$cerebro_survival_time <- as.numeric(dat$cerebro_censor_date - dat$recruitment_date)
+
+# COPD
+dat$COPD_survival_time <- as.numeric(dat$COPD_censor_date - dat$recruitment_date)
+
+# liver
+dat$liver_survival_time <- as.numeric(dat$liver_censor_date - dat$recruitment_date)
+
+# kidney
+dat$kidney_survival_time <- as.numeric(dat$kidney_censor_date - dat$recruitment_date)
+
+# all-cause dementia
+dat$all_dementia_survival_time <- as.numeric(dat$all_dementia_censor_date - dat$recruitment_date)
+
+# vascular dementia
+dat$vasc_dementia_survival_time <- as.numeric(dat$vasc_dementia_censor_date - dat$recruitment_date)
+
+# alzheimer's
+dat$alzheimers_survival_time <- as.numeric(dat$alzheimers_censor_date - dat$recruitment_date)
+
+# parkinson's
+dat$parkinsons_survival_time <- as.numeric(dat$parkinsons_censor_date - dat$recruitment_date)
+
+# rheumatoid
+dat$rheumatoid_survival_time <- as.numeric(dat$rheumatoid_censor_date - dat$recruitment_date)
+
+# macular
+dat$macular_survival_time <- as.numeric(dat$macular_censor_date - dat$recruitment_date)
+
+# osteoporosis
+dat$osteoporosis_survival_time <- as.numeric(dat$osteoporosis_censor_date - dat$recruitment_date)
+
+# osteoarthritis
+dat$osteoarthritis_survival_time <- as.numeric(dat$osteoarthritis_censor_date - dat$recruitment_date)
+
+```
+
+## save
+
+```{r save}
+# rename eid
+dat$eid <- dat$f.eid
+
+dat_NCD <- subset(
+  dat,
+  select = c(
+    "eid",
+    "NCD_event",
+    "NCD_date",
+    "NCD_censor_date",
+    "NCD_survival_time",
+    "NCD_number_diagnoses"
+  )
+)
+
+save(dat_NCD, file = "/path/to/file/NCD_aug_04_2022.RData")
+
+dat_NCD_all <- subset(
+  dat,
+  select = c(
+    Cs(
+      eid,
+      NCD_event,
+      NCD_date,
+      NCD_censor_date,
+      NCD_survival_time,
+      NCD_number_diagnoses,
+      colon_cancer_event,
+      lung_cancer_event,
+      eso_cancer_event,
+      liver_cancer_event,
+      pancreatic_cancer_event,
+      brain_cancer_event,
+      leukemia_event,
+      lymphoma_event,
+      breast_cancer_event,
+      ovarian_cancer_event,
+      prostate_cancer_event,
+      diabetes_event,
+      CVD_event,
+      hypertension_event,
+      obesity_event,
+      dyslipidemia_event,
+      cerebro_event,
+      COPD_event,
+      liver_event,
+      kidney_event,
+      all_dementia_event,
+      vasc_dementia_event,
+      alzheimers_event,
+      parkinsons_event,
+      rheumatoid_event,
+      macular_event,
+      osteoporosis_event,
+      osteoarthritis_event,
+      colon_cancer_date,
+      lung_cancer_date,
+      eso_cancer_date,
+      liver_cancer_date,
+      pancreatic_cancer_date,
+      brain_cancer_date,
+      leukemia_date,
+      lymphoma_date,
+      breast_cancer_date,
+      ovarian_cancer_date,
+      prostate_cancer_date,
+      diabetes_date,
+      CVD_date,
+      hypertension_date,
+      obesity_date,
+      dyslipidemia_date,
+      cerebro_date,
+      COPD_date,
+      liver_date,
+      kidney_date,
+      all_dementia_date,
+      vasc_dementia_date,
+      alzheimers_date,
+      parkinsons_date,
+      rheumatoid_date,
+      macular_date,
+      osteoporosis_date,
+      osteoarthritis_date,
+      colon_cancer_censor_date,
+      lung_cancer_censor_date,
+      eso_cancer_censor_date,
+      liver_cancer_censor_date,
+      pancreatic_cancer_censor_date,
+      brain_cancer_censor_date,
+      leukemia_censor_date,
+      lymphoma_censor_date,
+      breast_cancer_censor_date,
+      ovarian_cancer_censor_date,
+      prostate_cancer_censor_date,
+      diabetes_censor_date,
+      CVD_censor_date,
+      hypertension_censor_date,
+      obesity_censor_date,
+      dyslipidemia_censor_date,
+      cerebro_censor_date,
+      COPD_censor_date,
+      liver_censor_date,
+      kidney_censor_date,
+      all_dementia_censor_date,
+      vasc_dementia_censor_date,
+      alzheimers_censor_date,
+      parkinsons_censor_date,
+      rheumatoid_censor_date,
+      macular_censor_date,
+      osteoporosis_censor_date,
+      osteoarthritis_censor_date,
+      colon_cancer_survival_time,
+      lung_cancer_survival_time,
+      eso_cancer_survival_time,
+      liver_cancer_survival_time,
+      pancreatic_cancer_survival_time,
+      brain_cancer_survival_time,
+      leukemia_survival_time,
+      lymphoma_survival_time,
+      breast_cancer_survival_time,
+      ovarian_cancer_survival_time,
+      prostate_cancer_survival_time,
+      diabetes_survival_time,
+      CVD_survival_time,
+      hypertension_survival_time,
+      obesity_survival_time,
+      dyslipidemia_survival_time,
+      cerebro_survival_time,
+      COPD_survival_time,
+      liver_survival_time,
+      kidney_survival_time,
+      all_dementia_survival_time,
+      vasc_dementia_survival_time,
+      alzheimers_survival_time,
+      parkinsons_survival_time,
+      rheumatoid_survival_time,
+      macular_survival_time,
+      osteoporosis_survival_time,
+      osteoarthritis_survival_time
+    )
+  )
+)
+
+
+save(dat_NCD_all, file = "/path/to/file/NCD_all_subsets_aug_04_2022.RData")
+```

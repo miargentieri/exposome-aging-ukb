@@ -1,0 +1,598 @@
+
+### Create forest plots for Fig. 4 and supplement
+
+```{r packages}
+library(ggforestplot)
+library(tidyverse)
+library(data.table)
+library(mice)
+library(Hmisc)
+library(gridExtra)
+```
+
+```{r load}
+path <- "/path/to/file"
+
+# cluster multivariate results
+load(paste0(path, "/results/full cohort/cluster multivariate/final_cluster_model_output_nov_07_2022_all_sexes.RData"))
+
+# XWAS results
+load(paste0(path,"/results/full cohort/ACM_XWAS_results_sept_07_2022_all_sexes_summary.RData"))
+
+# exposome model results
+load(paste0(path, "/results/incident disease/R2_models_nov_09_2022_exposome_cph.RData"))
+
+# load variable categories
+categories <- read.csv("/path/to/file/Argentieri UKB dataset data dictionary.csv")
+
+```
+
+## Create matrix of model results from individual clusters
+
+```{r cluster_data_prep_indv_clusters}
+
+# get vector of variables significant in XWAS + covariates
+exposures <- XWAS_total[which(XWAS_total$FDR.rep < 0.05), ]
+exposures <- unique(exposures$Variable)
+exposures <- c(
+  exposures,
+  Cs(
+    education_years,
+    ethnicity
+  )
+)
+
+exposures <- c(exposures, "air_pollution_PC1", "air_pollution_PC2", "air_pollution_PC3", "greenspace_PC1", "greenspace_PC2", "traffic_PC1", "noise_pollution_PC1")
+
+## multivariable exposure estimates 
+
+# get list of summaries for all pooled models (with beta)
+smry <- lapply(cluster_pool[3:10],
+               summary,
+               conf.int = TRUE,
+               conf.level = 0.95)
+
+
+# loop across each to subset to just cluster exposures
+for (k in seq_along(smry)) {
+    
+    ## map variable names to results
+    smry[[k]]$Variable <- NA
+    # create vector of variable names
+    variables <- sort(exposures)
+    # add variable names based on partial match with XWAS exposures
+    for(j in seq_along(variables)) {
+        smry[[k]]$Variable[smry[[k]]$term %in% smry[[k]]$term[substring(
+            smry[[k]]$term,
+            1,
+            nchar(variables[[j]])) == variables[[j]]]] <- variables[[j]]
+    }
+    
+    # assign id to cluster group
+    if (k==1){
+        smry[[k]]$group <- "Cluster 1"
+        smry[[k]] <- smry[[k]][!grepl("ethnicity", smry[[k]]$term), ]
+        smry[[k]] <- smry[[k]][!grepl("recruitment_centre", smry[[k]]$term), ]
+
+    }
+    
+    if (k==2) {
+        smry[[k]]$group <- "Cluster 2"
+        smry[[k]] <- smry[[k]][!grepl("hshld_income", smry[[k]]$term), ]
+        smry[[k]] <- smry[[k]][!grepl("education_years", smry[[k]]$term), ]
+        smry[[k]] <- smry[[k]][!grepl("ethnicity", smry[[k]]$term), ]
+        smry[[k]] <- smry[[k]][!grepl("recruitment_centre", smry[[k]]$term), ]
+        smry[[k]] <- smry[[k]][!grepl("overall_health", smry[[k]]$term), ]
+
+    }
+    
+    if (k==3) {
+        smry[[k]]$group <- "Cluster 3"
+        smry[[k]] <- smry[[k]][!grepl("hshld_income", smry[[k]]$term), ]
+        smry[[k]] <- smry[[k]][!grepl("education_years", smry[[k]]$term), ]
+        smry[[k]] <- smry[[k]][!grepl("ethnicity", smry[[k]]$term), ]
+        smry[[k]] <- smry[[k]][!grepl("recruitment_centre", smry[[k]]$term), ]
+
+    }
+    
+    if (k==4) {
+        smry[[k]]$group <- "Cluster 4"
+        smry[[k]] <- smry[[k]][!grepl("hshld_income", smry[[k]]$term), ]
+        smry[[k]] <- smry[[k]][!grepl("education_years", smry[[k]]$term), ]
+        smry[[k]] <- smry[[k]][!grepl("ethnicity", smry[[k]]$term), ]
+        smry[[k]] <- smry[[k]][!grepl("recruitment_centre", smry[[k]]$term), ]
+
+    }
+    
+    if (k==5) {
+        smry[[k]]$group <- "Cluster 5"
+        smry[[k]] <- smry[[k]][!grepl("hshld_income", smry[[k]]$term), ]
+        smry[[k]] <- smry[[k]][!grepl("education_years", smry[[k]]$term), ]
+        smry[[k]] <- smry[[k]][!grepl("ethnicity", smry[[k]]$term), ]
+        smry[[k]] <- smry[[k]][!grepl("recruitment_centre", smry[[k]]$term), ]
+        
+    }
+
+    if (k==6) {
+        smry[[k]]$group <- "Cluster 6"
+        smry[[k]] <- smry[[k]][!grepl("hshld_income", smry[[k]]$term), ]
+        smry[[k]] <- smry[[k]][!grepl("education_years", smry[[k]]$term), ]
+        smry[[k]] <- smry[[k]][!grepl("recruitment_centre", smry[[k]]$term), ]
+        
+    }
+    
+    if (k==7) {
+        smry[[k]]$group <- "Cluster 7"
+        smry[[k]] <- smry[[k]][!grepl("hshld_income", smry[[k]]$term), ]
+        smry[[k]] <- smry[[k]][!grepl("education_years", smry[[k]]$term), ]
+        smry[[k]] <- smry[[k]][!grepl("ethnicity", smry[[k]]$term), ]
+        smry[[k]] <- smry[[k]][!grepl("recruitment_centre", smry[[k]]$term), ]
+        
+    }
+    
+    if (k==8) {
+        smry[[k]]$group <- "Cluster 8"
+        smry[[k]] <- smry[[k]][!grepl("hshld_income", smry[[k]]$term), ]
+        smry[[k]] <- smry[[k]][!grepl("education_years", smry[[k]]$term), ]
+        smry[[k]] <- smry[[k]][!grepl("ethnicity", smry[[k]]$term), ]
+        smry[[k]] <- smry[[k]][!grepl("recruitment_centre", smry[[k]]$term), ]
+        
+    }
+}
+
+# extract all model summaries from the lists and convert to single data frame of estimates
+cluster_mat <- rbindlist(smry)
+cluster_mat$HR <- exp(cluster_mat$estimate)
+cluster_mat$HR.se <- cluster_mat$std.error * cluster_mat$HR
+
+# merge categories
+cluster_mat <- merge(cluster_mat,
+                     subset(categories, select = c("Variable", "Category")),
+                     by = "Variable",
+                     all.x = TRUE,
+                     all.y = FALSE)
+
+# change category for skin color
+cluster_mat$Category[which(cluster_mat$Variable == "skin_color")] <- "Other sociodemographics"
+
+# re-order by category
+cluster_mat <- cluster_mat[order(cluster_mat$group, cluster_mat$Category), ]
+
+```
+
+## Create matrix of model results from grouped clusters
+
+```{r cluster_data_prep_groups}
+
+# get vector of variables significant in XWAS + covariates
+exposures <- XWAS_total[which(XWAS_total$FDR.rep < 0.05), ]
+exposures <- unique(exposures$Variable)
+exposures <- c(
+  exposures,
+  Cs(
+    education_years,
+    ethnicity
+  )
+)
+
+exposures <- c(exposures, "air_pollution_PC1", "air_pollution_PC2", "air_pollution_PC3", "greenspace_PC1", "greenspace_PC2", "traffic_PC1", "noise_pollution_PC1")
+
+## multivariable exposure estimates 
+
+# get list of summaries for all pooled models (with beta)
+smry <- lapply(cluster_pool[1:2],
+               summary,
+               conf.int = TRUE,
+               conf.level = 0.95)
+
+
+# loop across each to subset to just cluster exposures
+for (k in seq_along(smry)) {
+    
+    ## map variable names to results
+    smry[[k]]$Variable <- NA
+    # create vector of variable names
+    variables <- sort(exposures)
+    # add variable names based on partial match with XWAS exposures
+    for(j in seq_along(variables)) {
+        smry[[k]]$Variable[smry[[k]]$term %in% smry[[k]]$term[substring(
+            smry[[k]]$term,
+            1,
+            nchar(variables[[j]])) == variables[[j]]]] <- variables[[j]]
+    }
+    
+    # assign id to cluster group
+    if (k==1){
+        smry[[k]]$group <- "Clusters 1-3"
+        smry[[k]] <- smry[[k]][!grepl("ethnicity", smry[[k]]$term), ]
+        smry[[k]] <- smry[[k]][!grepl("recruitment_centre", smry[[k]]$term), ]
+
+    }
+    
+    if (k==2) {
+        smry[[k]]$group <- "Clusters 4-8"
+        smry[[k]] <- smry[[k]][!grepl("hshld_income", smry[[k]]$term), ]
+        smry[[k]] <- smry[[k]][!grepl("education_years", smry[[k]]$term), ]
+        smry[[k]] <- smry[[k]][!grepl("recruitment_centre", smry[[k]]$term), ]
+    }
+
+}
+
+# extract all model summaries from the lists and convert to single data frame of estimates
+cluster_mat_grp <- rbindlist(smry)
+cluster_mat_grp$HR <- exp(cluster_mat_grp$estimate)
+cluster_mat_grp$HR.se <- cluster_mat_grp$std.error * cluster_mat_grp$HR
+
+# merge categories
+cluster_mat_grp <- merge(cluster_mat_grp,
+                  subset(categories, select = c("Variable", "Category")),
+                  by = "Variable",
+                  all = F)
+
+# change category for skin color
+cluster_mat_grp$Category[which(cluster_mat_grp$Variable == "skin_color")] <- "Other sociodemographics"
+
+# re-order by other plot
+cluster_mat_grp <- cluster_mat_grp[order(match(cluster_mat_grp$Variable, cluster_mat$Variable)), ]
+
+```
+
+## Create matrix of model results from full exposome model
+
+```{r exposome_data_prep}
+
+model_pool <- pool(R2_results_exp_cph[[1]])
+exp_mat <- tidy(model_pool)
+
+exp_mat <- exp_mat[!grepl("age_scaled", exp_mat$term), ]
+exp_mat <- exp_mat[!grepl("sexMale", exp_mat$term), ]
+exp_mat <- exp_mat[!grepl(".Q", exp_mat$term, fixed = T), ]
+exp_mat <- exp_mat[!grepl(".C", exp_mat$term, fixed = T), ]
+exp_mat <- exp_mat[!grepl("^4", exp_mat$term, fixed = T), ]
+exp_mat <- exp_mat[!grepl("^5", exp_mat$term, fixed = T), ]
+exp_mat <- exp_mat[!grepl("^6", exp_mat$term, fixed = T), ]
+
+exp_mat$Variable <- NA
+# create vector of variable names
+variables <- sort(exposures)
+# add variable names based on partial match with XWAS exposures
+for(j in seq_along(variables)) {
+    exp_mat$Variable[exp_mat$term %in% exp_mat$term[substring(
+        exp_mat$term,
+        1,
+        nchar(variables[[j]])) == variables[[j]]]] <- variables[[j]]
+}
+
+length(unique(exp_mat$Variable))
+
+exp_mat <- exp_mat[order(match(exp_mat$Variable, cluster_mat_grp$Variable)), ]
+
+exp_mat$group <- ifelse(exp_mat$Variable %in% smry[[1]]$Variable,
+                        " ",
+                        "   ")
+
+exp_mat$group <- " "
+```
+
+## Create pretty exposure labels
+
+```{r pretty_labels}
+
+pretty_labels <- function(x) {
+    
+    x$pretty_labels <- x$Variable
+    
+    # make pretty labels for plot
+    # this section will need to be tweaked for each new set of results
+    x$pretty_labels <-
+        gsub("_England", "", 
+             x$pretty_labels, 
+             fixed = TRUE)
+    x$pretty_labels <-
+        gsub("_", " ",
+             x$pretty_labels,
+             fixed = TRUE)
+    x$pretty_labels <-
+        gsub("hshld", "household", 
+             x$pretty_labels, 
+             fixed = TRUE)
+    x$pretty_labels <-
+        gsub("freq", "frequency", 
+             x$pretty_labels, 
+             fixed = TRUE)
+    x$pretty_labels <-
+        gsub("prop", "prop.",
+             x$pretty_labels,
+             fixed = TRUE)
+    x$pretty_labels <- 
+        gsub("pack", "smoking pack",
+             x$pretty_labels,
+             fixed = TRUE)
+    x$pretty_labels <- 
+        gsub("tobacco", "tobacco use",
+             x$pretty_labels,
+             fixed = TRUE)
+    x$pretty_labels <- 
+        gsub("environ", "environment",
+             x$pretty_labels,
+             fixed = TRUE)
+    x$pretty_labels <- 
+        gsub("10yrs", "10 yrs",
+             x$pretty_labels,
+             fixed = TRUE)
+    
+    x$pretty_labels[x$Variable == "recruitment_centre"] <- 
+        "UKB assessment center"
+    
+    x$pretty_labels[x$Variable == "worry_embarassment"] <- 
+        "worry after embarassment"
+    
+    x$pretty_labels[x$Variable == "psychiatrist_visit_mental_health"] <- 
+        "psychiatrist visit for MH"
+    x$pretty_labels[x$Variable == "doctor_visit_mental_health"] <- 
+        "doctor visit for MH"
+    
+    x$pretty_labels[x$Variable == "maternal_smoking"] <- 
+        "maternal smoking around birth"
+    
+    x$pretty_labels[x$Variable == "open_fire_heat"] <- 
+        "uses open fire for heating"
+    x$pretty_labels[x$Variable == "gas_hob_heat"] <- 
+        "uses gas hob for heating"
+    x$pretty_labels[x$Variable == "gas_fire_heat"] <- 
+        "uses gas fire for heating"
+    
+    x$pretty_labels[x$Variable == "sound_average_16hr"] <- 
+        "average noise pollution (16hr)"
+    x$pretty_labels[x$Variable == "sound_average_24hr"] <- 
+        "average noise pollution (24hr)"
+    
+    x$pretty_labels[x$Variable == "night_sound_average"] <- 
+        "average night noise pollution"
+    x$pretty_labels[x$Variable == "daytime_sound_average"] <- 
+        "average daytime noise pollution"
+    x$pretty_labels[x$Variable == "evening_sound_average"] <- 
+        "average evening noise pollution"
+    
+    x$pretty_labels[x$Variable == "greenspace_buffer_300m"] <- 
+        "greenspace (300m buffer)"
+    x$pretty_labels[x$Variable == "greenspace_buffer_1000m"] <- 
+        "greenspace (1000m buffer)"
+    x$pretty_labels[x$Variable == "natural_environment_buffer_300m"] <- 
+        "natural environment (300m buffer)"
+    x$pretty_labels[x$Variable == "natural_environment_buffer_1000m"] <- 
+        "natural environment (1000m buffer)"
+    x$pretty_labels[x$Variable == "domestic_garden_buffer_300m"] <- 
+        "domestic garden (300m buffer)"
+    
+    x$pretty_labels[x$Variable == "road_length_sum_100m"] <- 
+        "sum of major roads length w/in 100m"
+    
+    x$pretty_labels[x$Variable == "public_transport_4wks"] <- 
+        "public transport past 4 wks"
+    x$pretty_labels[x$Variable == "cycle_transport_4wks"] <- 
+        "cycle transport past 4 wks"
+    x$pretty_labels[x$Variable == "walk_transport_4wks"] <- 
+        "walking transport past 4 wks"
+    x$pretty_labels[x$Variable == "car_transport_4wks"] <- 
+        "car transport past 4 wks"
+    
+    
+    x$pretty_labels[x$Variable == "strenuous_sports_4wks"] <- 
+        "strenuous sports past 4wks"
+    x$pretty_labels[x$Variable == "heavy_DIY_4wks"] <- 
+        "heavy DIY past 4 wks (e.g., carpentry, digging)"
+    x$pretty_labels[x$Variable == "light_DIY_4wks"] <- 
+        "light DIY past 4 wks (e.g., pruning, watering lawn)"
+    
+    x$pretty_labels[x$Variable == "mobile_phone_duration"] <- 
+        "years using mobile phone"
+    x$pretty_labels[x$Variable == "mobile_phone_2yrs"] <- 
+        "mobile phone use now vs. 2 yrs ago"
+    
+    x$pretty_labels[x$Variable == "vigorous_activity_over_10mins_days"] <- 
+        "days/week 10+ minutes of vigorous PA"
+    x$pretty_labels[x$Variable == "moderate_activity_over_10mins_days"] <- 
+        "days/week 10+ minutes of moderate PA"
+    x$pretty_labels[x$Variable == "mins_activity_sum"] <- 
+        "summed mins of PA"
+    
+    x$pretty_labels[x$Variable == "sex_age_first"] <- 
+        "age first sexual intercourse"
+    
+    x$pretty_labels[x$Variable == "easy_wake"] <- 
+        "easy to wake in the morning"
+    
+    x$pretty_labels[x$Variable == "hshld_vehicles"] <- 
+        "no. household vehicles"
+    
+    x$pretty_labels[x$Variable == "hshld_number"] <- 
+        "no. people living in household"
+    
+    x$pretty_labels[x$Variable == "other_exercise_4wks"] <- 
+        "other exercise past 4wks (e.g., swim, cycle)"
+    x$pretty_labels[x$Variable == "days_activity_sum"] <- 
+        "summed days of PA"
+    x$pretty_labels[x$Variable == "pleasure_walks_4wks"] <- 
+        "pleasure walks past 4 wks"
+    x$pretty_labels[x$Variable == "sleep_hours_categorical"] <- 
+        "sleep hours"
+    x$pretty_labels[x$Variable == "above_activity_recommendation"] <- 
+        "meets UK PA guidelines"
+    x$pretty_labels[x$Variable == "above_activity_recommendation_incl_walk"] <- 
+        "meets UK PA guidelines (incl. walk)"
+    x$pretty_labels[x$Variable == "walked_over_10mins_days"] <- 
+        "no. days/week walked 10+ minutes"
+    
+    x$pretty_labels[x$Variable == "air_pollution_PC1"] <- 
+        "air pollution PC1"
+    
+    x$pretty_labels[x$Variable == "air_pollution_PC2"] <- 
+        "air pollution PC2"
+    
+    x$pretty_labels[x$Variable == "air_pollution_PC3"] <- 
+        "air pollution PC3"
+    
+    x$pretty_labels[x$Variable == "greenspace_PC1"] <- 
+        "greenspace PC1"
+    
+    x$pretty_labels[x$Variable == "greenspace_PC2"] <- 
+        "greenspace PC2"
+    
+    x$pretty_labels[x$Variable == "traffic_PC1"] <- 
+        "traffic PC1"
+    
+    x$pretty_labels[x$Variable == "noise_pollution_PC1"] <- 
+        "noise pollution PC1"
+    
+    x$pretty_labels[x$Variable == "death_partner"] <- 
+        "death of partner in last 2 yrs"
+    
+    x$pretty_labels[x$Variable == "relative_illness_injury_assault"] <- 
+        "illness/injury to a relative in last 2 yrs"
+    
+    x$pretty_labels[x$Variable == "own_or_rent"] <- 
+        "home ownership"
+    
+    return(x)
+    
+}
+
+cluster_mat <- pretty_labels(cluster_mat)
+cluster_mat_grp <- pretty_labels(cluster_mat_grp)
+exp_mat <- pretty_labels(exp_mat)
+    
+```
+
+## Plot Fig. 4
+
+```{r plot_indv}
+
+cluster_plot_indv <- ggforestplot::forestplot(
+  df = cluster_mat,
+  name = pretty_labels,
+  estimate = estimate,
+  se = std.error,
+  pvalue = p.value,
+  psignif = 0.05,
+  xlab = "Hazard Ratio",
+  title = "a",
+  logodds = TRUE
+) +
+    ggforce::facet_col(
+        facets = ~group,
+        scales = "free_y",
+        space = "free"
+    ) + 
+    scale_x_continuous(breaks = seq(0.6, 2, by = 0.2)) +
+    theme(axis.text = element_text(size = 9))
+
+cluster_plot_grp <- ggforestplot::forestplot(
+  df = cluster_mat_grp,
+  name = pretty_labels,
+  estimate = estimate,
+  se = std.error,
+  pvalue = p.value,
+  psignif = 0.05,
+  xlab = "Hazard Ratio",
+  title = "b",
+  logodds = TRUE
+) +
+    ggforce::facet_col(
+        facets = ~group,
+        scales = "free_y",
+        space = "free"
+    ) + 
+    scale_x_continuous(breaks = seq(0.6, 2, by = 0.2)) +
+    theme(axis.text = element_text(size = 12))
+
+cluster_plot_exp <- ggforestplot::forestplot(
+  df = exp_mat,
+  name = pretty_labels,
+  estimate = estimate,
+  se = std.error,
+  pvalue = p.value,
+  psignif = 0.05,
+  xlab = "Hazard Ratio",
+  title = "c",
+  logodds = TRUE
+) +
+    ggforce::facet_col(
+        facets = ~group,
+        scales = "free_y",
+        space = "free"
+    ) +
+    scale_x_continuous(breaks = seq(0.6, 2, by = 0.2)) +
+    theme(axis.text = element_text(size = 12))
+
+# empty panel for margin space
+blank <- grid.rect(gp = gpar(col = "white"))
+
+# plot as grid
+grid <- grid.arrange(cluster_plot_indv, cluster_plot_grp, cluster_plot_exp, blank, ncol = 4, nrow = 1, widths = c(6, 6.5, 6.5, 0.1))
+
+# save
+ggsave(grid, filename = paste0(path, "/output/full cohort/cluster multivariate/cluster_forest_plot_nov_09_2022_indv_clusters.jpeg"), width = 16, height = 14)
+
+```
+
+## Make forest plots for diseases - supplementary figures
+
+```{r}
+
+for (k in 2:length(R2_results_exp_cph)) {
+    
+    pool <- pool(R2_results_exp_cph[[k]])
+    
+    pool_df <- tidy(pool)
+    
+    pool_df <- pool_df[!grepl("age_scaled", pool_df$term), ]
+    pool_df <- pool_df[!grepl("sexMale", pool_df$term), ]
+    pool_df <- pool_df[!grepl(".Q", pool_df$term, fixed = T), ]
+    pool_df <- pool_df[!grepl(".C", pool_df$term, fixed = T), ]
+    pool_df <- pool_df[!grepl("^4", pool_df$term, fixed = T), ]
+    pool_df <- pool_df[!grepl("^5", pool_df$term, fixed = T), ]
+    pool_df <- pool_df[!grepl("^6", pool_df$term, fixed = T), ]
+    
+    pool_df$term <- gsub("\\.L", "", pool_df$term, perl = T)
+    pool_df$term <- gsub("(?<=[a-z])(?=[A-Z])", ": ", pool_df$term, perl = T)
+    
+    pool_df$Variable <- pool_df$term
+    pool_df <- pretty_labels(pool_df)
+    pool_df$pretty_labels <- gsub(": Yes", "", pool_df$pretty_labels, perl = T)
+    pool_df$pretty_labels <- gsub("own or rent", "home ownership", pool_df$pretty_labels, perl = T)
+    
+    # make forest plot
+    gg <- ggforestplot::forestplot(
+        pool_df, 
+        name = pretty_labels, 
+        se = std.error, 
+        pvalue = p.value, 
+        logodds = TRUE,
+        xlab = "Hazard Ratio",
+        title = names(R2_results_exp_cph)[k]
+    )
+    
+    # save with different dimensions for different plots
+    if (k %in% c(5,9,20,21,23)) {
+        
+        ggsave(gg, filename = 
+                   paste0(paste0(paste0(path, "/output/full cohort/cluster multivariate/4. disease-specific forest plots/"), 
+                                 gsub(" ", "_", names(R2_results_exp_cph)[k])),
+                          "_forest_plot_nov_11_2022.jpeg"), width = 10, height = 6, bg = "white")
+    } else if (k %in% c(2,4,6,7,8,10,11)) {
+        
+        ggsave(gg, filename = 
+                   paste0(paste0(paste0(path, "/output/full cohort/cluster multivariate/4. disease-specific forest plots/"), 
+                                 gsub(" ", "_", names(R2_results_exp_cph)[k])),
+                          "_forest_plot_nov_11_2022.jpeg"), width = 6, height = 4, bg = "white")  
+    } else {
+        
+        ggsave(gg, filename = 
+                   paste0(paste0(paste0(path, "/output/full cohort/cluster multivariate/4. disease-specific forest plots/"),
+                                 gsub(" ", "_", names(R2_results_exp_cph)[k])), 
+                          "_forest_plot_nov_11_2022.jpeg"), width = 10, height = 14, bg = "white")
+    }
+}
+
+```

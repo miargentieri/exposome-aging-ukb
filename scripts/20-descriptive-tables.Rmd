@@ -1,0 +1,977 @@
+
+### Descriptive statistics tables (Tables 1, S1, S2, S3, S4)
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = FALSE)
+knitr::opts_chunk$set(warning = FALSE)
+knitr::opts_chunk$set(message = FALSE)
+knitr::opts_chunk$set(results = 'asis')
+```
+
+```{r packages, echo=FALSE }
+
+library(table1)
+library(flextable)
+library(Hmisc)
+library(stringr)
+```
+
+```{r path}
+path <- "/path/to/file"
+```
+
+```{r load}
+# load analysis datasets
+load(paste0(path, "/datasets/ACM_final_analysis_datasets_aug_20_2022_all_data.RData"))
+load(paste0(path, "/datasets/ACM_final_analysis_datasets_aug_20_2022_scotwales.RData"))
+
+# load NCD data
+load("/path/to/file/NCD_all_subsets_aug_04_2022.RData")
+
+# load interview baseline dx data
+load("/path/to/file/baseline_dx_data_july_07_2022.RData")
+
+# load telomere data
+load(paste0(path, "/datasets/telomere_data_mar_07_2022.RData"))
+
+```
+
+## Table 1
+
+```{r table1_full_cohort}
+
+data <- all_data[[1]]
+
+data$ACM_event_indicator <- factor(data$ACM_event_indicator)
+levels(data$ACM_event_indicator) <- c("Alive", "Dead")
+
+label(data$education_years) <- "Education years"
+label(data$recruitment_age) <- "Age"
+label(data$BMI) <- "BMI"
+label(data$pack_years) <- "Smoking pack years"
+label(data$smoking_status) <- "Smoking status"
+label(data$ethnicity) <- "Ethnicity"
+label(data$hshld_income) <- "Household income"
+label(data$population_density) <- "Home area population density"
+label(data$ACM_event_indicator) <- "Mortality"
+
+my.render.cont <- function(x) {
+    with(stats.apply.rounding(stats.default(x), digits = 2), c("",
+        "Mean (SD)"=sprintf("%s (%s)", MEAN, SD)))
+}
+
+my.render.categorical <- function(x, ...) {
+    c("", sapply(stats.apply.rounding(stats.default(x)), function(y) with(y,
+      sprintf("%s (%s%%)", prettyNum(FREQ, big.mark=","), PCT))))
+}
+
+my.render.strat <- function (label, n, ...) {
+    sprintf("<span class='stratlabel'>%s<br><span class='stratn'>(N=%s)</span></span>", 
+        label, prettyNum(n, big.mark=","))
+}
+
+table <- 
+    table1(~ recruitment_age + hshld_income + education_years + ethnicity + BMI + smoking_status +
+               population_density + ACM_event_indicator | sex,
+           data = data, 
+           render.continuous = my.render.cont,
+           render.strat = my.render.strat,
+           render.categorical = my.render.categorical,
+           render.missing = NULL,
+           overall = "Total")
+
+# save as word doc
+ftable <- t1flex(table)
+ftable <- add_header_row(ftable,
+                         value = "Table 1. Baseline descriptive statistics - UK Biobank participants recruited in England",
+                         top = TRUE,
+                         colwidths = 4)
+ftable <- padding(ftable, 
+                  i = c(2, 4:8, 10:15, 17:21, 23, 25:27, 29, 30, 32, 33),
+                  padding.top = 0,
+                  padding.bottom = 0)
+ftable <- fontsize(ftable, size = 9, part = "all")
+
+# save
+save_as_docx(ftable, path = paste0(path, "/output/tables/table_1_aug_28_2022.docx"))
+```
+
+## Table S1 prep
+
+```{r healthy_prep}
+
+# merge ICD-10 data with ACM datasets
+all_data_ncd <- lapply(all_data, function(x)
+    as.data.frame(
+        merge(x, 
+              dat_NCD_all,
+              by = "eid",
+              all = FALSE,
+              sort = FALSE)
+    )
+)
+
+# merge baseline interview dx data with ACM datasets
+all_data_ncd <- lapply(all_data_ncd, function(x)
+    as.data.frame(
+        merge(x, 
+              dat_dx,
+              by = "eid",
+              all = FALSE,
+              sort = FALSE)
+    )
+)
+
+# function to code baseline disease indicator
+identify_prev_disease <- function(x) {
+  
+    # identify hospital inpatient ICD-10 diagnosis dates <= to recruitment date
+    baseline_colon <- which(x$colon_cancer_censor_date <= x$recruitment_date)
+    baseline_lung <- which(x$lung_cancer_censor_date <= x$recruitment_date)
+    baseline_eso <- which(x$eso_cancer_censor_date <= x$recruitment_date)
+    baseline_liver <- which(x$liver_cancer_censor_date <= x$recruitment_date)
+    baseline_pancreatic <- which(x$pancreatic_cancer_censor_date <= x$recruitment_date)
+    baseline_brain <- which(x$brain_cancer_censor_date <= x$recruitment_date)
+    baseline_leukemia <- which(x$leukemia_censor_date <= x$recruitment_date)
+    baseline_lymphoma <- which(x$lymphoma_censor_date <= x$recruitment_date)
+    baseline_breast <- which(x$breast_cancer_censor_date <= x$recruitment_date)
+    baseline_ovarian <- which(x$ovarian_cancer_censor_date <= x$recruitment_date)
+    baseline_prostate <- which(x$prostate_cancer_censor_date <= x$recruitment_date)
+    baseline_diabetes <- which(x$diabetes_censor_date <= x$recruitment_date)
+    baseline_CVD <- which(x$CVD_censor_date <= x$recruitment_date)
+    baseline_cerebro <- which(x$cerebro_cancer_censor_date <= x$recruitment_date)
+    baseline_COPD <- which(x$COPD_censor_date <= x$recruitment_date)
+    baseline_liver <- which(x$liver_censor_date <= x$recruitment_date)
+    baseline_kidney <- which(x$kidney_censor_date <= x$recruitment_date)
+    baseline_all_dementia <- which(x$all_dementia_censor_date <= x$recruitment_date)
+    baseline_vasc_dementia <- which(x$vasc_dementia_censor_date <= x$recruitment_date)
+    baseline_alzheimers <- which(x$alzheimers_censor_date <= x$recruitment_date)
+    baseline_parkinsons <- which(x$parkinsons_censor_date <= x$recruitment_date)
+    baseline_rheumatoid <- which(x$rheumatoid_censor_date <= x$recruitment_date)
+    baseline_macular <- which(x$macular_censor_date <= x$recruitment_date)
+    baseline_osteoporosis <- which(x$osteoporosis_censor_date <= x$recruitment_date)
+    baseline_osteoarthritis <- which(x$osteoarthritis_censor_date <= x$recruitment_date)
+    
+    # creating empty health indicator for baseline disease
+    x$baseline_disease_indicator <- NA
+    
+    # hospital inpatient ICD-10 code exclusions
+    x$baseline_disease_indicator[baseline_colon] <- 1
+    x$baseline_disease_indicator[baseline_lung] <- 1
+    x$baseline_disease_indicator[baseline_eso] <- 1
+    x$baseline_disease_indicator[baseline_liver] <- 1
+    x$baseline_disease_indicator[baseline_pancreatic] <- 1
+    x$baseline_disease_indicator[baseline_brain] <- 1
+    x$baseline_disease_indicator[baseline_leukemia] <- 1
+    x$baseline_disease_indicator[baseline_lymphoma] <- 1
+    x$baseline_disease_indicator[baseline_breast] <- 1
+    x$baseline_disease_indicator[baseline_ovarian] <- 1
+    x$baseline_disease_indicator[baseline_prostate] <- 1
+    x$baseline_disease_indicator[baseline_diabetes] <- 1
+    x$baseline_disease_indicator[baseline_CVD] <- 1
+    x$baseline_disease_indicator[baseline_cerebro] <- 1
+    x$baseline_disease_indicator[baseline_COPD] <- 1
+    x$baseline_disease_indicator[baseline_liver] <- 1
+    x$baseline_disease_indicator[baseline_kidney] <- 1
+    x$baseline_disease_indicator[baseline_all_dementia] <- 1
+    x$baseline_disease_indicator[baseline_vasc_dementia] <- 1
+    x$baseline_disease_indicator[baseline_alzheimers] <- 1
+    x$baseline_disease_indicator[baseline_parkinsons] <- 1
+    x$baseline_disease_indicator[baseline_rheumatoid] <- 1
+    x$baseline_disease_indicator[baseline_macular] <- 1
+    x$baseline_disease_indicator[baseline_osteoporosis] <- 1
+    x$baseline_disease_indicator[baseline_osteoarthritis] <- 1
+    
+    # baseline verbal interview dx exclusions
+    x$baseline_disease_indicator[which(x$colon_cancer_baseline_dx == 1)] <- 1
+    x$baseline_disease_indicator[which(x$lung_cancer_baseline_dx == 1)] <- 1
+    x$baseline_disease_indicator[which(x$eso_cancer_baseline_dx == 1)] <- 1
+    x$baseline_disease_indicator[which(x$liver_cancer_baseline_dx == 1)] <- 1
+    x$baseline_disease_indicator[which(x$pancreatic_cancer_baseline_dx == 1)] <- 1
+    x$baseline_disease_indicator[which(x$brain_cancer_baseline_dx == 1)] <- 1
+    x$baseline_disease_indicator[which(x$leukemia_baseline_dx == 1)] <- 1
+    x$baseline_disease_indicator[which(x$lymphoma_baseline_dx == 1)] <- 1
+    x$baseline_disease_indicator[which(x$breast_cancer_baseline_dx == 1)] <- 1
+    x$baseline_disease_indicator[which(x$ovarian_cancer_baseline_dx == 1)] <- 1
+    x$baseline_disease_indicator[which(x$prostate_cancer_baseline_dx == 1)] <- 1
+    x$baseline_disease_indicator[which(x$diabetes_baseline_dx == 1)] <- 1
+    x$baseline_disease_indicator[which(x$CVD_baseline_dx == 1)] <- 1
+    x$baseline_disease_indicator[which(x$cerebro_baseline_dx == 1)] <- 1
+    x$baseline_disease_indicator[which(x$COPD_baseline_dx == 1)] <- 1
+    x$baseline_disease_indicator[which(x$liver_baseline_dx == 1)] <- 1
+    x$baseline_disease_indicator[which(x$kidney_baseline_dx == 1)] <- 1
+    x$baseline_disease_indicator[which(x$all_dementia_baseline_dx == 1)] <- 1
+    x$baseline_disease_indicator[which(x$vasc_dementia_baseline_dx == 1)] <- 1
+    x$baseline_disease_indicator[which(x$alzheimers_baseline_dx == 1)] <- 1
+    x$baseline_disease_indicator[which(x$parkinsons_baseline_dx == 1)] <- 1
+    x$baseline_disease_indicator[which(x$rheumatoid_baseline_dx == 1)] <- 1
+    x$baseline_disease_indicator[which(x$macular_baseline_dx == 1)] <- 1
+    x$baseline_disease_indicator[which(x$osteoporosis_baseline_dx == 1)] <- 1
+    x$baseline_disease_indicator[which(x$osteoarthritis_baseline_dx == 1)] <- 1
+    
+    # baseline self-report questionnaire exclusions
+    x$baseline_disease_indicator[which(x$heart_attack_diagnosis == "Yes")] <- 1
+    x$baseline_disease_indicator[which(x$angina_diagnosis == "Yes")] <- 1
+    x$baseline_disease_indicator[which(x$stroke_diagnosis == "Yes")] <- 1
+    x$baseline_disease_indicator[which(x$bronchitis_emphysema_diagnosis == "Yes")] <- 1
+    x$baseline_disease_indicator[which(x$cancer_diagnosis == "Yes")] <- 1
+    x$baseline_disease_indicator[which(x$number_cancers >= 1)] <- 1
+    x$baseline_disease_indicator[which(x$diabetes_diagnosis == "Yes")] <- 1
+    x$baseline_disease_indicator[which(x$insulin == "Yes")] <- 1
+    x$baseline_disease_indicator[which(x$overall_health == "Poor")] <- 1
+    
+    # code rest as 0
+    x$baseline_disease_indicator[which(is.na(x$baseline_disease_indicator))] <- 0
+    
+    # make factor
+    x$baseline_disease_indicator <- factor(x$baseline_disease_indicator)
+    
+    return(x)
+}
+
+# run function in each dataset
+data_disease <- lapply(all_data_ncd, identify_prev_disease)
+
+### Subset datasets -------------------------------------------------------------------
+
+# subset to those without disease at baseline
+data_disease <- lapply(data_disease, function(x) {
+    x <- x[which(x$baseline_disease_indicator == 0), ]
+    return(x)
+}
+)
+
+# check difference in sample size
+nrow(all_data_ncd[[1]])
+nrow(data_disease[[1]])
+
+```
+
+## Table S1
+
+```{r table_healthy_subset}
+
+data <- data_disease[[1]]
+
+data$ACM_event_indicator <- factor(data$ACM_event_indicator)
+levels(data$ACM_event_indicator) <- c("Alive", "Dead")
+
+label(data$education_years) <- "Education years"
+label(data$recruitment_age) <- "Age"
+label(data$BMI) <- "BMI"
+label(data$pack_years) <- "Smoking pack years"
+label(data$smoking_status) <- "Smoking status"
+label(data$ethnicity) <- "Ethnicity"
+label(data$hshld_income) <- "Household income"
+label(data$population_density) <- "Home area population density"
+label(data$ACM_event_indicator) <- "Mortality"
+
+my.render.cont <- function(x) {
+    with(stats.apply.rounding(stats.default(x), digits = 2), 
+         c("", "Mean (SD)"=sprintf("%s (%s)", MEAN, SD)))
+}
+
+my.render.categorical <- function(x, ...) {
+    c("", sapply(stats.apply.rounding(stats.default(x)), 
+                 function(y) with(y, sprintf("%s (%s%%)", prettyNum(FREQ, big.mark=","), PCT))))
+}
+
+my.render.strat <- function (label, n, ...) {
+    sprintf("<span class='stratlabel'>%s<br><span class='stratn'>(N=%s)</span></span>", 
+            label, prettyNum(n, big.mark=","))
+}
+
+table2 <- 
+    table1(~ recruitment_age + hshld_income + education_years + ethnicity + BMI + smoking_status +
+               population_density + ACM_event_indicator | sex,
+           data = data, 
+           render.continuous = my.render.cont,
+           render.strat = my.render.strat,
+           render.categorical = my.render.categorical,
+           render.missing = NULL,
+           overall = "Total")
+
+table2
+
+# save as word doc
+ftable2 <- t1flex(table2)
+ftable2 <- add_header_row(ftable2,
+                          value = "Table S1. Baseline descriptive statistics - UK Biobank participants with no prevalent disease",
+                          top = TRUE,
+                          colwidths = 4)
+ftable2 <- padding(ftable2, 
+                  i = c(2, 4:8, 10:15, 17:21, 23, 25:27, 29, 30, 32, 33),
+                  padding.top = 0,
+                  padding.bottom = 0)
+ftable2 <- fontsize(ftable2, size = 9, part = "all")
+
+# save
+save_as_docx(ftable2, path = paste0(path, "/output/tables/table_S1_aug_28_2022.docx"))
+
+```
+
+## Table S4
+
+```{r table1_scotwales}
+
+data <- scotwales[[1]]
+
+data$ACM_event_indicator <- factor(data$ACM_event_indicator)
+levels(data$ACM_event_indicator) <- c("Alive", "Dead")
+
+label(data$education_years) <- "Education years"
+label(data$recruitment_age) <- "Age"
+label(data$BMI) <- "BMI"
+label(data$pack_years) <- "Smoking pack years"
+label(data$smoking_status) <- "Smoking status"
+label(data$ethnicity) <- "Ethnicity"
+label(data$hshld_income) <- "Household income"
+label(data$population_density) <- "Home area population density"
+label(data$ACM_event_indicator) <- "Mortality"
+
+my.render.cont <- function(x) {
+    with(stats.apply.rounding(stats.default(x), digits = 2), c("",
+        "Mean (SD)"=sprintf("%s (%s)", MEAN, SD)))
+}
+
+my.render.categorical <- function(x, ...) {
+    c("", sapply(stats.apply.rounding(stats.default(x)), function(y) with(y,
+      sprintf("%s (%s%%)", prettyNum(FREQ, big.mark=","), PCT))))
+}
+
+my.render.strat <- function (label, n, ...) {
+    sprintf("<span class='stratlabel'>%s<br><span class='stratn'>(N=%s)</span></span>", 
+        label, prettyNum(n, big.mark=","))
+}
+
+table3 <- 
+    table1(~ recruitment_age + hshld_income + education_years + ethnicity + BMI + smoking_status +
+               population_density + ACM_event_indicator | sex,
+           data = data, 
+           render.continuous = my.render.cont,
+           render.strat = my.render.strat,
+           render.categorical = my.render.categorical,
+           render.missing = NULL,
+           overall = "Total")
+
+# save as word doc
+ftable3 <- t1flex(table3)
+ftable3 <- add_header_row(ftable3,
+                          value = "Table S4. Baseline descriptive statistics - UK Biobank participants recruited in Scotland/Walese",
+                          top = TRUE,
+                          colwidths = 4)
+ftable3 <- padding(ftable3, 
+                  i = c(2, 4:8, 10:15, 17:21, 23, 25:27, 29, 30, 32, 33),
+                  padding.top = 0,
+                  padding.bottom = 0)
+ftable3 <- fontsize(ftable3, size = 9, part = "all")
+
+# save
+save_as_docx(ftable3, path = paste0(path, "/output/tables/table_S4_aug_28_2022.docx"))
+
+```
+
+## Table S2 prep
+
+```{r incident_disease_vars}
+
+data <- all_data_ncd[[1]]
+
+## create incident colon cancer
+data$incident_colon_cancer <- data$colon_cancer_event
+
+# identify cases at baseline
+baseline_colon_cancer <- which(data$colon_cancer_censor_date <= data$recruitment_date)
+data$incident_colon_cancer[baseline_colon_cancer] <- "Prevalent diagnosis"
+data$incident_colon_cancer[which(data$colon_cancer_baseline_dx == 1)] <- "Prevalent diagnosis"
+data$incident_colon_cancer <- factor(data$incident_colon_cancer)
+levels(data$incident_colon_cancer) <- c("No diagnosis", "Incident diagnosis", "Prevalent diagnosis")
+
+# check
+table(data$incident_colon_cancer)
+
+
+## create incident lung cancer
+data$incident_lung_cancer <- data$lung_cancer_event
+
+# identify cases at baseline
+baseline_lung_cancer <- which(data$lung_cancer_censor_date <= data$recruitment_date)
+data$incident_lung_cancer[baseline_lung_cancer] <- "Prevalent diagnosis"
+data$incident_lung_cancer[which(data$lung_cancer_baseline_dx == 1)] <- "Prevalent diagnosis"
+data$incident_lung_cancer <- factor(data$incident_lung_cancer)
+levels(data$incident_lung_cancer) <- c("No diagnosis", "Incident diagnosis", "Prevalent diagnosis")
+
+# check
+table(data$incident_lung_cancer)
+
+
+## create incident eso cancer
+data$incident_eso_cancer <- data$eso_cancer_event
+
+# identify cases at baseline
+baseline_eso_cancer <- which(data$eso_cancer_censor_date <= data$recruitment_date)
+data$incident_eso_cancer[baseline_eso_cancer] <- "Prevalent diagnosis"
+data$incident_eso_cancer[which(data$eso_cancer_baseline_dx == 1)] <- "Prevalent diagnosis"
+data$incident_eso_cancer <- factor(data$incident_eso_cancer)
+levels(data$incident_eso_cancer) <- c("No diagnosis", "Incident diagnosis", "Prevalent diagnosis")
+
+# check
+table(data$incident_eso_cancer)
+
+
+## create incident liver cancer
+data$incident_liver_cancer <- data$liver_cancer_event
+
+# identify cases at baseline
+baseline_liver_cancer <- which(data$liver_cancer_censor_date <= data$recruitment_date)
+data$incident_liver_cancer[baseline_liver_cancer] <- "Prevalent diagnosis"
+data$incident_liver_cancer[which(data$liver_cancer_baseline_dx == 1)] <- "Prevalent diagnosis"
+data$incident_liver_cancer <- factor(data$incident_liver_cancer)
+levels(data$incident_liver_cancer) <- c("No diagnosis", "Incident diagnosis", "Prevalent diagnosis")
+
+# check
+table(data$incident_liver_cancer)
+
+
+## create incident pancreatic cancer
+data$incident_pancreatic_cancer <- data$pancreatic_cancer_event
+
+# identify cases at baseline
+baseline_pancreatic_cancer <- which(data$pancreatic_cancer_censor_date <= data$recruitment_date)
+data$incident_pancreatic_cancer[baseline_pancreatic_cancer] <- "Prevalent diagnosis"
+data$incident_pancreatic_cancer[which(data$pancreatic_cancer_baseline_dx == 1)] <- "Prevalent diagnosis"
+data$incident_pancreatic_cancer <- factor(data$incident_pancreatic_cancer)
+levels(data$incident_pancreatic_cancer) <- c("No diagnosis", "Incident diagnosis", "Prevalent diagnosis")
+
+# check
+table(data$incident_pancreatic_cancer)
+
+
+## create incident brain cancer
+data$incident_brain_cancer <- data$brain_cancer_event
+
+# identify cases at baseline
+baseline_brain_cancer <- which(data$brain_cancer_censor_date <= data$recruitment_date)
+data$incident_brain_cancer[baseline_brain_cancer] <- "Prevalent diagnosis"
+data$incident_brain_cancer[which(data$brain_cancer_baseline_dx == 1)] <- "Prevalent diagnosis"
+data$incident_brain_cancer <- factor(data$incident_brain_cancer)
+levels(data$incident_brain_cancer) <- c("No diagnosis", "Incident diagnosis", "Prevalent diagnosis")
+
+# check
+table(data$incident_brain_cancer)
+
+
+## create incident leukemia
+data$incident_leukemia <- data$leukemia_event
+
+# identify cases at baseline
+baseline_leukemia <- which(data$leukemia_censor_date <= data$recruitment_date)
+data$incident_leukemia[baseline_leukemia] <- "Prevalent diagnosis"
+data$incident_leukemia[which(data$leukemia_baseline_dx == 1)] <- "Prevalent diagnosis"
+data$incident_leukemia <- factor(data$incident_leukemia)
+levels(data$incident_leukemia) <- c("No diagnosis", "Incident diagnosis", "Prevalent diagnosis")
+
+# check
+table(data$incident_leukemia)
+
+
+## create incident lymphoma
+data$incident_lymphoma <- data$lymphoma_event
+
+# identify cases at baseline
+baseline_lymphoma <- which(data$lymphoma_censor_date <= data$recruitment_date)
+data$incident_lymphoma[baseline_lymphoma] <- "Prevalent diagnosis"
+data$incident_lymphoma[which(data$lymphoma_baseline_dx == 1)] <- "Prevalent diagnosis"
+data$incident_lymphoma <- factor(data$incident_lymphoma)
+levels(data$incident_lymphoma) <- c("No diagnosis", "Incident diagnosis", "Prevalent diagnosis")
+
+# check
+table(data$incident_lymphoma)
+
+
+## create incident breast cancer
+data$incident_breast_cancer <- data$breast_cancer_event
+
+# identify cases at baseline
+baseline_breast_cancer <- which(data$breast_cancer_censor_date <= data$recruitment_date)
+data$incident_breast_cancer[baseline_breast_cancer] <- "Prevalent diagnosis"
+data$incident_breast_cancer[which(data$breast_cancer_baseline_dx == 1)] <- "Prevalent diagnosis"
+data$incident_breast_cancer <- factor(data$incident_breast_cancer)
+levels(data$incident_breast_cancer) <- c("No diagnosis", "Incident diagnosis", "Prevalent diagnosis")
+
+# check
+table(data$incident_breast_cancer)
+
+## create incident ovarian cancer
+data$incident_ovarian_cancer <- data$ovarian_cancer_event
+
+# identify cases at baseline
+baseline_ovarian_cancer <- which(data$ovarian_cancer_censor_date <= data$recruitment_date)
+data$incident_ovarian_cancer[baseline_ovarian_cancer] <- "Prevalent diagnosis"
+data$incident_ovarian_cancer[which(data$ovarian_cancer_baseline_dx == 1)] <- "Prevalent diagnosis"
+data$incident_ovarian_cancer <- factor(data$incident_ovarian_cancer)
+levels(data$incident_ovarian_cancer) <- c("No diagnosis", "Incident diagnosis", "Prevalent diagnosis")
+
+# check
+table(data$incident_ovarian_cancer)
+
+
+## create incident prostate cancer
+data$incident_prostate_cancer <- data$prostate_cancer_event
+
+# identify cases at baseline
+baseline_prostate_cancer <- which(data$prostate_cancer_censor_date <= data$recruitment_date)
+data$incident_prostate_cancer[baseline_prostate_cancer] <- "Prevalent diagnosis"
+data$incident_prostate_cancer[which(data$prostate_cancer_baseline_dx == 1)] <- "Prevalent diagnosis"
+data$incident_prostate_cancer <- factor(data$incident_prostate_cancer)
+levels(data$incident_prostate_cancer) <- c("No diagnosis", "Incident diagnosis", "Prevalent diagnosis")
+
+# check
+table(data$incident_prostate_cancer)
+
+
+## create incident diabetes
+data$incident_diabetes <- data$diabetes_event
+
+# identify cases at baseline
+baseline_diabetes <- which(data$diabetes_censor_date <= data$recruitment_date)
+data$incident_diabetes[baseline_diabetes] <- "Prevalent diagnosis"
+data$incident_diabetes[which(data$diabetes_diagnosis == "Yes")] <- "Prevalent diagnosis"
+data$incident_diabetes[which(data$diabetes_baseline_dx == 1)] <- "Prevalent diagnosis"
+data$incident_diabetes[which(data$insulin == "Yes")] <- "Prevalent diagnosis"
+data$incident_diabetes[which(data$hbA1c >= 48)] <- "Prevalent diagnosis"
+data$incident_diabetes[which(data$glucose >= 11.1)] <- "Prevalent diagnosis"
+data$incident_diabetes <- factor(data$incident_diabetes)
+levels(data$incident_diabetes) <- c("No diagnosis", "Incident diagnosis", "Prevalent diagnosis")
+
+# check
+table(data$incident_diabetes)
+
+
+## create incident CVD
+data$incident_CVD <- data$CVD_event
+
+# identify cases at baseline
+baseline_CVD <- which(data$CVD_censor_date <= data$recruitment_date)
+data$incident_CVD[baseline_CVD] <- "Prevalent diagnosis"
+data$incident_CVD[which(data$heart_attack_diagnosis == "Yes")] <- "Prevalent diagnosis"
+data$incident_CVD[which(data$angina == "Yes")] <- "Prevalent diagnosis"
+data$incident_CVD[which(data$CVD_baseline_dx == 1)] <- "Prevalent diagnosis"
+data$incident_CVD <- factor(data$incident_CVD)
+levels(data$incident_CVD) <- c("No diagnosis", "Incident diagnosis", "Prevalent diagnosis")
+
+# check
+table(data$incident_CVD)
+
+
+## create incident hypertension
+data$incident_hypertension <- data$hypertension_event
+
+# identify cases at baseline
+baseline_hypertension <- which(data$hypertension_censor_date <= data$recruitment_date)
+data$incident_hypertension[baseline_hypertension] <- "Prevalent diagnosis"
+data$incident_hypertension[which(data$high_blood_pressure_diagnosis == "Yes")] <- "Prevalent diagnosis"
+data$incident_hypertension[which(data$blood_pressure_meds == "Yes")] <- "Prevalent diagnosis"
+data$incident_hypertension[which(data$hypertension_baseline_dx == 1)] <- "Prevalent diagnosis"
+data$incident_hypertension[which((data$systolic_bp/data$diastolic_bp) >= 140/90)] <- "Prevalent diagnosis"
+data$incident_hypertension[which(data$incident_hypertension == 0)] <- "No diagnosis"
+data$incident_hypertension[which(data$incident_hypertension == 1)] <- "No diagnosis"
+
+data$incident_hypertension <- factor(data$incident_hypertension, levels = c("No diagnosis", "Prevalent diagnosis"))
+
+# check
+table(data$incident_hypertension, useNA = "always")
+prop.table(table(data$incident_hypertension))
+
+
+## create incident obesity
+data$incident_obesity <- data$obesity_event
+
+# identify cases at baseline
+baseline_obesity <- which(data$obesity_censor_date <= data$recruitment_date)
+data$incident_obesity[baseline_obesity] <- "Prevalent diagnosis"
+data$incident_obesity[which(data$BMI >= 30)] <- "Prevalent diagnosis"
+data$incident_obesity[which(data$incident_obesity == 0)] <- "No diagnosis"
+data$incident_obesity[which(data$incident_obesity == 1)] <- "No diagnosis"
+
+data$incident_obesity <- factor(data$incident_obesity, levels = c("No diagnosis", "Prevalent diagnosis"))
+
+# check
+table(data$incident_obesity, useNA = "always")
+prop.table(table(data$incident_obesity)) 
+
+
+## create incident dyslipidemia
+data$incident_dyslipidemia <- data$dyslipidemia_event
+
+# identify cases at baseline
+baseline_dyslipidemia <- which(data$dyslipidemia_censor_date <= data$recruitment_date)
+data$incident_dyslipidemia[baseline_dyslipidemia] <- "Prevalent diagnosis"
+data$incident_dyslipidemia[which(data$cholesterol_meds == "Yes")] <- "Prevalent diagnosis"
+data$incident_dyslipidemia[which(data$cholesterol >= 240 / 38.67)] <- "Prevalent diagnosis"
+data$incident_dyslipidemia[which(data$LDL_direct >= 160 / 38.67)] <- "Prevalent diagnosis"
+data$incident_dyslipidemia[which(data$HDL_cholesterol < 40 / 38.67)] <- "Prevalent diagnosis"
+data$incident_dyslipidemia[which(data$triglycerides >= 200 / 88.57)] <- "Prevalent diagnosis"
+data$incident_dyslipidemia[which(data$incident_dyslipidemia == 0)] <- "No diagnosis"
+data$incident_dyslipidemia[which(data$incident_dyslipidemia == 1)] <- "No diagnosis"
+
+data$incident_dyslipidemia <- factor(data$incident_dyslipidemia, levels = c("No diagnosis", "Prevalent diagnosis"))
+
+# check
+prop.table(table(data$incident_dyslipidemia))
+table(data$incident_dyslipidemia, useNA = "always")
+
+
+## create incident cerebro
+data$incident_cerebro <- data$cerebro_event
+
+# identify cases at baseline
+baseline_cerebro <- which(data$cerebro_censor_date <= data$recruitment_date)
+data$incident_cerebro[baseline_cerebro] <- "Prevalent diagnosis"
+data$incident_cerebro[which(data$stroke_diagnosis == "Yes")] <- "Prevalent diagnosis"
+data$incident_cerebro[which(data$cerebro_baseline_dx == 1)] <- "Prevalent diagnosis"
+data$incident_cerebro <- factor(data$incident_cerebro)
+levels(data$incident_cerebro) <- c("No diagnosis", "Incident diagnosis", "Prevalent diagnosis")
+
+# check
+table(data$incident_cerebro)
+
+
+## create incident COPD
+data$incident_COPD <- data$COPD_event
+
+# identify cases at baseline
+baseline_COPD <- which(data$COPD_censor_date <= data$recruitment_date)
+data$incident_COPD[baseline_COPD] <- "Prevalent diagnosis"
+data$incident_COPD[which(data$bronchitis_emphysema_diagnosis == "Yes")] <- "Prevalent diagnosis"
+data$incident_COPD[which(data$COPD_baseline_dx == 1)] <- "Prevalent diagnosis"
+data$incident_COPD <- factor(data$incident_COPD)
+levels(data$incident_COPD) <- c("No diagnosis", "Incident diagnosis", "Prevalent diagnosis")
+
+# check
+table(data$incident_COPD)
+
+
+## create incident liver
+data$incident_liver <- data$liver_event
+
+# identify cases at baseline
+baseline_liver <- which(data$liver_censor_date <= data$recruitment_date)
+data$incident_liver[baseline_liver] <- "Prevalent diagnosis"
+data$incident_liver[which(data$liver_baseline_dx == 1)] <- "Prevalent diagnosis"
+data$incident_liver <- factor(data$incident_liver)
+levels(data$incident_liver) <- c("No diagnosis", "Incident diagnosis", "Prevalent diagnosis")
+
+# check
+table(data$incident_liver)
+
+
+## create incident kidney
+data$incident_kidney <- data$kidney_event
+
+# identify cases at baseline
+baseline_kidney <- which(data$kidney_censor_date <= data$recruitment_date)
+data$incident_kidney[baseline_kidney] <- "Prevalent diagnosis"
+data$incident_kidney[which(data$kidney_baseline_dx == 1)] <- "Prevalent diagnosis"
+data$incident_kidney <- factor(data$incident_kidney)
+levels(data$incident_kidney) <- c("No diagnosis", "Incident diagnosis", "Prevalent diagnosis")
+
+# check
+table(data$incident_kidney)
+
+
+## create incident all_dementia
+data$incident_all_dementia <- data$all_dementia_event
+
+# identify cases at baseline
+baseline_all_dementia <- which(data$all_dementia_censor_date <= data$recruitment_date)
+data$incident_all_dementia[baseline_all_dementia] <- "Prevalent diagnosis"
+data$incident_all_dementia[which(data$all_dementia_baseline_dx == 1)] <- "Prevalent diagnosis"
+data$incident_all_dementia <- factor(data$incident_all_dementia)
+levels(data$incident_all_dementia) <- c("No diagnosis", "Incident diagnosis", "Prevalent diagnosis")
+
+# check
+table(data$incident_all_dementia)
+
+
+## create incident vasc_dementia
+data$incident_vasc_dementia <- data$vasc_dementia_event
+
+# identify cases at baseline
+baseline_vasc_dementia <- which(data$vasc_dementia_censor_date <= data$recruitment_date)
+data$incident_vasc_dementia[baseline_vasc_dementia] <- "Prevalent diagnosis"
+data$incident_vasc_dementia[which(data$vasc_dementia_baseline_dx == 1)] <- "Prevalent diagnosis"
+data$incident_vasc_dementia <- factor(data$incident_vasc_dementia)
+levels(data$incident_vasc_dementia) <- c("No diagnosis", "Incident diagnosis", "Prevalent diagnosis")
+
+# check
+table(data$incident_vasc_dementia)
+
+
+## create incident alzheimers
+data$incident_alzheimers <- data$alzheimers_event
+
+# identify cases at baseline
+baseline_alzheimers <- which(data$alzheimers_censor_date <= data$recruitment_date)
+data$incident_alzheimers[baseline_alzheimers] <- "Prevalent diagnosis"
+data$incident_alzheimers[which(data$alzheimers_baseline_dx == 1)] <- "Prevalent diagnosis"
+data$incident_alzheimers <- factor(data$incident_alzheimers)
+levels(data$incident_alzheimers) <- c("No diagnosis", "Incident diagnosis", "Prevalent diagnosis")
+
+# check
+table(data$incident_alzheimers)
+
+
+## create incident parkinsons
+data$incident_parkinsons <- data$parkinsons_event
+
+# identify cases at baseline
+baseline_parkinsons <- which(data$parkinsons_censor_date <= data$recruitment_date)
+data$incident_parkinsons[baseline_parkinsons] <- "Prevalent diagnosis"
+data$incident_parkinsons[which(data$parkinsons_baseline_dx == 1)] <- "Prevalent diagnosis"
+data$incident_parkinsons <- factor(data$incident_parkinsons)
+levels(data$incident_parkinsons) <- c("No diagnosis", "Incident diagnosis", "Prevalent diagnosis")
+
+# check
+table(data$incident_parkinsons)
+
+
+## create incident rheumatoid 
+data$incident_rheumatoid <- data$rheumatoid_event
+
+# identify cases at baseline
+baseline_rheumatoid <- which(data$rheumatoid_censor_date <= data$recruitment_date)
+data$incident_rheumatoid[baseline_rheumatoid] <- "Prevalent diagnosis"
+data$incident_rheumatoid[which(data$rheumatoid_baseline_dx == 1)] <- "Prevalent diagnosis"
+data$incident_rheumatoid <- factor(data$incident_rheumatoid)
+levels(data$incident_rheumatoid) <- c("No diagnosis", "Incident diagnosis", "Prevalent diagnosis")
+
+# check
+table(data$incident_rheumatoid)
+
+
+## create incident macular 
+data$incident_macular <- data$macular_event
+
+# identify cases at baseline
+baseline_macular <- which(data$macular_censor_date <= data$recruitment_date)
+data$incident_macular[baseline_macular] <- "Prevalent diagnosis"
+data$incident_macular[which(data$macular_baseline_dx == 1)] <- "Prevalent diagnosis"
+data$incident_macular <- factor(data$incident_macular)
+levels(data$incident_macular) <- c("No diagnosis", "Incident diagnosis", "Prevalent diagnosis")
+
+# check
+table(data$incident_macular)
+
+
+## create incident osteoporosis 
+data$incident_osteoporosis <- data$osteoporosis_event
+
+# identify cases at baseline
+baseline_osteoporosis <- which(data$osteoporosis_censor_date <= data$recruitment_date)
+data$incident_osteoporosis[baseline_osteoporosis] <- "Prevalent diagnosis"
+data$incident_osteoporosis[which(data$osteoporosis_baseline_dx == 1)] <- "Prevalent diagnosis"
+data$incident_osteoporosis <- factor(data$incident_osteoporosis)
+levels(data$incident_osteoporosis) <- c("No diagnosis", "Incident diagnosis", "Prevalent diagnosis")
+
+# check
+table(data$incident_osteoporosis)
+
+
+## create incident osteoarthritis 
+data$incident_osteoarthritis <- data$osteoarthritis_event
+
+# identify cases at baseline
+baseline_osteoarthritis <- which(data$osteoarthritis_censor_date <= data$recruitment_date)
+data$incident_osteoarthritis[baseline_osteoarthritis] <- "Prevalent diagnosis"
+data$incident_osteoarthritis[which(data$osteoarthritis_baseline_dx == 1)] <- "Prevalent diagnosis"
+data$incident_osteoarthritis <- factor(data$incident_osteoarthritis)
+levels(data$incident_osteoarthritis) <- c("No diagnosis", "Incident diagnosis", "Prevalent diagnosis")
+
+# check
+table(data$incident_osteoarthritis)
+
+```
+
+## Table S2
+
+``` {r incident_disease_table}
+
+label(data$incident_colon_cancer) <- "Colorectal cancer"
+label(data$incident_lung_cancer) <- "Lung cancer"
+label(data$incident_eso_cancer) <- "Esophageal cancer"
+label(data$incident_liver_cancer) <- "Liver cancer"
+label(data$incident_pancreatic_cancer) <- "Pancreatic cancer"
+label(data$incident_brain_cancer) <- "Brain cancer"
+label(data$incident_leukemia) <- "Leukemia"
+label(data$incident_lymphoma) <- "Lymphoma"
+label(data$incident_breast_cancer) <- "Breast cancer"
+label(data$incident_ovarian_cancer) <- "Ovarian cancer"
+label(data$incident_prostate_cancer) <- "Prostate cancer"
+label(data$incident_diabetes) <- "Type II diabetes"
+label(data$incident_CVD) <- "Ischemic heart disease"
+label(data$incident_cerebro) <- "Cerebrovascular diseases"
+label(data$incident_COPD) <- "Emphysema, COPD"
+label(data$incident_liver) <- "Chronic liver diseases"
+label(data$incident_kidney) <- "Chronic kidney diseases"
+label(data$incident_all_dementia) <- "All-cause dementia"
+label(data$incident_vasc_dementia) <- "Vascular dementia"
+label(data$incident_alzheimers) <- "Alzheimer's"
+label(data$incident_parkinsons) <- "Parkinson's"
+label(data$incident_rheumatoid) <- "Rheumatoid arthritis"
+label(data$incident_macular) <- "Macular degeneration"
+label(data$incident_osteoporosis) <- "Osteoporosis"
+label(data$incident_osteoarthritis) <- "Osteoarthritis"
+label(data$incident_hypertension) <- "Hypertension"
+label(data$incident_obesity) <- "Obesity"
+label(data$incident_dyslipidemia) <- "Dyslipidemia"
+
+my.render.cont <- function(x) {
+    with(stats.apply.rounding(stats.default(x), digits=2), 
+         c("", "Mean (SD)"=sprintf("%s (%s)", MEAN, SD)))
+}
+
+my.render.categorical <- function(x, ...) {
+    c("", sapply(stats.apply.rounding(stats.default(x)), function(y) with(y,
+                                                                          sprintf("%s (%s%%)", prettyNum(FREQ, big.mark=","), PCT))))
+}
+
+my.render.strat <- function (label, n, ...) {
+    sprintf("<span class='stratlabel'>%s<br><span class='stratn'>(N=%s)</span></span>", 
+            label, prettyNum(n, big.mark=","))
+}
+
+table4 <- 
+    table1(~ incident_colon_cancer + incident_lung_cancer + incident_eso_cancer + incident_liver_cancer + incident_pancreatic_cancer + incident_brain_cancer + incident_leukemia + incident_lymphoma + incident_breast_cancer + incident_ovarian_cancer + incident_prostate_cancer + incident_diabetes + incident_CVD + incident_cerebro + incident_COPD + incident_liver + incident_kidney + incident_all_dementia + incident_vasc_dementia + incident_alzheimers + incident_parkinsons + incident_rheumatoid + incident_macular + incident_osteoporosis + incident_osteoarthritis + incident_hypertension + incident_obesity + incident_dyslipidemia | sex,
+           data = data, 
+           render.continuous = my.render.cont,
+           render.strat = my.render.strat,
+           render.categorical = my.render.categorical,
+           render.missing = NULL,
+           overall = "Total")
+
+table4
+
+# save as word doc
+ftable4 <- t1flex(table4)
+ftable4 <- add_header_row(ftable4,
+                          value = "Table S2. Chronic disease and clinical risk factor diagnosis rates - UK Biobank participants recruited in England",
+                          top = TRUE,
+                          colwidths = 4)
+
+row_index <- as.vector(seq(1, 25*4))
+row_index <- row_index[-seq(1, length(row_index), 4)]
+
+ftable4 <- padding(ftable4, 
+                   i = row_index,
+                   padding.top = 0,
+                   padding.bottom = 0)
+ftable4 <- fontsize(ftable4, size = 9, part = "all")
+
+# Save
+save_as_docx(ftable4, path = paste0(path, "/output/tables/table_S2_aug_28_2022.docx"))
+
+```
+
+### Table S3
+
+```{r biomarkers}
+
+data <- all_data[[1]]
+data <- merge(data, 
+              telomere_data,
+              by = "eid",
+              all.x = TRUE,
+              all.y = FALSE,
+              sort = FALSE)
+
+label(data$alanine_aminotransferase) <- "Alanine Aminotransferase (U/L)"
+label(data$albumin) <- "Albumin (g/L)"
+label(data$alkaline_phosphatase) <- "Alkaline phosphatase (U/L)"
+label(data$apolipoprotein_A) <- "Apolipoprotein A (g/L)"
+label(data$apolipoprotein_B) <- "Apolipoprotein B (g/L)"
+label(data$aspartate_aminotransferase) <- "Aspartate aminotransferase (U/L)"
+label(data$C_reactive_protein) <- "C-reactive protein (mg/L)"
+label(data$cholesterol) <- "Cholesterol (mmol/L)"
+label(data$creatinine) <- "Creatinine (umol/L)"
+label(data$cystatin_C) <- "Cystatin C (mg/L)"
+label(data$direct_bilirubin) <- "Direct bilirubin (umol/L)"
+label(data$gamma_glutamyltransferase) <- "Gamma glutamyltransferase (U/L)"
+label(data$glucose) <- "Glucose (mmol/L)"
+label(data$hbA1c) <- "Glycated haemoglobin (HbA1c) (mmol/mol)"
+label(data$IGF1) <- "Insulin-like growth factor 1 (IGF-1) (nmol/L)"
+label(data$LDL_direct) <- "LDL direct (mmol/L)"
+label(data$lipoprotein_A) <- "Lipoprotein A (nmol/L)"
+label(data$phosphate) <- "Phosphate (mmol/L)"
+label(data$total_bilirubin) <- "Total bilirubin (umol/L)"
+label(data$triglycerides) <- "Triglycerides (mmol/L)"
+label(data$urate) <- "Urate (umol/L)"
+label(data$urea) <- "Urea (mmol/L)"
+label(data$vitamin_D) <- "Vitamin D (nmol/L)"
+label(data$LTL_adj) <- "Leukocyte telomere length (T/S ratio)"
+
+my.render.cont <- function(x) {
+    with(stats.apply.rounding(stats.default(x), digits=2), 
+         c("", "Mean (SD)"=sprintf("%s (%s)", MEAN, SD)))
+}
+
+
+my.render.strat <- function (label, n, ...) {
+    sprintf("<span class='stratlabel'>%s<br><span class='stratn'>(N=%s)</span></span>", 
+            label, prettyNum(n, big.mark=","))
+}
+
+table5 <- 
+    table1(~ alanine_aminotransferase + 
+               albumin + 
+               alkaline_phosphatase + 
+               apolipoprotein_A +           
+               apolipoprotein_B +
+               aspartate_aminotransferase +
+               C_reactive_protein +
+               cholesterol +
+               creatinine +
+               cystatin_C +
+               direct_bilirubin +
+               gamma_glutamyltransferase +
+               glucose +
+               hbA1c +
+               HDL_cholesterol +
+               IGF1 +
+               LDL_direct +
+               LTL_adj +
+               lipoprotein_A +
+               phosphate +
+               total_bilirubin +
+               triglycerides +
+               urate +
+               urea +
+               vitamin_D | sex,
+           data = data, 
+           render.continuous = my.render.cont,
+           render.strat = my.render.strat,
+           render.missing = NULL,
+           overall = "Total")
+
+table5
+
+# save as word doc
+ftable5 <- t1flex(table5)
+ftable5 <- add_header_row(ftable5,
+                          value = "Table S3. Biomarker summary statistics by sex - UK Biobank participants recruited in England",
+                          top = TRUE,
+                          colwidths = 4)
+
+row_index <- as.vector(seq(1, 25*2))
+row_index <- row_index[seq(1, length(row_index), 2)]
+
+ftable5 <- padding(ftable5,
+                   i = row_index,
+                   padding.top = 0,
+                   padding.bottom = 0)
+ftable5 <- fontsize(ftable5, size = 9, part = "all")
+
+# save
+save_as_docx(ftable5, path = paste0(path, "/output/tables/table_S3_aug_28_2022.docx"))
+
+```

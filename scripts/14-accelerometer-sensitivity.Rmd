@@ -1,0 +1,453 @@
+
+### Sensitivity analysis comparing self-report physical activity with accelerometer data
+
+```{r packages}
+library(Hmisc)
+library(dplyr)
+library(survival)
+library(mice)
+library(CoxR2)
+library(DescTools)
+library(modelsummary)
+library(flextable)
+```
+
+## Extract accelerometer variables
+
+```{r, eval=FALSE}
+
+# import raw UKB dataset
+dat <- readRDS("/path/to/file/ukb42114.rds")
+
+dat_accel <- 
+    rename(dat,
+           eid = f.eid,    
+           overall_acceleration = f.90012.0.0,
+           accel_good_quality_calib = f.90016.0.0,
+           accel_good_wear_time = f.90015.0.0,
+           clips_pre_calib = f.90183.0.0,
+           clips_post_calib = f.90185.0.0,
+           accel_total_data_readings = f.90187.0.0,
+           accel_wear_start_date = f.90010.0.0
+    )
+
+
+
+dat_accel <- 
+    subset(dat_accel, 
+           select = c(eid,
+                      overall_acceleration,
+                      accel_good_quality_calib,
+                      accel_good_wear_time,
+                      clips_pre_calib,
+                      clips_post_calib,
+                      accel_total_data_readings,
+                      accel_wear_start_date
+           ))
+
+
+# save dataset with just accelerometer data for easy access
+save(dat_accel, file = "/path/to/file/accelerometer_data.RData")
+```
+
+## Run QC on accelerometer data
+
+```{r accelerometer_QC}
+
+# load accelerometer data
+load("/path/to/file/accelerometer_data.RData")
+
+# set path
+path <- "/path/to/file"
+
+# load main analysis datasets
+load(paste0(path, "/ACM_final_analysis_datasets_aug_20_2022_all_data.RData"))
+
+
+# merge accelerometer data with main dataset
+for (k in seq_along(all_data)) {
+    all_data[[k]] <- merge(all_data[[k]],
+                           dat_accel,
+                           by = "eid",
+                           all.x = TRUE,
+                           all.y = FALSE,
+                           sort = FALSE)
+}
+
+# number of participants before QC exclusions
+rows1 <- length(all_data[[1]]$overall_acceleration[which(!is.na(all_data[[1]]$overall_acceleration))])
+
+# accelerometer QC
+for (k in seq_along(all_data)) {
+    
+    # remove participants whose data could not be calibrated
+    all_data[[k]]$overall_acceleration[which(all_data[[k]]$accel_good_quality_calib == "No")] <- NA
+    
+    # remove participants who didn't wear device long enough for stable measurement
+    all_data[[k]]$overall_acceleration[which(all_data[[k]]$accel_good_wear_time == "No")] <- NA
+   
+    # remove participants with > 1% clipped values
+    all_data[[k]]$overall_acceleration[which((all_data[[k]]$clips_pre_calib / all_data[[k]]$accel_total_data_readings) > 0.01)] <- NA
+    all_data[[k]]$overall_acceleration[which((all_data[[k]]$clips_post_calib / all_data[[k]]$accel_total_data_readings) > 0.01)] <- NA
+    
+    # remove participants with an unrealistically high overall activity value 
+    all_data[[k]]$overall_acceleration[which(all_data[[k]]$overall_acceleration >= 100)] <- NA
+
+}
+
+# number of participants after QC exclusions
+rows2 <- length(all_data[[1]]$overall_acceleration[which(!is.na(all_data[[1]]$overall_acceleration))])
+
+# print number of participants excluded
+cat("num of accelerometer samples removed = ", rows1-rows2)
+
+
+```
+
+## Create new survival time for accelerometer data
+
+```{r accelerometer_survival time}
+
+# load mortality data
+load("/path/to/file/ukb_ACM_mortality_may_20_2022.RData")
+
+# merge accelerometer data with mortality data
+for (k in seq_along(all_data)) {
+    all_data[[k]] <- merge(all_data[[k]],
+                           subset(mort, select = c("eid", "ACM_censor_date")),
+                           by = "eid",
+                           all = FALSE,
+                           sort = FALSE)
+}
+
+# check how date is formatted for correct as.Date formatting
+head(all_data[[1]]$accel_wear_start_date, n = 20L) 
+
+# set as date
+for (k in seq_along(all_data)) {
+    all_data[[k]]$accel_wear_start_date <- 
+        as.Date(all_data[[k]]$accel_wear_start_date)
+}
+
+# check for any formatting errors
+head(all_data[[1]]$accel_wear_start_date, n = 20L)
+
+
+# new survival time for accelerometer data
+for (k in seq_along(all_data)) {
+    all_data[[k]]$accel_survival_time <- 
+        as.numeric(all_data[[k]]$ACM_censor_date - all_data[[k]]$accel_wear_start_date)
+}
+
+# new age at acceleration data collection
+for (k in seq_along(all_data)) {
+    
+    # subtract recruitment date from accel start date 
+    all_data[[k]]$time_diff <- 
+        as.numeric(all_data[[k]]$accel_wear_start_date - all_data[[k]]$recruitment_date)
+    
+    # divide by 365.25 to get time in years
+    all_data[[k]]$time_diff <- all_data[[k]]$time_diff / 365.25
+    
+    # add to recruitment age to get age at start of accelerometer reading
+    all_data[[k]]$accel_age <- all_data[[k]]$recruitment_age + all_data[[k]]$time_diff
+}
+
+```
+
+## Create survival variables
+
+```{r survival_vars}
+
+# load XWAS results
+load(paste0(path,"/ACM_XWAS_results_aug_21_2022_all_sexes_summary.RData"))
+
+# create vector of exposures (only variables replicated in the main XWAS)
+exposures <- XWAS_total[which(XWAS_total$FDR.rep < 0.05), ]
+exposures <- unique(exposures$Variable)
+
+# use all_data file, which is men and women together + discovery and replication together too
+
+# create age at censoring variables for age-at-risk analysis
+for(j in seq_along(all_data)) {
+    # divide survival time (days) by 365.25 to get time in years
+    # change to numeric because survival time is a difftime object
+    all_data[[j]]$time <- 
+        as.numeric(all_data[[j]]$accel_survival_time / 365.25) 
+    # add time (years) to recruitment age to get censor age
+    all_data[[j]]$censor_age <-
+        all_data[[j]]$accel_age + all_data[[j]]$time 
+}
+
+### Create 5-year birth cohorts -------------------------------------------------------------------
+
+# function to calculate birth cohorts
+split_birth_year <- function(x){
+    x$birth_cohort <- ifelse(
+        x$birth_year >= 1935 & x$birth_year < 1940,
+        "1935-1940",
+        ifelse(
+            x$birth_year >= 1940 & x$birth_year < 1945,
+            "1940-1945",
+            ifelse(
+                x$birth_year >= 1945 & x$birth_year < 1950,
+                "1945-1950",
+                ifelse(
+                    x$birth_year >= 1950 & x$birth_year < 1955,
+                    "1950-1955",
+                    ifelse(
+                        x$birth_year >= 1955 & x$birth_year < 1960,
+                        "1955-1960",
+                        ifelse(
+                            x$birth_year >= 1960 & x$birth_year < 1965,
+                            "1960-1965",
+                            ifelse(
+                                x$birth_year >= 1965 & x$birth_year <= 1970, 
+                                "1965-1970", 
+                                NA
+                            )
+                        )
+                    )
+                )
+            )
+        )
+    )
+    
+    x$birth_cohort <- as.factor(x$birth_cohort)
+    return(x)
+}
+
+# execute function across imputed datasets to create 5-year age bands
+all_data <- lapply(all_data, split_birth_year)
+
+### Scale -------------------------------------------------------------------
+
+# scale function
+scale_numeric <- function(x) { 
+    # create logical vector of numeric columns
+    nums <- sapply(x, is.numeric)
+    
+    # list of numeric variables to exclude from scaling
+    scale_exclude <- c(
+        Cs(
+            recruitment_age,
+            accel_age,
+            censor_age,
+            ACM_event_indicator,
+            ACM_survival_time,
+            accel_survival_time,
+            eid,
+            time,
+            hazard,
+            birth_year
+        )
+    )
+    
+    # exclude those columns I don't want to scale
+    nums[names(nums) %in% scale_exclude] <- FALSE # don't want to scale these
+    
+    # don't bother scaling other numeric cols not in analysis
+    nums[names(nums) %nin% exposures] <- FALSE 
+    
+    # perform scale
+    x[nums] <- scale(x[nums],
+                     scale = TRUE)
+    
+    # return entire dataset
+    return(x)
+}
+
+# scale desired numeric columns
+all_data <- lapply(all_data, scale_numeric)
+
+```
+
+## Run analysis
+
+```{r cox_model}
+
+## accelerometer cox model
+fit <- lapply(all_data, function(x) {
+    
+    coxph(Surv(accel_survival_time, ACM_event_indicator) ~ 
+              accel_age + sex + 
+              recruitment_centre + hshld_income + education_years + ethnicity +
+              townsend_deprivation_index + smoking_status +
+              overall_acceleration,
+          data = x)
+    
+})
+
+# pool models
+pool <- pool(fit)
+
+# summary
+summary(pool)
+
+# get r-squared across imputations
+avg_rsq <- c(
+    coxr2(fit[[1]])$rsq,
+    coxr2(fit[[2]])$rsq,
+    coxr2(fit[[3]])$rsq,
+    coxr2(fit[[4]])$rsq,
+    coxr2(fit[[5]])$rsq
+)
+
+# transform to correlation scale (sqrt)
+avg_rsq <- lapply(avg_rsq, sqrt)
+
+# transform using Fischer's Z
+avg_rsq <- lapply(avg_rsq, FisherZ)
+
+# pool coefficients (which is just the average)
+avg_rsq <- mean(unlist(avg_rsq))
+
+# transform coefficients back to r scale
+avg_rsq <- FisherZInv(avg_rsq)
+
+# transform to r squared scale
+avg_rsq <- (avg_rsq)^2
+
+
+random <- sample(nrow(all_data[[1]]), nrow(all_data[[1]])/2)
+
+# self-reported measures cox model
+fit2 <- lapply(all_data, function(x) {
+    
+    coxph(Surv(ACM_survival_time, ACM_event_indicator) ~ 
+              recruitment_age + sex + 
+              recruitment_centre + hshld_income + education_years + ethnicity +
+              townsend_deprivation_index + smoking_status + 
+              IPAQ_activity_group + LTPA + OPA + sedentary,
+          data = x)
+    
+})
+
+# pool models
+pool2 <- pool(fit2)
+
+# summary
+summary(pool2)
+
+# get r-squared across imputations
+avg_rsq2 <- c(
+    coxr2(fit2[[1]])$rsq,
+    coxr2(fit2[[2]])$rsq,
+    coxr2(fit2[[3]])$rsq,
+    coxr2(fit2[[4]])$rsq,
+    coxr2(fit2[[5]])$rsq
+)
+
+# transform to correlation scale (sqrt)
+avg_rsq2 <- lapply(avg_rsq2, sqrt)
+
+# transform using Fischer's Z
+avg_rsq2 <- lapply(avg_rsq2, FisherZ)
+
+# pool coefficients (which is just the average)
+avg_rsq2 <- mean(unlist(avg_rsq2))
+
+# transform coefficients back to r scale
+avg_rsq2 <- FisherZInv(avg_rsq2)
+
+# transform r squared scale
+avg_rsq2 <- (avg_rsq2)^2
+
+VIF(fit2[[1]])
+
+# show accelerometer R-squared
+avg_rsq
+
+# show self-reported R-squared
+avg_rsq2
+
+```
+
+## Create table of results
+
+```{r table}
+
+# variable names
+cm <- c(
+    'overall_acceleration' = 'Overall acceleration average (milli-gravity)',
+    'IPAQ_activity_group.L' = 'IPAQ physical activity group',
+    'LTPA.L'                = 'Leisure time physical activity (LTPA)',
+    'OPA.L'                 = 'Occupational physical activity (OPA)',
+    "sedentary.L"           = "Total sedentary time"
+)
+
+# unclass to add in data
+poolr2 <- unclass(pool)
+# add in my calculated R^2 values
+poolr2$glanced$r.squared <- rep(avg_rsq,5)
+# re-class
+class(poolr2) <- c("mipo","data.frame")
+
+# unclass to add in data
+pool2r2 <- unclass(pool2)
+# add in my calculated R^2 values
+pool2r2$glanced$r.squared <- rep(avg_rsq,5)
+# re-class
+class(pool2r2) <- c("mipo","data.frame")
+
+# make list of estimates and p-values for model comparison table
+list <- list(
+    "Hazard Ratio [95% CI]" = poolr2,
+    "p-value"               = poolr2,
+    "Hazard Ratio [95% CI]" = pool2r2,
+    "p-value"               = pool2r2
+)
+
+
+library(tibble)
+# make empty rows in table for factor reference levels
+rows <- tribble(
+    ~term, ~`Hazard Ratio [95% CI]`, ~`P-value`, ~`Hazard Ratio [95% CI]`, ~`P-value`,
+    "R2",  round(avg_rsq, 2),  "",  round(avg_rsq2, 2), ""
+)
+
+### create table
+accel_table <-
+    modelsummary(
+        list,
+        estimate = 
+            c("{estimate} [{conf.low}, {conf.high}]", "p.value", 
+              "{estimate} [{conf.low}, {conf.high}]", "p.value"),
+        gof_omit = ".*",
+        coef_map = cm,
+        add_rows = rows,
+        fmt = 2,
+        statistic = NULL,
+        exponentiate = TRUE,
+        output = 'flextable'
+        ) %>%
+    theme_vanilla(
+    ) %>%
+    width(
+        j = c(1,2,3),
+        width = c(3.5,1,1)
+    ) %>%
+    fontsize(
+        size = 9, part = "all"
+    ) %>%
+    add_header_row(
+        values = "Accelerometer vs. self-reported physical activity measures in relation to mortality",
+        top = TRUE,
+        colwidths = 5
+    )
+
+### replace small p-values with less than thresholds
+accel_table <- compose(accel_table,
+                         i = 1, 
+                         j = 3,
+                         as_paragraph("< 0.001"))
+
+accel_table <- compose(accel_table,
+                         i = c(2:5), 
+                         j = 5,
+                         as_paragraph("< 0.001"))
+
+# save
+save_as_docx(accel_table, path = paste0(path, "/accelerometer_sensitivity_sept_01_2022.docx"))
+
+```

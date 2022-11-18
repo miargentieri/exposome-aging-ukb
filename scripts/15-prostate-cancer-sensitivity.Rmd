@@ -1,0 +1,318 @@
+
+### Sensitivity analysis checking prostate cancer associations for PSA detection bias
+
+```{r packages}
+library(Hmisc)
+library(dplyr)
+library(survival)
+library(mice)
+library(CoxR2)
+library(DescTools)
+library(modelsummary)
+library(flextable)
+```
+
+```{r}
+# set path
+path <- "/path/to/file/"
+
+# load sex-specific datasets
+load(paste0(path, "/ACM_final_analysis_datasets_aug_20_2022_all_data.RData"))
+
+# load NCD data
+load("/path/to/file/NCD_all_subsets_aug_04_2022.RData")
+
+# load interview baseline dx data
+load("/path/to/file/baseline_dx_data_july_07_2022.RData")
+
+```
+
+## Data prep
+
+```{r variable_prep}
+
+mult <- lapply(all_data, function(x) {
+    x <- x[which(x$sex == "Male"), ]
+    return(x)
+})
+
+# load XWAS results
+load(paste0(path,"/ACM_XWAS_results_aug_21_2022_all_sexes_summary.RData"))
+
+# create vector of exposures (only variables replicated in the main XWAS)
+exposures <- XWAS_total[which(XWAS_total$FDR.rep < 0.05), ]
+exposures <- unique(exposures$Variable)
+
+
+### Create 5-year birth cohorts -------------------------------------------------------------------
+
+# function to calculate birth cohorts
+split_birth_year <- function(x){
+    x$birth_cohort <- ifelse(
+        x$birth_year >= 1935 & x$birth_year < 1940,
+        "1935-1940",
+        ifelse(
+            x$birth_year >= 1940 & x$birth_year < 1945,
+            "1940-1945",
+            ifelse(
+                x$birth_year >= 1945 & x$birth_year < 1950,
+                "1945-1950",
+                ifelse(
+                    x$birth_year >= 1950 & x$birth_year < 1955,
+                    "1950-1955",
+                    ifelse(
+                        x$birth_year >= 1955 & x$birth_year < 1960,
+                        "1955-1960",
+                        ifelse(
+                            x$birth_year >= 1960 & x$birth_year < 1965,
+                            "1960-1965",
+                            ifelse(
+                                x$birth_year >= 1965 & x$birth_year <= 1970, 
+                                "1965-1970", 
+                                NA
+                            )
+                        )
+                    )
+                )
+            )
+        )
+    )
+    
+    x$birth_cohort <- as.factor(x$birth_cohort)
+    return(x)
+}
+
+# execute function across imputed datasets to create 5-year age bands
+mult <- lapply(mult, split_birth_year)
+
+### Scale -------------------------------------------------------------------
+
+# scale function
+scale_numeric <- function(x) { 
+    # create logical vector of numeric columns
+    nums <- sapply(x, is.numeric)
+    
+    # list of numeric variables to exclude from scaling
+    scale_exclude <- c(
+        Cs(
+            recruitment_age,
+            censor_age,
+            ACM_event_indicator,
+            eid,
+            time,
+            ACM_survival_time,
+            hazard,
+            birth_year,
+            air_pollution_PC1,
+            air_pollution_PC2,
+            air_pollution_PC3,
+            greenspace_PC1,
+            greenspace_PC2,
+            noise_pollution_PC1
+        )
+    )
+    
+    # exclude those columns I don't want to scale
+    nums[names(nums) %in% scale_exclude] <- FALSE # don't want to scale these
+    
+    # don't bother scaling other numeric cols not in analysis
+    nums[names(nums) %nin% exposures] <- FALSE 
+
+    # perform scale
+    x[nums] <- scale(x[nums],
+                     scale = TRUE)
+    
+    # return entire dataset
+    return(x)
+}
+
+# scale desired numeric columns
+mult <- lapply(mult, scale_numeric)
+
+```
+
+```{r merge_disease_data}
+
+# merge ICD-10 data with ACM datasets
+mult_ncd <- lapply(mult, function(x)
+    as.data.frame(
+        merge(x, 
+              dat_NCD_all,
+              by = "eid",
+              all.x = TRUE,
+              all.y = FALSE,
+              sort = FALSE)
+    )
+)
+
+# merge baseline dx data with ACM datasets
+mult_ncd <- lapply(mult_ncd, function(x)
+    as.data.frame(
+        merge(x, 
+              dat_dx,
+              by = "eid",
+              all.x = TRUE,
+              all.y = FALSE,
+              sort = FALSE)
+    )
+)
+
+```
+
+## Run models
+
+```{r test_stratify}
+
+# function to identify and remove prevalent prostate cancer cases
+prostate <- function(x) {
+    
+    # define all participants with NCD diagnosis before or equal to recruitment date
+    baseline_ncd <- which(x$prostate_cancer_censor_date <= x$recruitment_date)
+    
+    # creating health indicator for baseline disease in total population
+    x$baseline_prostate_cancer <- NA
+    x$baseline_prostate_cancer[baseline_ncd] <- 1
+    x$baseline_prostate_cancer[which(x$prostate_cancer_baseline_dx == 1)] <- 1
+    x$baseline_prostate_cancer[which(is.na(x$baseline_prostate_cancer))] <- 0
+    x$baseline_prostate_cancer <- factor(x$baseline_prostate_cancer)
+    
+    x <- x[which(x$baseline_prostate_cancer == 0), ]
+    
+    x$time <- as.numeric(x$prostate_cancer_survival_time / 365.25) 
+    # add time (years) to recruitment age to get censor age
+    x$censor_age <- x$recruitment_age + x$time 
+    
+    return(x)
+}
+
+# run in datasets
+psa_data <- lapply(mult_ncd, prostate)
+
+# exclude those with a PSA test
+psa_data1 <- lapply(psa_data, function(x) {
+    x <- x[which(x$PSA_test == "No"), ]
+    return(x)
+})
+
+# exclude those without a PSA test
+psa_data2 <- lapply(psa_data, function(x) {
+    x <- x[which(x$PSA_test == "Yes"), ]
+    return(x)
+})
+
+
+# model testing the effect of smoking in those with a PSA test
+fit1 <- lapply(psa_data1, function(x) {
+    coxph(Surv(recruitment_age, censor_age, prostate_cancer_event) ~
+              strata(birth_cohort) +
+              recruitment_centre + education_years + hshld_income + ethnicity + 
+              smoking_status + IPAQ_activity_group,
+          data = x)
+})
+
+# model testing the effect of smoking in those without a PSA test
+fit2 <- lapply(psa_data2, function(x) {
+    coxph(Surv(recruitment_age, censor_age, prostate_cancer_event) ~
+              strata(birth_cohort) +
+              recruitment_centre + education_years + hshld_income + ethnicity + 
+              smoking_status + IPAQ_activity_group,
+          data = x)
+})
+ 
+# model testing the effect of smoking in all participants while including PSA test as covariate
+fit3 <- lapply(psa_data, function(x) {
+    coxph(Surv(recruitment_age, censor_age, prostate_cancer_event) ~
+              strata(birth_cohort) +
+              recruitment_centre + education_years + hshld_income + ethnicity + 
+              smoking_status + IPAQ_activity_group + PSA_test,
+          data = x)
+})
+
+# pool models
+pool1 <- pool(fit1)
+pool2 <- pool(fit2)
+pool3 <- pool(fit3)
+
+```
+
+## Create results table
+
+```{r table}
+
+# set variable names
+cm <- c(
+    'smoking_statusPrevious' = 'Previous smoker',
+    'smoking_statusCurrent' = 'Current smoker'
+)
+
+
+# make list of estimates and p-values for model comparison table
+list <- list(
+    "Hazard Ratio [95% CI]" = pool1,
+    "p-value"               = pool1,
+    "Hazard Ratio [95% CI]" = pool2,
+    "p-value"               = pool2,
+    "Hazard Ratio [95% CI]" = pool3,
+    "p-value"               = pool3
+)
+
+
+library(tibble)
+library(kableExtra)
+
+# make empty rows in table for factor reference levels
+rows <- tribble(
+    ~term, ~`Hazard Ratio [95% CI]`, ~`P-value`, ~`Hazard Ratio [95% CI]`, ~`P-value`, ~`Hazard Ratio [95% CI]`, ~`P-value`,
+    "Never smoker (reference)",  "-",  "-",  "-", "-", "-", "-"
+)
+
+# row position of where reference levels go in table
+attr(rows, 'position') <- 1
+
+### create table
+smoking_table <-
+    modelsummary(
+        list,
+        estimate = 
+            c("{estimate} [{conf.low}, {conf.high}]", "p.value", 
+              "{estimate} [{conf.low}, {conf.high}]", "p.value",
+              "{estimate} [{conf.low}, {conf.high}]", "p.value"),
+        gof_omit = ".*",
+        coef_map = cm,
+        add_rows = rows,
+        fmt = 2,
+        statistic = NULL,
+        exponentiate = TRUE,
+        # align = "lrr",
+        output = 'flextable'
+        ) %>%
+    theme_vanilla(
+    ) %>%
+    width(
+        j = c(1,2,3),
+        width = c(3.5,1,1)
+    ) %>%
+    fontsize(
+        size = 9, part = "all"
+    ) %>%
+    add_header_row(
+        values = c(" ", "No PSA test", "Has PSA test", "PSA test as covariate"),
+        top = TRUE,
+        colwidths = c(1,2,2,2)
+    ) %>%
+    add_header_row(
+        values = "Smoking associations with prostate cancer according to PSA test",
+        top = TRUE,
+        colwidths = 7
+    )
+
+### replace small p-values with less than thresholds
+smoking_table <- compose(smoking_table,
+                         i = 3, 
+                         j = 7,
+                         as_paragraph("< 0.001"))
+
+# save
+save_as_docx(smoking_table, path = paste0(path, "/prostate_cancer_smoking_sensitivity_sept_01_2022.docx"))
+
+```
