@@ -6,7 +6,7 @@ This directory contains raw summary statistics from all analyses completed for t
 Manifest
 --------
 
-All files are contained within a single excel document as seaparate tabs. The following is a description of the file included in each tab.
+All files are contained within a single excel document as separate tabs. The following is a description of the file included in each tab.
 
 |Tab                  |Description                                                                                         |
 |:--------------------|:---------------------------------------------------------------------------------------------------|
