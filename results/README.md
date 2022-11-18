@@ -1,4 +1,4 @@
-# Supplementary files
+# Supplementary analysis output files
 
 This directory contains raw summary statistics from all analyses completed for the publication "Exposome-wide analysis reveals the environmental architecture of human aging among 492,569 UK Biobank participants." Published in XXX. 
 
@@ -6,7 +6,7 @@ This directory contains raw summary statistics from all analyses completed for t
 Manifest
 --------
 
-All files are contained within a single excel document as seaparate tabls. The following is a description of the file included in each tab.
+All files are contained within a single excel document as seaparate tabs. The following is a description of the file included in each tab.
 
 |Tab                  |Description                                                                                         |
 |:--------------------|:---------------------------------------------------------------------------------------------------|
