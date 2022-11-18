@@ -6,7 +6,7 @@ This directory contains raw summary statistics from all analyses completed for t
 Manifest
 --------
 
-The following is a description of the files included in the xlsx file. Each file is a separate tab.
+All files are contained within a single excel document as seaparate tabls. The following is a description of the file included in each tab.
 
 |Tab                  |Description                                                                                         |
 |:--------------------|:---------------------------------------------------------------------------------------------------|
@@ -20,7 +20,8 @@ The following is a description of the files included in the xlsx file. Each file
 |`SF32-SF59`          |Incident disease and cardiometabolic risk factor analysis output.                                   |
 
 
-Detailed descriptions
+
+Detailed file descriptions
 --------
 
 **Supplementary File SF1. Data dictionary for all variables used in multiple imputation.** Summary information about all baseline variables collected from the UK Biobank that were used in multiple imputation after variable exclusions. Information includes variable name used in analysis, UK Biobank field ID, original variable name in UK Biobank dataset provided to us, and URL link for each variable to the corresponding webpage on the UK Biobank showcase giving extensive detail for each variable. 
