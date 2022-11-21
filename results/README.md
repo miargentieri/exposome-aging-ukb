@@ -1,4 +1,4 @@
-# Supplementary analysis output files
+# Raw analysis output files
 
 This directory contains raw summary statistics from all analyses completed for the publication "Exposome-wide analysis reveals the environmental architecture of human aging among 492,569 UK Biobank participants." Published in XXX. 
 
