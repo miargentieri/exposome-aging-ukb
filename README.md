@@ -21,7 +21,7 @@ The following is a description of the various files and directories found within
 |Directory            |Description                                                                                         |
 |:--------------------|:---------------------------------------------------------------------------------------------------|
 |`dictionaries/`      |Data dictionaries describing the UK Biobank data used in imputation and XWAS analyses.              |
-|`files`              |Files and coding tables that are called in scripts.                                                 |
+|`files/`              |Files and coding tables that are called in scripts.                                                 |
 |`results/`           |Raw analysis output from each analysis stage. Single excel file with multiple tabs.                 |
 |`scripts/`           |Code used for all analyses and for creating figures/tables.                                         |
 |`scripts/functions`  |Custom function files that are called in scripts.                                                   |
