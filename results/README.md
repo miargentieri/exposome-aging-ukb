@@ -10,7 +10,7 @@ All files are contained within a single excel document as separate tabs.
 
 |Tab                  |Description                                                                                         |
 |:--------------------|:---------------------------------------------------------------------------------------------------|
-|`SF1          `      |Data dictionary for all variables used in multiple imputation.                                      |
+|`SF1`                |Data dictionary for all variables used in multiple imputation.                                      |
 |`SF2`                |Data dictionary for all variables used in XWAS analyses.                                            |
 |`SF3`                |Female XWAS output.                                                                                 |                                           
 |`SF4`                |Male XWAS output.                                                                                   |
