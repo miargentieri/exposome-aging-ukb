@@ -1,0 +1,123 @@
+
+
+```{r packages}
+library(ggforestplot)
+library(tidyverse)
+library(data.table)
+library(mice)
+library(Hmisc)
+library(gridExtra)
+library(glue)
+```
+
+```{r load}
+# cluster multivariable results
+load('./results/final_cluster_model_output_2024-08-15.RData')
+
+# XWAS results
+load("./results/ACM_XWAS_results_dec_11_2022_all_sexes_summary.RData")
+
+# exposome model results
+load("./results/R2_models_2024-08-20_exposome_cph.RData")
+
+# load variable categories
+categories <- read.csv("./dictionaries/Argentieri UKB dataset data dictionary.csv")
+categories$Category[which(categories$Variable == "gym")] <- "Physical activity"
+
+# load clusters df
+clusters <- read.csv('./results/hierarchical_exposome_7_clusters_2024-08-15.csv')
+
+```
+
+```{r forest_plot_prep}
+library(data.table)
+
+## multivar exposure estimates 
+
+# get list of summaries for all pooled models (with beta)
+smry <- lapply(cluster_pool,
+                tidy,
+                conf.int = TRUE,
+                conf.level = 0.95)
+
+# loop across each to subset to just cluster exposures
+for (k in seq_along(smry)) {
+  group <- glue('Cluster {k}')
+  smry[[k]]$group <- group
+  toMatch <- as.vector(unlist(clusters[k]))
+  toMatch <- toMatch[!is.na(toMatch)]
+  toMatch <- paste(toMatch, collapse = '|')
+  smry[[k]] <- smry[[k]][grepl(toMatch, smry[[k]]$term), ]
+  
+}
+
+# extract all model summaries from the lists and convert to single data frame of estimates
+cluster_mat <- rbindlist(smry)
+cluster_mat$group <- factor(cluster_mat$group, levels = unique(cluster_mat$group))
+cluster_mat$term <- gsub(".L", "", cluster_mat$term, fixed = TRUE)
+
+```
+
+```{r pretty_labels}
+# load function to rename exposures
+source("./functions/pretty_variable_names.R")
+
+labels_df <- as.data.frame(cluster_mat$term)
+names(labels_df)[which(names(labels_df) == "cluster_mat$term")] <- "Variable"
+labels_df <- pretty_labels(labels_df)
+new_labels <- labels_df$pretty_labels
+cluster_mat$pretty_lables <- new_labels
+```
+
+```{r export_data}
+# copy
+fig3_data <- cluster_mat[, c(2,5,6,7,16,17)]
+
+# exponentiate for HR
+fig3_data$Hazard_ratio <- exp(fig3_data$estimate)
+fig3_data$conf_int_low <- exp(fig3_data$conf.low)
+fig3_data$conf_int_high <- exp(fig3_data$conf.high)
+
+# subset
+fig3_data <- fig3_data[, c(2,5,6,7,8,9)]
+
+# reorder
+fig3_data <- fig3_data[, c(3,4,5,6,1,2)]
+
+# rename
+colnames(fig3_data) <- c('Variable', 'Hazard_ratio', 'Conf_int_low', 'Conf_int_high', 'P_value', 'Cluster')
+
+# save
+file <- './press/Exposome_NatureMed_Fig3_data.csv'
+write.csv(fig3_data, file = file, row.names = FALSE)
+
+```
+
+```{r plot}
+cluster_plot <- ggforestplot::forestplot(
+  df = cluster_mat,
+  name = pretty_lables,
+  estimate = estimate,
+  se = std.error,
+  pvalue = p.value,
+  psignif = 0.05,
+  # colour = study,
+  xlab = "Hazard Ratio",
+  # title = "a",
+  logodds = TRUE
+) +
+    ggforce::facet_col(
+        facets = ~group,
+        scales = "free_y",
+        space = "free"
+    ) + 
+    scale_x_continuous(breaks = seq(0.4, 1.8, by = 0.2)) +
+    theme(axis.text = element_text(size = 9))
+
+name = "./manuscript/Revision 3/figures/Figure_3.pdf"
+width_in_inches <- 14 * 0.393701
+height_in_inches <- 22.5 * 0.393701
+ggsave(cluster_plot, filename = name, width = width_in_inches, height = height_in_inches)
+
+
+```
