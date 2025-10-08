@@ -1,0 +1,1139 @@
+# Correlation analysis among significant variables
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = FALSE)
+knitr::opts_chunk$set(warning = FALSE)
+knitr::opts_chunk$set(message = FALSE)
+knitr::opts_chunk$set(results = 'asis')
+```
+
+```{r path}
+path <- "."
+
+# load analysis datasets
+load(paste0(path, "/data/ACM_final_analysis_datasets_jan_25_2023_all_data.RData"))
+
+# load variable categories
+categories <- read.csv("./dictionaries/Argentieri UKB dataset data dictionary.csv")
+
+```
+
+```{r hetcor_prep}
+
+library(polycor)
+library(parallel)
+library(Hmisc)
+library(mlr)
+
+# load XWAS results
+load("./results/ACM_XWAS_results_dec_11_2022_all_sexes_summary.RData")
+
+# set cores for parallel computation
+cores <- detectCores(logical = FALSE) - 2
+
+### Dataset prep -------------------------------------------------------------------
+
+# get vars significant in XWAS
+sig_vars <- unique(XWAS_total$Variable[which(XWAS_total$FDR.rep < 0.05)])
+sig_vars <- c(sig_vars, "education_years", "ethnicity")
+
+
+### Recode nominal -------------------------------------------------------------------
+
+recode_nominal <- function(x) {
+    
+    # subset df to exposures
+    data <- x
+    rownames(data) <- data$eid
+    data <- data[sig_vars]
+    
+    # make duplicate datset for recoding
+    data_recoded <- data
+    
+    ### create dummy variables from unordered factors
+    
+    # identify factor vars
+    fact <- sapply(data, is.factor)
+    
+    # identify ordinal factors
+    ord <- sapply(data, is.ordered)
+    
+    # make list of levels for each factor
+    num_levels <- sapply(data_recoded, nlevels)
+
+    # get position of all factors with >2 responses
+    nominal <- which(fact == TRUE & ord == FALSE & num_levels > 2)
+
+    # get nominal factor col names
+    nom_cols <- colnames(data_recoded)[nominal]
+    
+    # make dummy vars from unordered factors
+    # need to set method parameter to "reference" otherwise the correlation matrix becomes non-positive definite
+    data_recoded <-
+        createDummyFeatures(data_recoded,
+                            method = "reference",
+                            cols = nom_cols)
+
+    # get position of newly made dummy vars factors
+    dummies <- grepl("([.])", names(data_recoded))
+    # remove PM2.5 vars from list
+    dummies[which(grepl("PM2.5", names(data_recoded)))] <- FALSE
+    
+    # get new dummy var col names
+    dummy_cols <- colnames(data_recoded)[dummies]
+    
+    # recode new dummies as factors
+    data_recoded[dummy_cols] <- lapply(data_recoded[dummy_cols], factor, 
+                                       ordered = FALSE, 
+                                       levels = c("0", "1"))
+
+    # subset
+    nom_data <- data_recoded[dummy_cols]
+    nom_data$eid <- rownames(nom_data)
+    
+    # list of results to return
+    ls <- list(
+        "data" = data_recoded,
+        "dummy_cols" = dummy_cols,
+        "nom_cols" = nom_cols
+        
+    )
+    
+    return(ls)
+    
+}
+
+# run 
+corr_recode <- lapply(all_data, recode_nominal)
+
+# extract data
+corr_dfs <- lapply(corr_recode, function(x) x <- x$data)
+
+dummy_cols <- corr_recode[[1]]$dummy_cols
+nom_cols <- corr_recode[[1]]$nom_cols
+
+# remove period from colnames
+for (k in seq_along(corr_dfs)) {
+    colnames(corr_dfs[[k]]) <- gsub("[.]", "", colnames(corr_dfs[[k]]))
+    colnames(corr_dfs[[k]]) <- gsub("PM25", "PM2.5", colnames(corr_dfs[[k]]))
+    dummy_cols2 <- gsub("[.]", "", dummy_cols)
+    dummy_cols2 <- gsub("PM25", "PM2.5", dummy_cols)
+    
+    # # replace colnames with exposure string from XWAS results
+    # ecols <- colnames(corr_dfs[[k]])
+    # ecols <- ecols[ecols %nin% dummy_cols2]
+    # replace <- which(colnames(corr_dfs[[k]]) %in% ecols)
+    # ecols <- exposu[match(ecols, XWAS_total$Variable)]
+    # 
+    # # remove "Yes" from binary vars
+    # ecols <- gsub("Yes", "", ecols, ignore.case = FALSE)
+    # colnames(corr_dfs[[k]])[replace] <- ecols
+    
+    # subset to only exposures significant in XWAS
+    index <- which(colnames(corr_dfs[[k]]) %nin% exposures)
+    # keep ethnicity
+    eindex <- grep("ethnicity", colnames(corr_dfs[[k]]))
+    index <- index[index %nin% eindex]
+    corr_dfs[[k]] <- corr_dfs[[k]][-index]
+}
+
+# clean names
+for (k in seq_along(corr_dfs)) {
+    colnames(corr_dfs[[k]]) <- gsub("<", "_less_than_", colnames(corr_dfs[[k]]), fixed = TRUE)
+    colnames(corr_dfs[[k]]) <- gsub(">", "_more_than_", colnames(corr_dfs[[k]]), fixed = TRUE)
+    colnames(corr_dfs[[k]]) <- gsub(" ", "_", colnames(corr_dfs[[k]]), fixed = TRUE)
+    colnames(corr_dfs[[k]]) <- gsub("'", "", colnames(corr_dfs[[k]]), fixed = TRUE)
+    colnames(corr_dfs[[k]]) <- gsub(",", "", colnames(corr_dfs[[k]]), fixed = TRUE)
+    colnames(corr_dfs[[k]]) <- gsub("-_", "", colnames(corr_dfs[[k]]), fixed = TRUE)
+    colnames(corr_dfs[[k]]) <- gsub("(", "", colnames(corr_dfs[[k]]), fixed = TRUE)
+    colnames(corr_dfs[[k]]) <- gsub(")", "", colnames(corr_dfs[[k]]), fixed = TRUE)
+}
+
+```
+
+```{r hetcor}
+
+### Correlation -------------------------------------------------------------------
+
+# run hetcor
+corr <- lapply(corr_dfs, function(x) {
+  hetcor(x, std.err = FALSE, use = "pairwise.complete.obs")
+})
+
+# save
+save(corr, file = paste0(path, "/results/correlation/hetcor_output_apr_21_2023_recode_nominal.RData"))
+
+### Pool correlation -------------------------------------------------------------------
+
+library(DescTools)
+
+# extract matrices
+correl <- lapply(corr, function(x) x[["correlations"]])
+
+### transform coefficients using fisher's z scale transformation
+
+# run Fisher transformation
+corr_zs <- lapply(correl, FisherZ)
+
+# replace inf with 100 (will re-transform back to 1)
+corr_zs[[1]][is.infinite(corr_zs[[1]])] <- 100
+corr_zs[[2]][is.infinite(corr_zs[[2]])] <- 100
+corr_zs[[3]][is.infinite(corr_zs[[3]])] <- 100
+corr_zs[[4]][is.infinite(corr_zs[[4]])] <- 100
+corr_zs[[5]][is.infinite(corr_zs[[5]])] <- 100
+
+# pool coefficients (which is just the average)
+tmp <- Reduce('+', corr_zs)
+corr_zs_pool <- tmp / length(corr_zs)
+
+# transform coefficients back to r scale
+corr_pool <- FisherZInv(corr_zs_pool)
+
+### calculate p-value for all coefficients using z transformed coefficients and standard error. 
+# See here for code suggestion: 
+# https://stats.stackexchange.com/questions/61026/can-p-values-for-pearsons-correlation-test-be-computed-just-from-correlation-co
+
+zse <- 1 / sqrt(nrow(corr_dfs[[1]]) - 3) # standard error using all_data sample size
+p.val_corr <- apply(corr_zs_pool, # z-transformed correlation coefficients
+                    c(1,2), # apply below formula to cells in all rows and columns
+                    function(x) min(pnorm(x, sd = zse),
+                                    pnorm(x, lower.tail = F, sd = zse)) * 2) 
+
+# save
+save(corr_pool, 
+     p.val_corr, 
+     file = paste0(path, "/results/correlation/pooled_correlation_april_21_2023_all_data.RData"))
+
+```
+
+```{r cluster_number_all}
+
+# load list of vars not significant in disease sensitivity
+combined <- read.csv(paste0(path, "/output/ACM_XWAS_sensitivity_non_sig_vars_list_jan_30_2023_all_sexes.csv"))
+combined <- as.vector(combined[[2]])
+
+# list of variables to remove based on PheWAS
+remove <- c(
+    Cs(
+        hshld_parents,
+        hshld_siblings,
+        mobile_phone_use,
+        mobile_phone_duration,
+        mobile_phone_2yrs,
+        fast_driving,
+        hshld_vehicles,
+        facial_aging,
+        number_sex_partners,
+        sex_age_first
+    )
+)
+
+# combine
+remove <- c(remove, combined)
+
+# also add other ethnicity to remove list - uninterpretable
+remove <- c("ethnicityOther", remove)
+
+# remove from correlation df
+rind <- which(rownames(corr_pool) %nin% remove)
+cind <- which(colnames(corr_pool) %nin% remove)
+corr_pool <- corr_pool[rind, cind]
+
+# save as list of final exposures
+write.csv(colnames(corr_pool), row.names = FALSE, file = paste0(path, "/output/correlation/XWAS_sig_exposures_list_apr_21_2023.csv"))
+
+## Determining optimal number of clusters by testing AIC of differnt K-means clustering runs
+## Taken from: http://sherrytowers.com/2013/10/24/k-means-clustering/ 
+
+# run kmeans clustering from 1 - 100 clusters
+kmax = 50 # the maximum number of clusters we will examine; you can change this
+totwss = rep(0, kmax) # will be filled with total sum of within group sum squares
+kmfit = list() # create and empty list
+
+set.seed(3456)
+for (i in 1:kmax){
+kclus = kmeans(corr_pool,
+               centers = i,
+               iter.max = 20)
+totwss[i] = kclus$tot.withinss
+kmfit[[i]] = kclus
+}
+
+# function to calculate AIC
+kmeansAIC = function(fit){
+
+m = ncol(fit$centers)
+n = length(fit$cluster)
+k = nrow(fit$centers)
+D = fit$tot.withinss
+return(D + 2*m*k)
+
+}
+
+# run AIC
+aic = sapply(kmfit, kmeansAIC)
+
+# calculate optimal # of clusters and add to plot
+v = -diff(aic)
+nv = length(v)
+fom = v[1:(nv-1)]/v[2:nv]
+nclus = which.max(fom) + 1 # optimal number of clusters
+cat("The apparent number of clusters is: ", nclus, "\n")
+
+# plot and save
+setwd(paste0(path, "/output/correlation"))
+jpeg(paste0(paste0("AIC_exposome_", nclus), "_clusters_apr_21_2023.jpg"), 
+    height = 7, 
+    width = 15,
+    units = "in", 
+    res = 1200) 
+# initialize plot (must run all code from here to end of chunk at same time)
+plot(
+    seq(1, kmax),
+    aic,
+    xlab = "Number of k-means clusters",
+    ylab = "AIC of each cluster model",
+    main = "Optimal Number of Clusters - Exposome Variables",
+    font.main = 1,
+    pch = 20,
+    cex = 2
+) 
+# axis scale and intervals
+axis(side = 1, at = seq(0, kmax, by = 2))
+# vertical line for number of clusters
+abline(v = nclus, col = "black", lwd = 1, lty = 2)
+# extra plot info
+points(nclus,
+       aic[nclus],
+       col = 2,
+       pch = 20,
+       cex = 2)
+dev.off()
+
+## visualize optimal number of clusters using elbow method (sum of WSS)
+## More tips here: https://www.datanovia.com/en/lessons/determining-the-optimal-number-of-clusters-3-must-know-methods/
+
+library(factoextra)
+
+elbow <- fviz_nbclust(corr_pool, 
+                      hcut, 
+                      k.max = kmax,
+                      method = "wss") +
+    geom_vline(xintercept = nclus, linetype = 2, color = "red") 
+
+setwd(paste0(path, "/output/correlation"))
+jpeg(paste0(paste0("elbow_exposome_", nclus), "_clusters_apr_21_2023.jpg"), 
+    height = 3.5, 
+    width = 5,
+     units = "in", 
+    res = 1200) 
+elbow +
+    scale_x_discrete(breaks = seq(0,kmax,5)) +
+    scale_y_continuous(breaks = seq(0,750,50)) +
+    labs(y = "WSS") +
+    theme(axis.title.x = element_text(size = 12, margin = margin(t = 20)),
+          axis.title.y = element_text(size = 12, margin = margin(r = 20)),
+          title = element_blank()
+          ) 
+    # ggtitle("")
+dev.off()
+```
+
+```{r linear_dendro_all}
+
+library(randomcoloR)
+library(dendextend)
+library(dplyr)
+
+# hierarchical clustering
+hr <- dist(corr_pool, method = "euclidean")
+fit <- hclust(hr, method = "complete")
+# dendrogram
+dend <- as.dendrogram(fit)
+
+nclus <- 7
+
+# color palette
+pal <- palette.colors(palette = "Okabe-Ito")
+pal <- pal[c(8,1:7)]
+
+# create plot and save
+setwd(paste0(path, "/output/correlation"))
+jpeg(paste0(paste0("linear_dendogram_exposome_", nclus), "_clusters_vertical_all.jpg"), 
+    width = 10,
+    height = 15,
+    units = "in", 
+    res = 1800) 
+# bottom, left, top, right
+par(oma = c(3, 3, 3, 3)) # all sides have 3 lines of space
+par(mar = c(3, 3, 3, 10), xpd = NA)
+dend %>% 
+    dendextend::set("branches_k_color", k = nclus, value = pal) %>%
+    dendextend::set("branches_lwd", 2) %>% 
+    dendextend::set("labels_cex", 0.65)  %>% 
+    plot(horiz = TRUE)
+dev.off()
+
+```
+
+```{r save_clusters_all}
+
+hr <- dist(corr_pool, method = "euclidean")
+fit <- hclust(hr, method = "complete")
+
+# get df of clusters
+groups <- cutree(fit, k = nclus)
+
+# convert to df
+mydata <- data.frame(groups)
+  
+# make column with variable names
+mydata$Variable <- rownames(mydata)
+
+# set column names
+colnames(mydata) <- c("Cluster", "Variable")
+
+# create list to store pool results
+prefix <- "cluster"
+suffix <- seq(1,nclus)
+clusters <- as.list(paste0(prefix, suffix))
+
+# loop to create list of each cluster
+for(j in seq_along(clusters)){
+ clusters[[j]] <-  mydata[mydata$Cluster == j,]
+}
+
+# remove cluster number
+clusters <- lapply(clusters, function(x) x <- subset(x, select = c("Variable")))
+
+# allow to be df with different length (need it double)
+clusters <- sapply(clusters, "length<-", max(lengths(clusters)))
+clusters <- sapply(clusters, "length<-", max(lengths(clusters)))
+clusters <- as.data.frame(clusters)
+
+prefix <- "Cluster"
+suffix <- seq(1,nclus)
+cluster_names <- paste(prefix, suffix, sep = " ")
+
+colnames(clusters) <- c(cluster_names)
+
+write.csv(clusters, 
+          row.names = FALSE,
+          file = paste0(path, paste0(paste0("/output/correlation/hierarchical_exposome_", nclus), "_clusters.csv")))
+
+```
+
+```{r environment_PCA}
+
+# duplicate dataset for PCA
+data_pca <- all_data
+
+# make rownames eid
+for (k in seq_along(data_pca)) {
+    rownames(data_pca[[k]]) <- data_pca[[k]]$eid
+}
+
+# all pollution vars significant in XWAS
+pollution_vars <- 
+    c(
+        Cs(
+            NO_2010,
+            NO2_2005,
+            NO2_2006,
+            NO2_2007,
+            NO2_2010,
+            PM10_2007,
+            PM10_2010,
+            PM2.5_2010,
+            PM2.5_absorbance_2010
+        )
+    )
+
+# all greenspace and natural environment vars significant in XWAS
+greenspace_vars <- 
+    c(
+        Cs(
+            greenspace_buffer_1000m,
+            greenspace_buffer_300m,
+            natural_environment_buffer_1000m,
+            natural_environment_buffer_300m
+        )
+    )
+
+# all noise pollution vars
+noise_pollution_vars <-
+    c(
+        Cs(
+            daytime_sound_average,
+            evening_sound_average,
+            night_sound_average,
+            sound_average_16hr,
+            sound_average_24hr
+        )
+    )
+
+# all traffic vars
+traffic_vars <-
+    c(
+        Cs(
+            road_length_sum_100m,
+            traffic_load_major_roads
+        )
+    )
+
+
+# run PCA in each imputed dataset - set scale to F because already scaled above
+set.seed(3456)
+pollution_PCA_list <- 
+    lapply(data_pca, function(x) {
+        prcomp(x[which(names(x) %in% pollution_vars)], 
+               scale = FALSE)
+    }
+)
+
+set.seed(3456)
+greenspace_PCA_list <- 
+    lapply(data_pca, function(x) {
+        prcomp(x[which(names(x) %in% greenspace_vars)], 
+               scale = FALSE)
+    }
+)
+
+set.seed(3456)
+noise_pollution_PCA_list <- 
+    lapply(data_pca, function(x) {
+        prcomp(x[which(names(x) %in% noise_pollution_vars)], 
+               scale = FALSE)
+    }
+)
+
+set.seed(3456)
+traffic_PCA_list <- 
+    lapply(data_pca, function(x) {
+        prcomp(x[which(names(x) %in% traffic_vars)], 
+               scale = FALSE)
+    }
+)
+
+# summary to see explained variance per PC
+summary(pollution_PCA_list[[1]])
+summary(pollution_PCA_list[[2]])
+summary(pollution_PCA_list[[3]])
+summary(pollution_PCA_list[[4]])
+summary(pollution_PCA_list[[5]])
+# first 3 PCs explain > 90% of variance in all datasets
+
+summary(greenspace_PCA_list[[1]])
+summary(greenspace_PCA_list[[2]])
+summary(greenspace_PCA_list[[3]])
+summary(greenspace_PCA_list[[4]])
+summary(greenspace_PCA_list[[5]])
+# first 2 PCs explain > 96% of variance in all datasets
+
+summary(noise_pollution_PCA_list[[1]])
+summary(noise_pollution_PCA_list[[2]])
+summary(noise_pollution_PCA_list[[3]])
+summary(noise_pollution_PCA_list[[4]])
+summary(noise_pollution_PCA_list[[5]])
+# first PC explains > 99% of variance in all datasets
+
+summary(traffic_PCA_list[[1]])
+summary(traffic_PCA_list[[2]])
+summary(traffic_PCA_list[[3]])
+summary(traffic_PCA_list[[4]])
+summary(traffic_PCA_list[[5]])
+# first PC explains > 91% of variance in all datasets
+
+# get df of pollution PC scores for each participant
+pollution_PCA_dfs <- 
+    lapply(pollution_PCA_list, function(x) {
+        # get individual PC scores
+        df <- data.frame(x$x)
+        # subset to just 3 PCs
+        df <- df[1:3]
+        # rename columns
+        colnames(df) <- c("air_pollution_PC1", 
+                          "air_pollution_PC2",
+                          "air_pollution_PC3")
+        # return df
+        return(df)
+    }
+)
+
+# get df of greenspace PC scores for each participant
+greenspace_PCA_dfs <- 
+    lapply(greenspace_PCA_list, function(x) {
+        # get individual PC scores
+        df <- data.frame(x$x)
+        # subset to just 2 PCs
+        df <- df[1:2]
+        # rename columns
+        colnames(df) <- c("greenspace_PC1", 
+                          "greenspace_PC2")
+        # return df
+        return(df)
+    }
+)
+
+# get df of noise pollution PC scores for each participant
+noise_pollution_PCA_dfs <- 
+    lapply(noise_pollution_PCA_list, function(x) {
+        # get individual PC scores
+        df <- data.frame(x$x)
+        # subset to just 1 PC
+        df <- df[1:1]
+        # rename columns
+        colnames(df) <- c("noise_pollution_PC1")
+        # return df
+        return(df)
+    }
+)
+
+# get df of traffic PC scores for each participant
+traffic_PCA_dfs <- 
+    lapply(traffic_PCA_list, function(x) {
+        # get individual PC scores
+        df <- data.frame(x$x)
+        # subset to just 1 PC
+        df <- df[1:1]
+        # rename columns
+        colnames(df) <- c("traffic_PC1")
+        # return df
+        return(df)
+    }
+)
+
+# make eids a column again for merge with larger dataset
+for (k in seq_along(pollution_PCA_dfs)) {
+    pollution_PCA_dfs[[k]]$eid <- rownames(pollution_PCA_dfs[[k]])
+}
+
+# make eids a column again for merge with larger dataset
+for (k in seq_along(greenspace_PCA_dfs)) {
+    greenspace_PCA_dfs[[k]]$eid <- rownames(greenspace_PCA_dfs[[k]])
+}
+
+# make eids a column again for merge with larger dataset
+for (k in seq_along(noise_pollution_PCA_dfs)) {
+    noise_pollution_PCA_dfs[[k]]$eid <- rownames(noise_pollution_PCA_dfs[[k]])
+}
+
+# make eids a column again for merge with larger dataset
+for (k in seq_along(traffic_PCA_dfs)) {
+    traffic_PCA_dfs[[k]]$eid <- rownames(traffic_PCA_dfs[[k]])
+}
+
+# merge PCA dfs together and save
+pca_dfs <- as.list(seq_along(greenspace_PCA_dfs))
+for (k in seq_along(pca_dfs)) {
+    pca_dfs[[k]] <- 
+        merge(pollution_PCA_dfs[[k]],
+              greenspace_PCA_dfs[[k]],
+              by = "eid",
+              sort = FALSE)
+}
+
+for (k in seq_along(pca_dfs)) {
+    pca_dfs[[k]] <- 
+        merge(pca_dfs[[k]],
+              noise_pollution_PCA_dfs[[k]],
+              by = "eid",
+              sort = FALSE)
+}
+
+for (k in seq_along(pca_dfs)) {
+    pca_dfs[[k]] <- 
+        merge(pca_dfs[[k]],
+              traffic_PCA_dfs[[k]],
+              by = "eid",
+              sort = FALSE)
+}
+
+# check
+colnames(pca_dfs[[1]])
+nrow(pca_dfs[[1]])
+
+```
+
+```{r plot_PCA}
+## make figures of variable loadings
+## heatmap of loadings
+library(reshape2)
+
+pca1 <- pollution_PCA_list[[1]]
+pca2 <- greenspace_PCA_list[[1]]
+pca3 <- noise_pollution_PCA_list[[1]]
+pca4 <- traffic_PCA_list[[1]]
+
+pca_mat1 <- as.matrix(pca1$rotation[,1:3])
+pca_mat1 <- ifelse(pca_mat1 > -0.3 & pca_mat1 < 0.3, 
+                  0,
+                  pca_mat1)
+melted_cormat1 <- melt(pca_mat1)
+
+pca_mat2 <- as.matrix(pca2$rotation[,1:2])
+pca_mat2 <- ifelse(pca_mat2 > -0.3 & pca_mat2 < 0.3, 
+                  0,
+                  pca_mat2)
+melted_cormat2 <- melt(pca_mat2)
+
+pca_mat3 <- as.matrix(pca3$rotation[,1])
+pca_mat3 <- ifelse(pca_mat3 > -0.3 & pca_mat3 < 0.3, 
+                  0,
+                  pca_mat3)
+melted_cormat3 <- melt(pca_mat3)
+melted_cormat3$Var2 <- "PC1"
+
+pca_mat4 <- as.matrix(pca4$rotation[,1])
+pca_mat4 <- ifelse(pca_mat4 > -0.3 & pca_mat4 < 0.3, 
+                  0,
+                  pca_mat4)
+melted_cormat4 <- melt(pca_mat4)
+melted_cormat4$Var2 <- "PC1"
+
+heat1 <- 
+    ggplot(data = melted_cormat1, aes(x=Var2, y=Var1, fill=value)) + 
+    geom_tile(color = "white") +
+    scale_fill_gradient2(
+        low = "blue",
+        high = "red",
+        mid = "white",
+        midpoint = 0,
+        limit = c(-1, 1),
+        space = "Lab",
+        name = ""
+    ) +
+    ggtitle("PCA loadings for physical environment variables - UK Biobank") +
+    theme_classic(base_size = 16) +   
+    theme(
+        legend.position = "right",
+        # legend.title = element_text(size = 18)
+        legend.title = element_blank(),
+        plot.title.position = "plot",
+        plot.title = element_text(size = 16),
+        plot.subtitle = element_text(
+            size = 14,
+            face = "italic",
+            margin = margin(0,0,30,0)
+        )
+    ) +
+    labs(x = "",
+         y = "",
+         subtitle = "Note: only loadings < -0.3 or > 0.3 are colored"
+    ) 
+
+heat2 <- 
+    ggplot(data = melted_cormat2, aes(x=Var2, y=Var1, fill=value)) + 
+    geom_tile(color = "white") +
+    scale_fill_gradient2(
+        low = "blue",
+        high = "red",
+        mid = "white",
+        midpoint = 0,
+        limit = c(-1, 1),
+        space = "Lab",
+        name = ""
+    ) +
+    # ggtitle("PCA loadings for natural/green space variables - UK Biobank") +
+    theme_classic(base_size = 16) +   
+    theme(
+        legend.position = "right",
+        # legend.title = element_text(size = 18)
+        legend.title = element_blank(),
+        # plot.title.position = "plot",
+        # plot.title = element_text(size = 16),
+        # plot.subtitle = element_text(
+        #     size = 14,
+        #     face = "italic",
+        #     margin = margin(0,0,30,0)
+    #     )
+    ) +
+    labs(x = "",
+         y = "",
+         # subtitle = "Note: only loadings < -0.3 or > 0.3 are colored"
+    ) 
+
+heat3 <- 
+    ggplot(data = melted_cormat3, aes(x=Var2, y=Var1, fill=value)) + 
+    geom_tile(color = "white") +
+    scale_fill_gradient2(
+        low = "blue",
+        high = "red",
+        mid = "white",
+        midpoint = 0,
+        limit = c(-1, 1),
+        space = "Lab",
+        name = ""
+    ) +
+    # ggtitle("PCA loadings for natural/green space variables - UK Biobank") +
+    theme_classic(base_size = 16) +   
+    theme(
+        legend.position = "right",
+        # legend.title = element_text(size = 18)
+        legend.title = element_blank(),
+        # plot.title.position = "plot",
+        # plot.title = element_text(size = 16),
+        # plot.subtitle = element_text(
+        #     size = 14,
+        #     face = "italic",
+        #     margin = margin(0,0,30,0)
+    #     )
+    ) +
+    labs(x = "",
+         y = "",
+         # subtitle = "Note: only loadings < -0.3 or > 0.3 are colored"
+    )
+
+heat4 <- 
+    ggplot(data = melted_cormat4, aes(x=Var2, y=Var1, fill=value)) + 
+    geom_tile(color = "white") +
+    scale_fill_gradient2(
+        low = "blue",
+        high = "red",
+        mid = "white",
+        midpoint = 0,
+        limit = c(-1, 1),
+        space = "Lab",
+        name = ""
+    ) +
+    # ggtitle("PCA loadings for natural/green space variables - UK Biobank") +
+    theme_classic(base_size = 16) +   
+    theme(
+        legend.position = "right",
+        # legend.title = element_text(size = 18)
+        legend.title = element_blank(),
+        # plot.title.position = "plot",
+        # plot.title = element_text(size = 16),
+        # plot.subtitle = element_text(
+        #     size = 14,
+        #     face = "italic",
+        #     margin = margin(0,0,30,0)
+    #     )
+    ) +
+    labs(x = "",
+         y = "",
+         # subtitle = "Note: only loadings < -0.3 or > 0.3 are colored"
+    )
+
+library(gridExtra)
+grid <- grid.arrange(heat1, heat2, heat3, heat4, ncol = 1, nrow = 4, widths = c(6), heights = c(20, 10, 10, 10))
+
+ggsave(grid, filename = paste0(path, "/output/phys_environment_PCA_jan_31_2023_four_PCAs.png"), width = 9, height = 11)
+```
+
+```{r save_PCA}
+# according to loadings, PC1 is inversely related to the pollution vars. So flip sign for sensible interpretation.
+for (k in seq_along(pca_dfs)) {
+pca_dfs[[k]]$air_pollution_PC1 <- pca_dfs[[k]]$air_pollution_PC1 * (-1)
+}
+
+# save
+save(pca_dfs, file = paste0(path, "/results/physical_environment_PCA_jan_31_2023_all_sexes.RData"))
+```
+
+```{r merge_PCA}
+
+# load 
+load(paste0(path, "/results/physical_environment_PCA_jan_31_2023_all_sexes.RData"))
+
+# scale for analyses
+for (k in seq_along(pca_dfs)) {
+pca_dfs[[k]][-1] <- scale(pca_dfs[[k]][-1], scale = TRUE)
+}
+
+# merge with analysis data
+for (k in seq_along(all_data)) {
+    all_data[[k]] <- 
+        merge(all_data[[k]],
+              pca_dfs[[k]],
+              by = "eid",
+              sort = FALSE)
+}
+
+#check
+nrow(all_data[[1]])
+```
+
+```{r merge_corr_data}
+
+# get columns to keep to avoid duplicated columns
+keep_cols <- c("eid", colnames(all_data[[1]])[which(colnames(all_data[[1]]) %nin% colnames(corr_dfs[[1]]))])
+
+# subset
+for (k in seq_along(all_data)) {
+    all_data[[k]] <- all_data[[k]][keep_cols]
+}
+
+# add eid as column to corr_dfs
+for (k in seq_along(corr_dfs)) {
+    corr_dfs[[k]]$eid <- rownames(corr_dfs[[k]])
+}
+
+# merge
+for (k in seq_along(all_data)) {
+    all_data[[k]] <- merge(
+        all_data[[k]],
+        corr_dfs[[k]],
+        by = "eid",
+        sort = FALSE
+    )
+}
+```
+
+```{r save}
+save(all_data, file = paste0(path, "/datasets/ACM_final_recoded_analysis_data_april_21_2023_all_sexes.RData"))
+
+```
+
+```{r data_prep_all}
+
+# create age at censoring variables for age-at-risk analysis
+for(j in seq_along(all_data)) {
+    # divide survival time (days) by 365.25 to get time in years
+    # change to numeric because survival time is a difftime object
+    all_data[[j]]$time <- 
+        as.numeric(all_data[[j]]$ACM_survival_time / 365.25) 
+    # add time (years) to recruitment age to get censor age
+    all_data[[j]]$censor_age <-
+        all_data[[j]]$recruitment_age + all_data[[j]]$time 
+}
+
+### Create 5-year birth cohorts -------------------------------------------------------------------
+
+# function to calculate birth cohorts
+split_birth_year <- function(x){
+    x$birth_cohort <- ifelse(
+        x$birth_year >= 1935 & x$birth_year < 1940,
+        "1935-1940",
+        ifelse(
+            x$birth_year >= 1940 & x$birth_year < 1945,
+            "1940-1945",
+            ifelse(
+                x$birth_year >= 1945 & x$birth_year < 1950,
+                "1945-1950",
+                ifelse(
+                    x$birth_year >= 1950 & x$birth_year < 1955,
+                    "1950-1955",
+                    ifelse(
+                        x$birth_year >= 1955 & x$birth_year < 1960,
+                        "1955-1960",
+                        ifelse(
+                            x$birth_year >= 1960 & x$birth_year < 1965,
+                            "1960-1965",
+                            ifelse(
+                                x$birth_year >= 1965 & x$birth_year <= 1970, 
+                                "1965-1970", 
+                                NA
+                            )
+                        )
+                    )
+                )
+            )
+        )
+    )
+    
+    x$birth_cohort <- as.factor(x$birth_cohort)
+    return(x)
+}
+
+# execute function across imputed datasets to create 5-year age bands
+all_data <- lapply(all_data, split_birth_year)
+
+### Scale -------------------------------------------------------------------
+
+# scale function
+scale_numeric <- function(x) { 
+    # create logical vector of numeric columns
+    nums <- sapply(x, is.numeric)
+    
+    # list of numeric variables to exclude from scaling
+    scale_exclude <- c(
+        Cs(
+            recruitment_age,
+            censor_age,
+            ACM_event_indicator,
+            eid,
+            time,
+            ACM_survival_time,
+            hazard,
+            birth_year
+        )
+    )
+    
+    # exclude those columns I don't want to scale
+    nums[names(nums) %in% scale_exclude] <- FALSE # don't want to scale these
+    
+    # don't bother scaling other numeric cols not in analysis
+    nums[names(nums) %nin% exposures] <- FALSE 
+    
+    # perform scale
+    x[nums] <- scale(x[nums],
+                     scale = TRUE)
+    
+    # return entire dataset
+    return(x)
+}
+
+# scale desired numeric columns
+XWAS_data <- lapply(all_data, scale_numeric)
+
+### Ordinal contrasts -------------------------------------------------------------------
+
+XWAS_dat_contrasts <- XWAS_data
+
+# overriding default polynomial contrasts to only return linear contrasts
+set_contrasts <- function(x) {
+
+  # find ordered variables
+  ord <- sapply(x, is.ordered)
+
+  # set contrasts to only linear
+  for (k in seq(ncol(x[ord]))) {
+    contrasts(x[ord][[k]], how.many = 1) <- contr.poly(nlevels(x[ord][[k]]))
+  }
+
+  return(x)
+
+}
+
+# run in datasets
+XWAS_data <- lapply(XWAS_data, set_contrasts)
+```
+
+```{r cluster_multivar_short_range}
+
+# load cluster results
+clusters <- read.csv(file = paste0(path, "/output/correlation/hierarchical_exposome_9_clusters_apr_21_2023.csv"))
+
+# get cluster # with PC variables
+greenspace_cluster <- which(apply(clusters, 2, function(x) "greenspace_buffer_1000m" %in% x) == TRUE)
+pollution_cluster <- which(apply(clusters, 2, function(x) "NO_2010" %in% x) == TRUE)
+traffic_cluster <- which(apply(clusters, 2, function(x) "road_length_sum_100m" %in% x) == TRUE)
+
+# replace with PCs
+clusters_edit <- clusters
+clusters_edit[pollution_cluster] <- c("air_pollution_PC1", "air_pollution_PC2", "air_pollution_PC3", rep(NA, nrow(cluster_edit)-3))
+clusters_edit[greenspace_cluster] <- c("oil_central_heat", "greenspace_PC1", "greenspace_PC2", rep(NA, nrow(cluster_edit)-3))
+clusters_edit[traffic_cluster] <- c("noise_pollution_PC1", "traffic_PC1", rep(NA, nrow(cluster_edit)-2))
+
+# set parameters
+outcome = "Surv(recruitment_age, censor_age, ACM_event_indicator)"
+covariates <- c(Cs(recruitment_centre, hshld_income, education_years, ethnicityBlack, ethnicityAsian, ethnicityMixed, townsend_deprivation_index))
+strata <- c(Cs(birth_cohort,sex))
+clusters_no <- seq(1, ncol(clusters))
+
+source(paste0(path, "/code/XWAS_cluster_reduce_function.R"))
+cluster.reduce <- cluster_reduce(
+  data = XWAS_data,
+  vif.data = XWAS_dat_contrasts,
+  clusters = clusters_no,
+  cluster.mat = clusters_edit,
+  model.type = "coxph",
+  alias.vars = c("tobacco", "OPA"),
+  outcome = outcome,
+  covariates = covariates,
+  strata = strata,
+  vif.limit = 1.6,
+  vif.type = "GVIF^(1/(2*Df))",
+  multi.imputation = TRUE
+)
+
+c.sig.vars <- sort(cluster.reduce$sig.vars)
+c.non.sig_vars <- sort(cluster.reduce$non.sig.vars)
+vif.vars <- cluster.reduce$vif.removed.vars
+# summary(cluster.reduce$pooled_models[[1]])
+
+# cluster.reduce$pooled_models[[4]]
+
+save(cluster.reduce, file = paste0(path, "/results/cluster_multivariable_all.RData"))
+```
+
+```{r cluster_multivar_long_range}
+
+# get significant exposures from 1st large branch
+group1 <- c.sig.vars[c.sig.vars %in% c(cluster_edit$`Cluster 1`, cluster_edit$`Cluster 2`, cluster_edit$`Cluster 3`, cluster_edit$`Cluster 5`)]
+
+# get significant exposures from 2nd large branch
+group2 <- c.sig.vars[c.sig.vars %nin% group1]
+# remove colliear vars detected above
+group2 <- group2[group2 %nin% c("ever_smoked", "irritability", "worry_embarassment")]
+
+groups <- list(group1, group2)
+
+# get new matrix of superclusters
+cluster_edit2 <- sapply(groups, "length<-", max(lengths(groups)))
+cluster_edit2 <- sapply(groups, "length<-", max(lengths(groups)))
+cluster_edit2 <- as.data.frame(cluster_edit2)
+
+# set parameters
+outcome = "Surv(recruitment_age, censor_age, ACM_event_indicator)"
+# only keep those significant above
+covariates <- c(Cs(recruitment_centre, hshld_income, education_years, ethnicityBlack, ethnicityAsian, townsend_deprivation_index))
+strata <- c(Cs(birth_cohort,sex))
+clusters_no <- seq(1, ncol(cluster_edit2))
+
+source(paste0(path, "/code/XWAS_cluster_reduce_function.R"))
+cluster.reduce_long <- cluster_reduce(
+  data = XWAS_data,
+  vif.data = XWAS_dat_contrasts,
+  clusters = clusters_no,
+  cluster.mat = cluster_edit2,
+  model.type = "coxph",
+  # alias.vars = "tobacco",
+  # keep first PC if collinear
+  # vif.override = c("air_pollution_PC1"),
+  outcome = outcome,
+  covariates = covariates,
+  strata=strata,
+  vif.limit = 1.6,
+  vif.type = "GVIF^(1/(2*Df))",
+  multi.imputation = TRUE
+)
+
+c.sig.vars_long <- sort(cluster.reduce_long$sig.vars)
+c.non.sig_vars_long <- sort(cluster.reduce_long$non.sig.vars)
+vif.vars_long <- cluster.reduce_long$vif.removed.vars
+# summary(cluster.reduce$pooled_models[[1]])
+
+# cluster.reduce$pooled_models[[4]]
+
+save(cluster.reduce_long, file = paste0(path, "/results/cluster_multivariable_long_range.RData"))
+```
+
+```{r}
+
+## collinear vars removed
+
+# tobacco
+# ever_smoked
+# pack_years_prop
+# irritability
+# worry_embarassment
+
+
+```
+
+```{r sig_vars_list}
+
+# save variable list
+write.csv(c.sig.vars_long, row.names = FALSE, file = paste0(path, "/output/total_sig_vars_list_all_sexes.csv"))
+
+
+```
+
+```{r model_list}
+
+# create list to store all model results
+cluster_pool <- as.list(seq(1:11))
+cluster_pool[[1]] <- cluster.reduce_long$pooled_models[[1]]
+cluster_pool[[2]] <- cluster.reduce_long$pooled_models[[2]]
+cluster_pool[[3]] <- cluster.reduce$pooled_models[[1]]
+cluster_pool[[4]] <- cluster.reduce$pooled_models[[2]]
+cluster_pool[[5]] <- cluster.reduce$pooled_models[[3]]
+cluster_pool[[6]] <- cluster.reduce$pooled_models[[4]]
+cluster_pool[[7]] <- cluster.reduce$pooled_models[[5]]
+cluster_pool[[8]] <- cluster.reduce$pooled_models[[6]]
+cluster_pool[[9]] <- cluster.reduce$pooled_models[[7]]
+
+save(cluster_pool, file = paste0(path, "/results/final_cluster_model_output_all_sexes.RData"))
+```
