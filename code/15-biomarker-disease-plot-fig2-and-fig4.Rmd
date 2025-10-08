@@ -1,0 +1,1925 @@
+
+```{r packages}
+
+library(ggplot2)
+library(cowplot)
+library(gtable)
+library(ComplexHeatmap)
+library(circlize)
+library(Hmisc)
+library(glue)
+```
+
+```{r disease_plot_prep_beta}
+
+# load disease analysis results
+load("./results/all_disease_analysis_output_with_cs_2024-08-20.RData")
+
+# remove risk factors
+disease_results <- disease_results[1:25]
+
+for (k in seq_along(disease_results)) {
+  disease_results[[k]]$Exposure <- gsub(".L", "", disease_results[[k]]$Exposure, fixed = TRUE)
+}
+
+# load variable categories
+categories <- read.csv("./data/Argentieri UKB dataset data dictionary.csv")
+categories$Category[which(categories$Variable == "gym")] <- "Physical activity"
+
+# set list of exposures that were tested
+exposures <- read.csv('./results/total_sig_vars_list_2024-08-15.csv')
+exposures <- as.vector(unlist(exposures[1]))
+
+# # add in categories to sort
+# exposures <- as.data.frame(exposures) # create df from exposure list
+# summary <- merge(exposures,
+#                  categories,
+#                  by.x = "exposures",
+#                  by.y = names(categories[1]),
+#                  all = F) # merge with categories
+# summary <- summary[order(summary$Category), ] # order exposures by category
+
+# # make final vector of exposures ordered by category
+# exposures <- as.vector(summary$exposures)
+
+# set labels for plot to list of exposures
+labels <- c(exposures)
+
+# function to get log-transformed plot values
+disease_plot_vals <- function(x){
+    
+    # get all rows significantly replicated
+    mat <- as.data.frame(labels)
+    mat <- merge(mat,
+                 x,
+                 by.x = "labels",
+                 by.y = "Variable",
+                 all = FALSE,
+                 sort = FALSE)
+    
+    # sort so that most significant p-value is on top for each variable (if multiple)
+    mat <- mat[order(mat$labels, abs(mat$`P-value`)), ]
+    
+    # # keep only highest level of alcohol
+    # aindex <- which(mat$labels == "alcohol_freq" & mat$Exposure != "alcohol_freqDaily or almost daily")
+    # mat <- mat[-aindex, ]
+    
+    # keep only Asian ethnicity (second most common after white)
+    eindex <- which(mat$labels == "ethnicity" & mat$Exposure != "ethnicityAsian")
+    mat <- mat[-eindex, ]
+    
+    # keep only current smoking
+    eindex <- which(mat$labels == "smoking_status" & mat$Exposure != "smoking_statusCurrent")
+    mat <- mat[-eindex, ]
+    
+    # keep only public housing
+    hindex <- which(mat$labels == "own_or_rent" & mat$Exposure != "own_or_rentRent - from local authority, local council, housing association")
+    mat <- mat[-hindex, ]
+
+    # keep only renting flat
+    hindex <- which(mat$labels == "accommodation_type" & mat$Exposure != "accommodation_typeA flat, maisonette or apartment")
+    mat <- mat[-hindex, ]
+    
+    # # keep only plumper than average at 10 years old 
+    # hindex <- which(mat$labels == "body_size_10yrs_old" & mat$Exposure != "body_size_10yrs_oldPlumper")
+    # mat <- mat[-hindex, ]
+    # 
+    # keep only shorter at 10 years old
+    hindex <- which(mat$labels == "height_10yrs_old" & mat$Exposure != "height_10yrs_oldShorter")
+    mat <- mat[-hindex, ]
+    # 
+    # # keep only older facial aging
+    # hindex <- which(mat$labels == "facial_aging" & mat$Exposure != "facial_agingOlder than you are")
+    # mat <- mat[-hindex, ]
+    
+    
+    # keep only first (top) row for each variable with most significant p-value
+    # mat <- mat[!duplicated(mat$labels),]
+    
+    # re-order to match dendrogram label order
+    mat <- mat[match(labels, mat$labels),]
+    
+    # make log-transformed p-values to plot in histogram
+    mat$plot.val <- 
+        ifelse(mat$FDR >= 0.05,
+               1000, # set 1000 for non-significant
+               mat$Beta)
+
+    # set rownames
+    row_labels <- mat$Exposure
+    
+    # reduce to just plot.val column
+    mat <- mat$plot.val
+    
+    # convert to matrix
+    mat <- as.matrix(mat)
+    
+    # set rownames
+    rownames(mat) <- row_labels
+    
+    return(mat)
+}
+
+# run function for each set of disease results
+matrix_list <- lapply(disease_results, disease_plot_vals)
+
+# cbind together
+disease_mat <- do.call(cbind, matrix_list)
+
+# set column names to diseases
+names <- c(
+    "Colorectal cancer",
+    "Lung cancer",
+    "Esophageal cancer",
+    "Liver cancer",
+    "Pancreatic cancer",
+    "Brain cancer",
+    "Leukemia",
+    "Lymphoma",
+    "Breast cancer",
+    "Ovarian cancer",
+    "Prostate cancer",
+    "Type II diabetes",
+    "Ischemic heart disease",
+    "Cerebrovascular diseases",
+    "Emphysema, COPD",
+    "Chronic liver diseases",
+    "Chronic kidney diseases",
+    "All-cause dementia",
+    "Vascular dementia",
+    "Alzheimer's disease",
+    "Parkinson's disease",
+    "Rheumatoid arthritis",
+    "Macular degeneration",
+    "Osteoporosis",
+    "Osteoarthritis"
+)
+
+
+colnames(disease_mat) <- names
+
+# transpose so that exposures are columns
+disease_mat <- t(disease_mat)
+
+# get cols with no significant results
+# all_na <- apply(disease_mat, 2, function(x) all(x == 1000))
+
+# make separate matrix with just null exposures
+# na_mat <- data.matrix(as.data.frame(disease_mat)[which(all_na == TRUE)])
+# 
+# # make separate matrix with just exposures with at least 1 significant result
+# disease_mat <- data.matrix(as.data.frame(disease_mat)[which(all_na == FALSE)])
+
+# set 1000 to NA
+disease_mat2 <- disease_mat
+disease_mat2[which(disease_mat2 == 1000)] <- NA
+
+# na_mat2 <- na_mat
+# na_mat2[which(na_mat2 == 1000)] <- NA
+
+# cluster rows and columns for heatmap
+library(dendsort)
+row_dend = dendsort(hclust(dist(disease_mat)), isReverse = TRUE)
+col_dend = dendsort(hclust(dist(t(disease_mat))))
+
+# make full list of column names (exposures) using clustering that also includes null exposures
+# disease_cols <- c(colnames(disease_mat)[col_dend$order], colnames(na_mat))
+
+#cbind together
+# disease_mat3 <- cbind(disease_mat2, na_mat2)
+
+#re-order cols
+# disease_mat3 <- data.matrix(as.data.frame(disease_mat3)[match(disease_cols, colnames(disease_mat3))])
+
+# make vector of count of non-NA entries (i.e., significant hits) per column (biomarker)
+freq_count <- rowSums(!is.na(disease_mat2))
+freq_count <- data.matrix(freq_count)
+
+# row ordering by # of hits
+# dindex <- order(freq_count)
+# disease_order <- names[dindex]
+# 
+# # re-order disease rows
+# disease_mat2 <- disease_mat2[disease_order,]
+
+# row annotations
+ha <- rowAnnotation("FDR\nhits" = anno_lines(
+    freq_count, 
+    ylim = c(-10, 40),
+    axis_param = list(at = c(0, 15, 30))),
+    annotation_name_rot = 0,
+    annotation_name_offset = unit(8, "mm"),
+    annotation_name_gp = grid::gpar(fontsize = 8),
+    annotation_name_align = TRUE,
+    annotation_width = unit(9, "mm"),
+    show_legend = FALSE)
+```
+
+```{r biomarker_plot_prep_beta}
+
+# load biomarker analysis results
+load("./results/biomarker_analysis_results_2024-08-15_resid.RData")
+
+for (k in seq_along(biomarker_results)) {
+  biomarker_results[[k]]$Exposure <- gsub(".L", "", biomarker_results[[k]]$Exposure, fixed = TRUE)
+}
+
+# set list of exposures that were tested
+exposures <- read.csv('./results/total_sig_vars_list_2024-08-15.csv')
+exposures <- as.vector(unlist(exposures[1]))
+
+# set labels for plot to list of exposures
+labels <- c(exposures)
+
+# function to get log-transformed plot values
+biomarker_plot_vals <- function(x){
+    
+    # get all rows significantly replicated
+    mat <- as.data.frame(labels)
+    mat <- merge(mat,
+                 x,
+                 by.x = "labels",
+                 by.y = "Variable",
+                 all = FALSE,
+                 sort = FALSE)
+    
+    # sort so that most significant p-value is on top for each variable (if multiple)
+    mat <- mat[order(mat$labels, abs(mat$`P-value`)), ]
+    
+    # keep only current smoking
+    eindex <- which(mat$labels == "smoking_status" & mat$Exposure != "smoking_statusCurrent")
+    mat <- mat[-eindex, ]
+    
+    # # keep only highest level of alcohol
+    # aindex <- which(mat$labels == "alcohol_freq" & mat$Exposure != "alcohol_freqDaily or almost daily")
+    # mat <- mat[-aindex, ]
+    
+    # keep only Asian ethnicity (second most common after white)
+    eindex <- which(mat$labels == "ethnicity" & mat$Exposure != "ethnicityAsian")
+    mat <- mat[-eindex, ]
+
+    # keep only public housing
+    hindex <- which(mat$labels == "own_or_rent" & mat$Exposure != "own_or_rentRent - from local authority, local council, housing association")
+    mat <- mat[-hindex, ]
+
+    # keep only renting flat
+    hindex <- which(mat$labels == "accommodation_type" & mat$Exposure != "accommodation_typeA flat, maisonette or apartment")
+    mat <- mat[-hindex, ]
+
+    # keep only very fair 
+    # hindex <- which(mat$labels == "skin_color" & mat$Exposure != "skin_colorVery fair")
+    # mat <- mat[-hindex, ]
+    
+    # # keep only plumper than average at 10 years old 
+    # hindex <- which(mat$labels == "body_size_10yrs_old" & mat$Exposure != "body_size_10yrs_oldPlumper")
+    # mat <- mat[-hindex, ]
+    # 
+    # keep only shorter at 10 years old
+    hindex <- which(mat$labels == "height_10yrs_old" & mat$Exposure != "height_10yrs_oldShorter")
+    mat <- mat[-hindex, ]
+    # 
+    # # keep only older facial aging
+    # hindex <- which(mat$labels == "facial_aging" & mat$Exposure != "facial_agingOlder than you are")
+    # mat <- mat[-hindex, ]
+    # 
+    
+    # keep only first (top) row for each variable with most significant p-value
+    mat <- mat[!duplicated(mat$labels),]
+
+    # re-order to match dendrogram label order
+    mat <- mat[match(labels, mat$labels),]
+    
+    # make betas to plot in histogram
+    mat$plot.val <- 
+        ifelse(mat$FDR >= 0.05,
+               1000, # set 1000 for non-significant
+               mat$Beta)
+   
+    # set rownames
+    row_labels <- mat$labels
+    
+    # reduce to just plot.val column
+    mat <- mat$plot.val
+    
+    # convert to matrix
+    mat <- as.matrix(mat)
+    
+    # set rownames
+    rownames(mat) <- row_labels
+    
+    return(mat)
+}
+
+# run function for each biomarker
+matrix_list2 <- lapply(biomarker_results, biomarker_plot_vals)
+
+# cbind together
+bio_mat <- do.call(cbind, matrix_list2)
+
+# biomarkers
+biomarkers <-
+    c(
+        Cs(
+            alanine_aminotransferase,
+            albumin,
+            alkaline_phosphatase,
+            apolipoprotein_A,
+            apolipoprotein_B,
+            aspartate_aminotransferase,
+            C_reactive_protein,
+            cholesterol,
+            creatinine,
+            cystatin_C,
+            direct_bilirubin,
+            gamma_glutamyltransferase,
+            glucose,
+            hbA1c,
+            HDL_cholesterol,
+            IGF1,
+            LDL_direct,
+            lipoprotein_A,
+            phosphate,
+            total_bilirubin,
+            triglycerides,
+            urate,
+            urea,
+            vitamin_D,
+            LTL
+        )
+    )
+
+# set column names to biomarkers
+colnames(bio_mat) <- biomarkers
+
+# transpose
+bio_mat2 <- t(bio_mat)
+
+# # get cols with no significant results
+# all_na <- apply(bio_mat2, 2, function(x) all(x == 1000))
+# 
+# # make separate matrix with just null exposures
+# na_mat_bio <- data.matrix(as.data.frame(bio_mat2)[which(all_na == TRUE)])
+# 
+# # make separate matrix with just exposures with at least 1 significant result
+# bio_mat2 <- data.matrix(as.data.frame(bio_mat2)[which(all_na == FALSE)])
+
+# set 1000 to NA
+bio_mat2[which(bio_mat2 == 1000)] <- NA
+
+# na_mat_bio2 <- na_mat_bio
+# na_mat_bio2[which(na_mat_bio2 == 1000)] <- NA
+
+# cluster rows (biomarkers), but not columns (since exposures order needs to match disease matrix)
+library(dendsort)
+row_dend2 = dendsort(hclust(dist(bio_mat2)))
+col_dend2 = dendsort(hclust(dist(t(bio_mat2))))
+
+# make full list of column names (exposures) using clustering that also includes null exposures
+# biomarker_cols <- c(colnames(bio_mat2)[col_dend2$order], colnames(na_mat_bio2))
+
+#cbind together
+# bio_mat2 <- cbind(bio_mat2, na_mat_bio2)
+
+# re-order to match disease matrix
+# bio_mat2 <- data.matrix(as.data.frame(bio_mat2)[match(disease_cols, colnames(bio_mat2))])
+
+# re-order to match exposure order
+# bio_mat2 <- data.matrix(as.data.frame(bio_mat2)[match(disease_cols, colnames(bio_mat2))])
+
+# load index of biomarkers and mechanism categories
+biomarker_index <- read.csv("./output/Biomarker_index.csv")
+biomarker_index$Aging.mechanism[biomarker_index$Aging.mechanism == "Calcium and phosphate metabolism"] <- "Calcium/phosphate metabolism"
+mechanisms <- unique(biomarker_index$Aging.mechanism)
+mechanisms[mechanisms == "Calcium and phosphate metabolism"] <- "Calcium/phosphate metabolism"
+
+# generate color for each category of variable
+pal <- palette.colors(length(mechanisms), palette = "Set 3")
+color_map <- data.frame(sequence = mechanisms, color = pal)
+
+index1 <- merge(biomarker_index,
+                color_map,
+                by.x = "Aging.mechanism",
+                by.y = "sequence",
+                all = TRUE)
+index1 <- index1[c(1,2,6)]
+
+# re-order to have same order as heatmap matrix
+index1 <- index1[match(rownames(bio_mat2), index1$Biomarker),]
+
+# make named vector
+col_vect <- index1$color
+names(col_vect) <- index1$Biomarker
+
+# make vector of count of non-NA entries (i.e., significant hits) per column (biomarker)
+freq_count2 <- rowSums(!is.na(bio_mat2))
+freq_count2 <- data.matrix(freq_count2)
+
+# row annotations
+# ha2 <- rowAnnotation("FDR\nhits" = anno_lines(freq_count2, extend = 0.20),
+#                      annotation_name_rot = 0,
+#                      annotation_name_offset = unit(8, "mm"),
+#                      annotation_name_gp = grid::gpar(fontsize = 10),
+#                      annotation_name_align = TRUE,
+#                      show_legend = FALSE,
+#                      show_annotation_name = FALSE,
+#                      annotation_width = unit(2, "cm")
+#                      )
+# hcat <- rowAnnotation(Mechanisms = as.vector(names(col_vect)),
+#                       col = list(Mechanisms = col_vect),
+#                       show_legend = FALSE,
+#                       annotation_name_rot = 90,
+#                       show_annotation_name = FALSE)
+
+ha2 <- rowAnnotation("FDR\nhits" = anno_lines(
+    freq_count2, 
+    axis = FALSE,
+    ylim = c(-10, 40),
+    axis_param = list(at = c(0, 15, 30))),
+    Mechanisms = as.vector(names(col_vect)),
+    col = list(Mechanisms = col_vect),
+    show_legend = FALSE,
+    show_annotation_name = FALSE,
+    annotation_width = unit(c(9,3), "mm")
+)
+
+legend_df <- index1[!duplicated(index1$Aging.mechanism),]
+legend_df <- legend_df[order(legend_df$Aging.mechanism),]
+
+# set color scales
+library(RColorBrewer)
+col1 <- rev(brewer.pal(11, "RdYlBu"))[2:11]
+
+col_fun1 <- colorRamp2(seq(0, 0.3, 
+                     length = length(col1)), 
+                 col1, 
+                 space = "RGB")
+
+col_fun2 <- colorRamp2(c(-20, 0, 20), 
+                      c("blue", "white", "red"), 
+                      space = "RGB")
+
+# create legends
+lgd1 <- Legend(col_fun = col_fun1, 
+               title = "(-)log10 p-value density", 
+               at = c(0, 0.1, 0.2, 0.3), 
+               direction = "horizontal",
+               legend_width = unit(3, "cm"))
+lgd2 <- Legend(col_fun = col_fun2, 
+               title = "(-)log10 p-value", 
+               at = c(-20, 0, 20), 
+               direction = "horizontal",
+               legend_width = unit(3, "cm"))
+lgd3 = Legend(labels = legend_df$Aging.mechanism, 
+              title = "Mechanisms", 
+              legend_gp = gpar(fill = legend_df$color))
+
+# combine together into single legend object
+lgd <- packLegend(
+    # lgd1, 
+    lgd2, 
+    lgd3, 
+    max_width = unit(4, "cm"), 
+    direction = "horizontal",  
+    row_gap = unit(0.5, "cm"))
+
+```
+
+```{r protAge_plot_prep_beta}
+
+# load biomarker analysis results
+protAge_results <- read.csv("./output/protAge_associations_2024-08-15.csv")
+protAge_results <- protAge_results[-1]
+
+# set list of exposures that were tested
+exposures <- read.csv('./results/total_sig_vars_list_2024-08-15.csv')
+exposures <- as.vector(unlist(exposures[1]))
+
+# set labels for plot to list of exposures
+labels <- c(exposures)
+
+# function to get log-transformed plot values
+biomarker_plot_vals <- function(x){
+    
+    # get all rows significantly replicated
+    mat <- as.data.frame(labels)
+    mat <- merge(mat,
+                 x,
+                 by.x = "labels",
+                 by.y = "Variable",
+                 all = FALSE,
+                 sort = FALSE)
+    
+    # sort so that most significant p-value is on top for each variable (if multiple)
+    mat <- mat[order(mat$labels, abs(mat$P.value)), ]
+    
+    # keep only current smoking
+    eindex <- which(mat$labels == "smoking_status" & mat$Exposure != "smoking_statusCurrent")
+    mat <- mat[-eindex, ]
+    
+    # # keep only highest level of alcohol
+    # aindex <- which(mat$labels == "alcohol_freq" & mat$Exposure != "alcohol_freqDaily or almost daily")
+    # mat <- mat[-aindex, ]
+    
+    # keep only Asian ethnicity (second most common after white)
+    eindex <- which(mat$labels == "ethnicity" & mat$Exposure != "ethnicityAsian")
+    mat <- mat[-eindex, ]
+
+    # keep only public housing
+    hindex <- which(mat$labels == "own_or_rent" & mat$Exposure != "own_or_rentRent - from local authority, local council, housing association")
+    mat <- mat[-hindex, ]
+
+    # keep only renting flat
+    hindex <- which(mat$labels == "accommodation_type" & mat$Exposure != "accommodation_typeA flat, maisonette or apartment")
+    mat <- mat[-hindex, ]
+
+    # keep only very fair 
+    # hindex <- which(mat$labels == "skin_color" & mat$Exposure != "skin_colorVery fair")
+    # mat <- mat[-hindex, ]
+    
+    # # keep only plumper than average at 10 years old 
+    # hindex <- which(mat$labels == "body_size_10yrs_old" & mat$Exposure != "body_size_10yrs_oldPlumper")
+    # mat <- mat[-hindex, ]
+    # 
+    # keep only shorter at 10 years old
+    hindex <- which(mat$labels == "height_10yrs_old" & mat$Exposure != "height_10yrs_oldShorter")
+    mat <- mat[-hindex, ]
+    # 
+    # # keep only older facial aging
+    # hindex <- which(mat$labels == "facial_aging" & mat$Exposure != "facial_agingOlder than you are")
+    # mat <- mat[-hindex, ]
+    # 
+    
+    # keep only first (top) row for each variable with most significant p-value
+    mat <- mat[!duplicated(mat$labels),]
+
+    # re-order to match dendrogram label order
+    mat <- mat[match(labels, mat$labels),]
+    
+    # make betas to plot in histogram
+    mat$plot.val <- 
+        ifelse(mat$FDR >= 0.05,
+               1000, # set 1000 for non-significant
+               mat$Beta)
+   
+    # set rownames
+    row_labels <- mat$labels
+    
+    # reduce to just plot.val column
+    mat <- mat$plot.val
+    
+    # convert to matrix
+    mat <- as.matrix(mat)
+    
+    # set rownames
+    rownames(mat) <- row_labels
+    
+    return(mat)
+}
+
+# run function
+protAge_mat <- biomarker_plot_vals(protAge_results)
+
+# set column names to biomarkers
+colnames(protAge_mat) <- c('Proteomic age clock')
+
+# transpose
+protAge_mat2 <- t(protAge_mat)
+
+# # get cols with no significant results
+# all_na <- apply(bio_mat2, 2, function(x) all(x == 1000))
+# 
+# # make separate matrix with just null exposures
+# na_mat_bio <- data.matrix(as.data.frame(bio_mat2)[which(all_na == TRUE)])
+# 
+# # make separate matrix with just exposures with at least 1 significant result
+# bio_mat2 <- data.matrix(as.data.frame(bio_mat2)[which(all_na == FALSE)])
+
+# set 1000 to NA
+protAge_mat2[which(protAge_mat2 == 1000)] <- NA
+
+# na_mat_bio2 <- na_mat_bio
+# na_mat_bio2[which(na_mat_bio2 == 1000)] <- NA
+
+# make vector of count of non-NA entries (i.e., significant hits) per column (biomarker)
+freq_count4 <- rowSums(!is.na(protAge_mat2))
+freq_count4 <- data.matrix(freq_count4)
+
+
+# Create a data frame where the value is repeated to mimic a horizontal line
+# freq_count4 <- data.matrix(data.frame(value = rep(25, 2)))  # Repeat '25' across 10 positions
+
+# row annotations
+ha4 <- rowAnnotation("FDR\nhits" = anno_points(
+    freq_count4,
+    axis = FALSE,
+    ylim = c(-10, 40),
+    axis_param = list(at = c(0, 15, 30))),
+    annotation_name_rot = 0,
+    annotation_name_offset = unit(8, "mm"),
+    annotation_name_gp = grid::gpar(fontsize = 10),
+    annotation_name_align = TRUE,
+    annotation_width = unit(9, "mm"),
+    show_legend = FALSE,
+    show_annotation_name = FALSE)
+
+
+```
+
+```{r risk_factor_plot_prep_beta}
+
+# load disease analysis results
+load("./results/all_disease_analysis_output_with_cs_2024-08-20.RData")
+
+# remove risk factors
+disease_results2 <- disease_results[26:28]
+
+for (k in seq_along(disease_results)) {
+  disease_results[[k]]$Exposure <- gsub(".L", "", disease_results[[k]]$Exposure, fixed = TRUE)
+}
+
+# set list of exposures that were tested
+exposures <- read.csv('./results/total_sig_vars_list_2024-08-15.csv')
+exposures <- as.vector(unlist(exposures[1]))
+
+# set labels for plot to list of exposures
+labels <- c(exposures)
+
+# function to get log-transformed plot values
+disease_plot_vals <- function(x){
+    
+    # get all rows significantly replicated
+    mat <- as.data.frame(labels)
+    mat <- merge(mat,
+                 x,
+                 by.x = "labels",
+                 by.y = "Variable",
+                 all = FALSE,
+                 sort = FALSE)
+    
+    # sort so that most significant p-value is on top for each variable (if multiple)
+    mat <- mat[order(mat$labels, abs(mat$`P-value`)), ]
+    
+    # keep only current smoking
+    eindex <- which(mat$labels == "smoking_status" & mat$Exposure != "smoking_statusCurrent")
+    mat <- mat[-eindex, ]
+    
+    # # keep only highest level of alcohol
+    # aindex <- which(mat$labels == "alcohol_freq" & mat$Exposure != "alcohol_freqDaily or almost daily")
+    # mat <- mat[-aindex, ]
+    
+    # keep only Asian ethnicity (second most common after white)
+    eindex <- which(mat$labels == "ethnicity" & mat$Exposure != "ethnicityAsian")
+    mat <- mat[-eindex, ]
+    
+    # keep only public housing
+    hindex <- which(mat$labels == "own_or_rent" & mat$Exposure != "own_or_rentRent - from local authority, local council, housing association")
+    mat <- mat[-hindex, ]
+    
+    # keep only renting flat
+    hindex <- which(mat$labels == "accommodation_type" & mat$Exposure != "accommodation_typeA flat, maisonette or apartment")
+    mat <- mat[-hindex, ]
+    
+    # keep only very fair 
+    # hindex <- which(mat$labels == "skin_color" & mat$Exposure != "skin_colorVery fair")
+    # mat <- mat[-hindex, ]
+    
+    # # keep only plumper than average at 10 years old 
+    # hindex <- which(mat$labels == "body_size_10yrs_old" & mat$Exposure != "body_size_10yrs_oldPlumper")
+    # mat <- mat[-hindex, ]
+    # 
+    # keep only shorter at 10 years old
+    hindex <- which(mat$labels == "height_10yrs_old" & mat$Exposure != "height_10yrs_oldShorter")
+    mat <- mat[-hindex, ]
+    # 
+    # # keep only older facial aging
+    # hindex <- which(mat$labels == "facial_aging" & mat$Exposure != "facial_agingOlder than you are")
+    # mat <- mat[-hindex, ]
+    # 
+    
+    # keep only first (top) row for each variable with most significant p-value
+    mat <- mat[!duplicated(mat$labels),]
+    
+    # re-order to match dendrogram label order
+    mat <- mat[match(labels, mat$labels),]
+    
+    # make log-transformed p-values to plot in histogram
+    mat$plot.val <- 
+        ifelse(mat$FDR >= 0.05,
+               1000, # set 1000 for non-significant
+               mat$Beta)
+
+    # set rownames
+    row_labels <- mat$labels
+    
+    # reduce to just plot.val column
+    mat <- mat$plot.val
+    
+    # convert to matrix
+    mat <- as.matrix(mat)
+    
+    # set rownames
+    rownames(mat) <- row_labels
+    
+    return(mat)
+}
+
+# run function for each set of disease results
+matrix_list <- lapply(disease_results2, disease_plot_vals)
+
+# cbind together
+int_mat <- do.call(cbind, matrix_list)
+
+# set column names to diseases
+intermediates_names <- c(
+    "Hypertension",
+    "Obesity",
+    "Dyslipidemia"
+)
+
+colnames(int_mat) <- intermediates_names
+
+# transpose so that exposures are columns
+int_mat <- t(int_mat)
+
+# get cols with no significant results
+# all_na <- apply(int_mat, 2, function(x) all(x == 1000))
+
+# make separate matrix with just null exposures
+# na_mat <- data.matrix(as.data.frame(int_mat)[which(all_na == TRUE)])
+# 
+# # make separate matrix with just exposures with at least 1 significant result
+# int_mat <- data.matrix(as.data.frame(int_mat)[which(all_na == FALSE)])
+
+# set 1000 to NA
+int_mat2 <- int_mat
+int_mat2[which(int_mat2 == 1000)] <- NA
+
+# na_mat2 <- na_mat
+# na_mat2[which(na_mat2 == 1000)] <- NA
+
+# cluster rows and columns for heatmap
+library(dendsort)
+row_dend3 = dendsort(hclust(dist(int_mat)), isReverse = TRUE)
+col_dend3 = dendsort(hclust(dist(t(int_mat))))
+
+# make full list of column names (exposures) using clustering that also includes null exposures
+# disease_cols <- c(colnames(int_mat)[col_dend$order], colnames(na_mat))
+
+#cbind together
+# int_mat3 <- cbind(int_mat2, na_mat2)
+
+#re-order cols
+# int_mat3 <- data.matrix(as.data.frame(int_mat3)[match(disease_cols, colnames(int_mat3))])
+
+# make vector of count of non-NA entries (i.e., significant hits) per column (biomarker)
+freq_count3 <- rowSums(!is.na(int_mat2))
+freq_count3 <- data.matrix(freq_count3)
+
+# row annotations
+ha3 <- rowAnnotation("FDR\nhits" = anno_lines(
+    freq_count3, 
+    axis = FALSE,
+    ylim = c(-10, 40),
+    axis_param = list(at = c(0, 15, 30))),
+    annotation_name_rot = 0,
+    annotation_name_offset = unit(8, "mm"),
+    annotation_name_gp = grid::gpar(fontsize = 10),
+    annotation_name_align = TRUE,
+    annotation_width = unit(9, "mm"),
+    show_legend = FALSE,
+    show_annotation_name = FALSE)
+```
+
+```{r pretty_biomarkers_beta}
+library(stringr)
+
+pretty_biomarkers <- biomarkers
+pretty_biomarkers <- gsub("_", " ", pretty_biomarkers)
+pretty_biomarkers <- str_to_sentence(pretty_biomarkers)
+
+pretty_biomarkers[4] <- "Apolipoprotein A"
+pretty_biomarkers[5] <- "Apolipoprotein B"
+pretty_biomarkers[7] <- "C-reactive protein"
+pretty_biomarkers[10] <- "Cystatin C"
+pretty_biomarkers[15] <- "HDL cholesterol"
+pretty_biomarkers[16] <- "IGF-1"
+pretty_biomarkers[17] <- "LDL direct"
+pretty_biomarkers[18] <- "Lipoprotein(a)"
+pretty_biomarkers[24] <- "Vitamin D"
+pretty_biomarkers[25] <- "Telomere length"
+
+# make new matrix with pretty labels 
+bio_mat3 <- bio_mat2
+rownames(bio_mat3) <- pretty_biomarkers
+```
+
+```{r pretty_labels_beta}
+# load function to rename exposures
+source("./functions/pretty_variable_names.R")
+
+disease_mat3 <- disease_mat2
+labels_df <- as.data.frame(colnames(disease_mat3))
+names(labels_df)[which(names(labels_df) == "colnames(disease_mat3)")] <- "Variable"
+labels_df <- pretty_labels(labels_df)
+new_labels <- labels_df$pretty_labels
+colnames(disease_mat3) <- new_labels
+
+```
+
+```{r export_fig4_data}
+
+bio_mat4 <- bio_mat3
+labels_df <- as.data.frame(colnames(bio_mat4))
+names(labels_df)[which(names(labels_df) == "colnames(bio_mat4)")] <- "Variable"
+labels_df <- pretty_labels(labels_df)
+new_labels <- labels_df$pretty_labels
+colnames(bio_mat4) <- new_labels
+
+int_mat3 <- int_mat2
+labels_df <- as.data.frame(colnames(int_mat3))
+names(labels_df)[which(names(labels_df) == "colnames(int_mat3)")] <- "Variable"
+labels_df <- pretty_labels(labels_df)
+new_labels <- labels_df$pretty_labels
+colnames(int_mat3) <- new_labels
+
+protAge_mat3 <- protAge_mat2
+labels_df <- as.data.frame(colnames(protAge_mat3))
+names(labels_df)[which(names(labels_df) == "colnames(protAge_mat3)")] <- "Variable"
+labels_df <- pretty_labels(labels_df)
+new_labels <- labels_df$pretty_labels
+colnames(protAge_mat3) <- new_labels
+
+
+# copy
+fig4d_data <- disease_mat3[row_dend$order, col_dend2$order]
+fig4a_data <- bio_mat4[row_dend2$order, col_dend2$order]
+fig4b_data <- int_mat3[row_dend3$order, col_dend2$order]
+fig4c_data <- as.data.frame(protAge_mat3)
+fig4c_data <- fig4c_data[col_dend2$order]
+
+# save
+file <- './press/Fig4D_data_exposome_NatureMed.csv'
+write.csv(fig4d_data, file = file, row.names = TRUE)
+
+file <- './press/Fig4A_data_exposome_NatureMed.csv'
+write.csv(fig4a_data, file = file, row.names = TRUE)
+
+file <- './press/Fig4B_data_exposome_NatureMed.csv'
+write.csv(fig4b_data, file = file, row.names = TRUE)
+
+file <- './press/Fig4C_data_exposome_NatureMed.csv'
+write.csv(fig4c_data, file = file, row.names = TRUE)
+
+```
+
+
+
+```{r disease_biomarker_plot_betas}
+
+# new color functions for betas
+col_fun3 <- colorRamp2(c(-0.25, 0, 0.25), 
+                      c("blue", "white", "red"), 
+                      space = "RGB")
+                      
+col_fun4 <- colorRamp2(c(-0.01, 0, 0.01), 
+                      c("blue", "white", "red"), 
+                      space = "RGB")
+
+col_fun5 <- colorRamp2(c(-0.25, 0, 0.25), 
+                       c("blue", "white", "red"), 
+                       space = "RGB")
+
+# create legends
+lgd1 <- Legend(col_fun = col_fun4, 
+               title = "Biomarkers", 
+               at = c(-0.01, 0, 0.01), 
+               direction = "horizontal",
+               title_gp = gpar(fontsize = 8, fontface = "bold"),
+               labels_gp = gpar(fontsize = 8), 
+               legend_width = unit(1.5, "cm"))
+lgd5 <- Legend(col_fun = col_fun5, 
+               title = "Disease risk factors", 
+               at = c(-0.25, 0, 0.25), 
+               direction = "horizontal",
+               title_gp = gpar(fontsize = 8, fontface = "bold"),
+               labels_gp = gpar(fontsize = 8), 
+               legend_width = unit(1.5, "cm"))
+lgd2 <- Legend(col_fun = col_fun3, 
+               title = "Chronic diseases", 
+               at = c(-0.25, 0, 0.25), 
+               direction = "horizontal",
+               title_gp = gpar(fontsize = 8, fontface = "bold"),
+               labels_gp = gpar(fontsize = 8), 
+               legend_width = unit(1.5, "cm"))
+lgd3 = Legend(labels = legend_df$Aging.mechanism, 
+              title = "Mechanisms", 
+              title_gp = gpar(fontsize = 8, fontface = "bold"),
+              labels_gp = gpar(fontsize = 8), 
+              legend_gp = gpar(fill = legend_df$color))
+lgd4 = Legend(labels = "Not FDR significant", 
+              title_gp = gpar(fontsize = 8, fontface = "bold"),
+              labels_gp = gpar(fontsize = 8), 
+              legend_gp = gpar(fill = "gray"))
+
+lgd6 <- Legend(col_fun = col_fun5, 
+               title = "Proteomic age clock", 
+               at = c(-0.25, 0, 0.25), 
+               direction = "horizontal",
+               title_gp = gpar(fontsize = 8, fontface = "bold"),
+               labels_gp = gpar(fontsize = 8), 
+               legend_width = unit(1.5, "cm"))
+
+# combine together into single legend object
+lgd <- packLegend(
+    lgd1,
+    lgd5,
+    lgd6,
+    lgd2, 
+    lgd4,
+    lgd3, 
+    max_width = unit(2, "cm"), 
+    direction = "horizontal",  
+    row_gap = unit(0.25, "cm"))
+
+
+# create disease heatmap without cs
+disease_maps <-
+    Heatmap(disease_mat3,
+            col = col_fun3,
+            width = unit(9, "cm"),
+            heatmap_height = unit(10.5, "cm"),
+            column_names_gp = grid::gpar(fontsize = 8),
+            row_names_gp = grid::gpar(fontsize = 8),
+            row_dend_width = unit(1, "cm"),
+            column_names_rot = 45,
+            show_column_dend = FALSE,
+            show_row_dend = TRUE,
+            cluster_rows = row_dend,
+            # cluster_columns = FALSE,
+            cluster_columns = col_dend2, # arrange by biomarker clusters
+            column_names_max_height = unit(12, "cm"),
+            na_col = "gray",
+            right_annotation = ha,
+            show_heatmap_legend = FALSE)
+
+# create biomarker heatmap
+bio_map <- 
+    Heatmap(bio_mat3, 
+            col = col_fun4,
+            width = unit(9, "cm"),
+            # heatmap_height = unit(9.5, "cm"),
+            heatmap_height = unit(7.5, "cm"),
+            # column_names_gp = grid::gpar(fontsize = 10),
+            row_names_gp = grid::gpar(fontsize = 8),
+            # column_names_rot = 45,
+            # column_dend_height = unit(3.5, "cm"),
+            row_dend_width = unit(1, "cm"),
+            cluster_rows = row_dend2, 
+            # cluster_columns = FALSE,
+            cluster_columns = col_dend2, # arrange by biomarker clusters
+            # show_column_dend = FALSE,
+            show_column_dend = TRUE,
+            column_dend_height = unit(1, "cm"),
+            column_names_max_height = unit(12, "cm"),
+            na_col = "gray",
+            # right_annotation = c(ha2, hcat),
+            right_annotation = ha2,
+            show_heatmap_legend = FALSE,
+            show_column_names = FALSE
+            ) 
+
+# create biomarker heatmap
+int_map <- 
+    Heatmap(int_mat2, 
+            col = col_fun5,
+            width = unit(9, "cm"),
+            heatmap_height = unit(0.75, "cm"),
+            # column_names_gp = grid::gpar(fontsize = 10),
+            row_names_gp = grid::gpar(fontsize = 8),
+            # column_names_rot = 45,
+            show_column_dend = FALSE,
+            # column_dend_height = unit(3.5, "cm"),
+            row_dend_width = unit(1, "cm"),
+            cluster_rows = row_dend3, 
+            # cluster_columns = FALSE,
+            cluster_columns = col_dend2, # arrange by biomarker clusters
+            column_names_max_height = unit(12, "cm"),
+            na_col = "gray",
+            # right_annotation = c(ha2, hcat),
+            right_annotation = ha3,
+            show_heatmap_legend = FALSE,
+            show_column_names = FALSE
+            ) 
+
+# create protAge heatmap
+protAge_map <- 
+    Heatmap(protAge_mat2, 
+            col = col_fun5,
+            width = unit(9, "cm"),
+            heatmap_height = unit(0.25, "cm"),
+            # column_names_gp = grid::gpar(fontsize = 10),
+            row_names_gp = grid::gpar(fontsize = 8),
+            # column_names_rot = 45,
+            show_column_dend = FALSE,
+            show_row_dend = FALSE,
+            cluster_columns = col_dend2, # arrange by biomarker clusters
+            column_names_max_height = unit(12, "cm"),
+            na_col = "gray",
+            # right_annotation = c(ha2, hcat),
+            right_annotation = ha4,
+            show_heatmap_legend = FALSE,
+            show_column_names = FALSE
+            ) 
+
+```
+
+```{r plot_just_heatmap}
+
+# make heatmaps and legends grobs unit(c(bottom, left, top, right))
+gb1 <- grid.grabExpr(draw(bio_map, padding = unit(c(0,14.1,10,10), "mm")))
+gb2 <- grid.grabExpr(draw(int_map, padding = unit(c(0,-7.7,0,10), "mm")))
+gb3 <- grid.grabExpr(draw(protAge_map, padding = unit(c(1,11.4,1,10), "mm")))
+gb4 <- grid.grabExpr(draw(disease_maps, padding = unit(c(0,8,0,10), "mm")))
+gb5 <- grid.grabExpr(draw(lgd, x = unit(0.41, "npc"), y = unit(0.5, "npc")))
+
+setwd("./manuscript/Revision 3/figures/")
+# png("disease_biomarker_june_23_2022_all_sexes.png", 
+#     width = 15.5,
+#     height = 10,
+#     units = "in", 
+#     res = 1200) 
+# jpeg("disease_biomarker_july_13_2022_all_sexes_betas.jpeg",
+#     width = 15.5,
+#     height = 10,
+#     units = "in",
+#     res = 1200)
+# par(oma = c(10, 3, 10, 3)) # all sides have 3 lines of space
+# par(mar = rep(1,4), xpd = NA)
+
+# jpeg("disease_biomarker_sept_18_2022_all_sexes_betas.jpeg",
+#     width = 15.5,
+#     height = 10,
+#     units = "in",
+#     res = 1200)
+name = glue('Figure_4.pdf')
+width_in_inches <- 21 * 0.393701
+height_in_inches <- 20 * 0.393701
+pdf(name, width = width_in_inches, height = height_in_inches)
+par(oma = c(15, 3, 10, 3)) # all sides have 3 lines of space
+par(mar = rep(1,4), xpd = NA)
+
+# svg("disease_biomarker_july_13_2022_all_sexes_betas.svg",
+#     width = 15.5,
+#     height = 10,
+#     units = "in",
+#     res = 1200)
+# par(oma = c(10, 3, 10, 3)) # all sides have 3 lines of space
+# par(mar = rep(1,4), xpd = NA)
+
+# # first align the two heatmaps
+# left_col <- align_plots(gb1, gb2, gb3, gb4, align = 'v', axis = 'l')
+# 
+# # then plot in grid
+# p1 <- plot_grid(left_col[[1]], 
+#                 left_col[[2]], 
+#                 left_col[[3]],
+#                 left_col[[4]],
+#                 ncol = 1,
+#                 nrow = 4,
+#                 labels = c("a", "b", "c", "d"),
+#                 label_size = 16,
+#                 hjust = -2,
+#                 vjust = c(14, 8, 0)
+# )
+# 
+# # then combine with the legend column for final plot
+# plot_grid(p1, 
+#           gb5, 
+#           ncol = 2,
+#           nrow = 1,
+#           labels = "",
+#           rel_widths = c(4, 1)
+# )
+
+library(grid)
+
+# Start a new page for drawing
+grid.newpage()
+
+# Define the main layout with two columns directly in the main viewport
+main_vp <- viewport(layout = grid.layout(1, 2, widths = unit(c(4, 1), "null")))
+
+pushViewport(main_vp)
+
+# Left side for heatmaps
+pushViewport(viewport(layout.pos.col = 1))
+
+# Draw each grob in its corresponding viewport and add labels
+vp1 <- viewport(x = 0, y = 0.94, width = 1, height = 0.25, just = c("left", "top"))
+vp2 <- viewport(x = 0, y = 0.638, width = 1, height = 0.125, just = c("left", "top"))
+vp3 <- viewport(x = 0, y = 0.572, width = 1, height = 0.0625, just = c("left", "top"))
+vp4 <- viewport(x = 0, y = 0.45, width = 1, height = 0.375, just = c("left", "top"))
+
+pushViewport(vp1)
+grid.draw(gb1)
+grid.text("a", x = 0.02, y = 0.3, just = "center", gp = gpar(fontsize = 16, fontface = "bold"))
+popViewport()
+
+pushViewport(vp2)
+grid.draw(gb2)
+grid.text("b", x = 0.02, y = 0.61, just = "top", gp = gpar(fontsize = 16, fontface = "bold"))
+popViewport()
+
+pushViewport(vp3)
+grid.draw(gb3)
+grid.text("c", x = 0.02, y = 0.7, just = "top", gp = gpar(fontsize = 16, fontface = "bold"))
+popViewport()
+
+pushViewport(vp4)
+grid.draw(gb4)
+grid.text("d", x = 0.02, y = 0.8, just = "top", gp = gpar(fontsize = 16, fontface = "bold"))
+popViewport()
+
+popViewport()  # Close the viewport for the left side
+
+# Right side for gb5
+pushViewport(viewport(layout.pos.col = 2, x = unit(0.55, "npc")))
+grid.draw(gb5)
+popViewport()
+
+popViewport()  # Close the main viewport
+
+
+dev.off()
+
+```
+
+```{r total_sig_biomarkers}
+
+## count numbers of factors FDR significant for each biomarker
+
+# create empty list
+sig_list <- as.list(rep(1, length(biomarker_results)))
+
+# fill with FDR significant exposome factors for each biomarker
+for (k in seq_along(sig_list)) {
+    sig_list[[k]] <- 
+        unique(biomarker_results[[k]]$Variable[which(biomarker_results[[k]]$FDR < 0.05)])
+}
+
+# set names
+names(sig_list) <- pretty_biomarkers
+
+# get vars significant in all biomarkers
+total_sig <- Reduce(intersect, sig_list)
+
+# table of how many of the biomarkers each variable is significant for
+temp <- as.vector(unlist(sig_list))
+temp_table <- table(temp)
+
+# average biomarkers associated with each exposome factor
+mean(temp_table)
+
+# sort to see variable with lowest number of factors associated
+sort(temp_table)
+
+# count of associations per disease
+count <- sapply(sig_list, length)
+
+# sort to see variable with lowest number of factors associated
+sort(count)
+
+# check vars associated with lipoprotein A
+sig_list$lipoprotein_A
+
+# check vars associated with LTL
+sig_list$LTL
+
+```
+
+```{r total_sig_diseases}
+
+# load disease analysis results
+load("./results/all_disease_analysis_output_with_cs_2024-05-02.RData")
+
+disease_results3 <- disease_results[1:25]
+
+# create empty list
+sig_list <- as.list(rep(1, length(disease_results3)))
+
+# fill with FDR significant exposome factors for each biomarker
+for (k in seq_along(sig_list)) {
+    sig_list[[k]] <- 
+        unique(disease_results3[[k]]$Variable[which(disease_results3[[k]]$FDR < 0.05)])
+}
+
+# set names
+names(sig_list) <- names
+
+# get vars significant in all biomarkers
+total_sig <- Reduce(intersect, sig_list)
+
+# table of how many of the biomarkers each variable is significant for
+temp <- as.vector(unlist(sig_list))
+temp_table <- table(temp)
+
+# average diseases associated with each exposome factor
+mean(temp_table)
+
+# sort to see variable with lowest number of factors associated
+sort(temp_table)
+
+# count of associations per disease
+count <- sapply(sig_list, length)
+
+# sort to see variable with lowest number of factors associated
+sort(count)
+
+
+```
+
+
+```{r protAge_heatmap}
+# load proteomic age clock results
+protAge_df <- read.csv("./output/protAge_associations_2024-08-15.csv")
+# remove results for education and ethnicity (used as covars in XWAS)
+protAge_df <- protAge_df[protAge_df$Variable %nin% c('ethnicity', 'education_years'), ]
+# sort by category
+protAge_df <- protAge_df[order(protAge_df$Category), ]
+
+# recode not significant to 1000
+protAge_df$PA_val <- ifelse(
+  protAge_df$FDR >= 0.05,
+  1000, # set 1000 for non-significant
+  protAge_df$Beta)
+
+protAge_matrix <- protAge_df[c('PA_val', 'mort_beta')]
+rownames(protAge_matrix) <- protAge_df$Exposure
+colnames(protAge_matrix) <- c('Proteomic aging', 'Mortality')
+
+protAge_matrix <- data.matrix(protAge_matrix)
+# protAge_matrix <- t(protAge_matrix)
+protAge_matrix[which(protAge_matrix == 1000)] <- NA
+
+# load function to rename exposures
+source("./pretty_variable_names.R")
+
+# labels_df <- as.data.frame(colnames(protAge_matrix))
+# names(labels_df)[which(names(labels_df) == "colnames(protAge_matrix)")] <- "Variable"
+
+labels_df <- as.data.frame(rownames(protAge_matrix))
+names(labels_df)[which(names(labels_df) == "rownames(protAge_matrix)")] <- "Variable"
+
+labels_df <- pretty_labels(labels_df)
+new_labels <- labels_df$pretty_labels
+rownames(protAge_matrix) <- new_labels
+
+
+col_fun4 <- colorRamp2(c(-0.25, 0, 0.25), 
+                       c("blue", "white", "red"), 
+                       space = "RGB")
+
+# create legends
+lgd1 <- Legend(col_fun = col_fun4, 
+               title = "Beta", 
+               at = c(-0.25, 0, 0.25), 
+               direction = "horizontal",
+               legend_width = unit(2, "cm"),
+               legend_height = unit(0.25, "cm"),
+               labels_gp = gpar(fontsize = 6),
+               title_gp = gpar(fontsize = 6, fontface = "bold")
+               )
+
+# create biomarker heatmap
+protAge_map <- 
+    Heatmap(protAge_matrix, 
+            col = col_fun4,
+            width = unit(1, "cm"),
+            heatmap_height = unit(21, "cm"),
+            column_names_gp = grid::gpar(fontsize = 6),
+            column_names_rot = 45,
+            row_names_gp = grid::gpar(fontsize = 6),
+            cluster_rows = FALSE,
+            cluster_columns = FALSE,
+            column_names_max_height = unit(12, "cm"),
+            na_col = "gray",
+            show_heatmap_legend = FALSE,
+            show_column_names = TRUE
+            ) 
+
+```
+
+
+```{r exposome_importance plot_prep}
+
+disease_list <- c(
+    "All-cause mortality",
+    "Colorectal cancer",
+    "Lung cancer",
+    "Esophageal cancer",
+    "Liver cancer",
+    "Pancreatic cancer",
+    "Brain cancer",
+    "Leukemia",
+    "Lymphoma",
+    "Breast cancer",
+    "Ovarian cancer",
+    "Prostate cancer",
+    "Type II diabetes",
+    "Ischemic heart disease",
+    "Cerebrovascular diseases",
+    "Emphysema, COPD",
+    "Chronic liver diseases",
+    "Chronic kidney diseases",
+    "All-cause dementia",
+    "Vascular dementia",
+    "Alzheimer's disease",
+    "Parkinson's disease",
+    "Macular degeneration",
+    "Rheumatoid arthritis",
+    "Osteoporosis",
+    "Osteoarthritis"
+)
+
+disease_index <- disease_list[which(disease_list != "Brain cancer")]
+
+# load chisq results
+load("./results/chisq_models_2024-08-20_exposome_indiv.RData")
+
+# make pretty labels
+source("./pretty_variable_names.R")
+plots3 <- lapply(plots3, pretty_labels)
+
+# formatting
+plots3 <- lapply(plots3, function(x){
+    
+    names(x)[3:7] <- c("chisq1","chisq2","chisq3","chisq4","chisq5")
+    x <- x[which(x$pretty_labels != "TOTAL"), ]
+    x <- merge(x,
+              subset(categories, select = c("Variable", "Category")),
+              by = "Variable",
+              all.x = TRUE,
+              all.y = FALSE)
+    x$Category[which(x$Variable == "age_scaled")] <- "Age and sex"
+    x$Category[which(x$Variable == "sex")] <- "Age and sex"
+    x <- x[order(x$pctexp, decreasing = TRUE), ]
+    var_order <- x$pretty_labels
+    x$pretty_labels <- factor(x$pretty_labels, levels = var_order)
+
+    return(x)
+})
+
+library(ggforce)
+library(ggsci)
+
+load('/Users/aargenti/Documents/metabolic_age/color_palette.RData')
+# color_map$color[which(color_map$sequence == "Age and sex")] <- 
+    # color_map$color[which(color_map$sequence == "General health")]
+
+mort <- plots3[[disease_index[1]]]
+
+color_map$sequence[which(color_map$sequence == "Medications")] <- "Supplements"
+color_map$color[which(color_map$sequence == "Supplements")] <- 
+    color_map$color[which(color_map$sequence == "Urine biomarkers")]
+
+pal <- merge(mort, 
+             color_map, 
+             by.x = "Category",
+             by.y = "sequence", 
+             all = T)
+
+pal <- pal[which(!is.na(pal$Variable)), ]
+# pal$color[which(pal$Category == "Age and sex")] <- color_map$color[which(color_map$sequence == "General health")]
+# pal$color[which(pal$Category == "Age and sex")] <- "#4c4c4c"
+pal$color[which(pal$Category == "Age and sex")] <- "#756CD8"
+
+pal <- unique(pal$color)
+
+```
+
+```{r exposome_plot}
+
+g3abc <- ggplot(mort, aes(x = pretty_labels, y = sqrt(pctexp), fill = Category)) + 
+    geom_bar(position = "dodge", stat = "identity") +
+    geom_text(aes(x = pretty_labels, label = pretty_labels), vjust = 0, angle = 45, hjust = 0) +
+    scale_fill_manual(values = pal) +
+    theme_classic() +
+    ylab(expression(bold("Proportion of total mortality ") * bold(chi^2) * bold(" (square root)"))) +
+    xlab("") +
+    scale_y_continuous(expand = expansion(mult = c(0.02, 0.1))) +
+    scale_x_discrete(expand = expansion(mult = c(0.025, 0.01))) +
+    theme(
+        # axis.text.x = element_text(angle = 45, hjust = 1, size = 10),
+        axis.text.x = element_blank(),
+        axis.ticks.x = element_blank(),
+        axis.title.y = element_text(face = "bold", margin = margin(r = 20)),
+        legend.text = element_text(size = 8),
+        # legend.position = c(0.8,0.5),
+        # legend.position = "none",
+        legend.title = element_text(size = 8, face = "bold"),
+        legend.key.width = unit(0.4, "cm"),
+        legend.key.height = unit(0.4, "cm")
+    )  
+
+# g3abc
+
+# get legend
+library(ggpubr)
+
+glgd <- get_legend(g3abc)
+glgd <- as_ggplot(glgd)
+
+g3abc <- ggplot(mort, aes(x = pretty_labels, y = sqrt(pctexp), fill = Category)) + 
+    geom_bar(position = "dodge", stat = "identity") +
+    geom_text(aes(x = pretty_labels, y = sqrt(pctexp), label = pretty_labels), angle = 45, size = 2, vjust = 0, hjust = 0) +
+    scale_fill_manual(values = pal) +
+    theme_classic() +
+    ylab(expression(bold("Proportion of total mortality ") * bold(chi^2) * bold(" (square root)"))) +
+    xlab("Exposure") +
+    scale_y_continuous(expand = expansion(mult = c(0.02, 0.1))) +
+    scale_x_discrete(expand = expansion(mult = c(0.025, 0.01))) +
+    theme(
+        # axis.text.x = element_text(angle = 45, hjust = 1, size = 10),
+      axis.text.y = element_text(size = 8),
+      axis.text.x = element_blank(),
+      axis.ticks.x = element_blank(),
+      axis.title.y = element_text(face = "bold", size = 8, margin = margin(r = 5)),
+      axis.title.x = element_text(face = "bold", size = 8, margin = margin(t = 5)),
+      legend.position = "none",
+      legend.key.width = unit(0.4, "cm"),
+      legend.key.height = unit(0.4, "cm"),
+      plot.margin = margin(t = 0, r = 0, b = 0, l = 20, unit = "pt")
+    )  +
+  expand_limits(x = 34, y=0.45)
+
+# g3abc
+
+setwd("./output")
+jpeg(glue("exposome_mortality_chisq_{Sys.Date()}_nosplit.jpeg"),
+    width = 10,
+    height = 7,
+    units = "in",
+    res = 1200)
+
+g3abc
+
+dev.off()
+```
+
+```{r export_fig2d_data}
+
+# load color map
+load('/Users/aargenti/Documents/metabolic_age/color_palette.RData')
+color_map$sequence[which(color_map$sequence == "Medications")] <- "Supplements"
+color_map$color[which(color_map$sequence == "Supplements")] <- 
+    color_map$color[which(color_map$sequence == "Urine biomarkers")]
+
+# copy data
+fig2d_data <- mort
+# calculate sqrt for better axis viewing
+fig2d_data$sqrt_proportion <- sqrt(fig2d_data$pctexp)
+
+# merge with color codes
+fig2d_data <- merge(
+  fig2d_data, 
+  color_map, 
+  by.x = "Category",
+  by.y = "sequence", 
+  all.x = T,
+  all.y = F,
+  sort = F
+)
+
+# remove empty rows
+fig2d_data <- fig2d_data[which(!is.na(fig2d_data$Variable)), ]
+
+# add color manually
+fig2d_data$color[which(fig2d_data$Category == "Age and sex")] <- "#756CD8"
+
+# sort by proportion
+fig2d_data <- fig2d_data %>% arrange(desc(sqrt_proportion))
+
+# remove unecessary cols
+fig2d_data <- fig2d_data[c(1,11,12,13)]
+
+# rename
+colnames(fig2d_data) <- c("exposure_category", "exposure", "sqrt_proportion", "color")
+
+# save
+file <- './press/Fig2D_data_exposome_NatureMed.csv'
+write.csv(fig2d_data, file = file, row.names = FALSE)
+
+
+## fig 2c
+file <- './press/Fig2C_data_exposome_NatureMed.csv'
+write.csv(protAge_matrix, file = file, row.names = TRUE)
+```
+
+```{r male_female_comparison_plot}
+# library(plotly)
+library(ggplot2)
+library(htmlwidgets)
+library(ggpubr)
+
+options(scipen = 999)
+
+# load color palette
+load('/Users/aargenti/Documents/metabolic_age/color_palette.RData')
+
+# load female results
+load("/Users/aargenti/Library/CloudStorage/GoogleDrive-austin.argentieri@gmail.com/My Drive/Computer backup/DPhil Research/UKB/Analysis projects/ACM EWAS 2021/results/full cohort/sex-specific results/ACM_XWAS_results_dec_11_2022_women_summary.RData")
+
+# rename
+female_XWAS_total <- XWAS_total
+
+#load male results
+load("/Users/aargenti/Library/CloudStorage/GoogleDrive-austin.argentieri@gmail.com/My Drive/Computer backup/DPhil Research/UKB/Analysis projects/ACM EWAS 2021/results/full cohort/sex-specific results/ACM_XWAS_results_dec_11_2022_men_summary.RData")
+
+# get common exposures
+common_exposures <- intersect(XWAS_total$Exposure, female_XWAS_total$Exposure)
+
+# merge
+plots_df <- merge(XWAS_total[which(XWAS_total$Exposure %in% common_exposures), ], 
+                  female_XWAS_total[which(female_XWAS_total$Exposure %in% common_exposures), ],
+                  by = "Exposure",
+                  all = TRUE,
+                  sort = FALSE)
+
+# merge categories for plot
+plots_df$Category <- ifelse(!is.na(plots_df$Category.x),
+                            plots_df$Category.x,
+                            plots_df$Category.y)
+
+# add in row for female reproductive factors to color_map
+rep_factors <- data.frame("Female reproductive factors", "#678F63")
+names(rep_factors) <- names(color_map)
+color_map <- rbind(color_map, rep_factors)
+color_map <- color_map[order(color_map$sequence), ]
+
+color_map$color[which(color_map$sequence == "Stressful life events")] <- 
+    color_map$color[which(color_map$sequence == "General health")]
+
+color_map$sequence[which(color_map$sequence == "Medications")] <- "Supplements"
+color_map$color[which(color_map$sequence == "Supplements")] <- 
+    color_map$color[which(color_map$sequence == "Urine biomarkers")]
+
+# merge color map with plots df
+plots_df <- merge(plots_df, 
+                  color_map, 
+                  by.x = "Category",
+                  by.y = "sequence", 
+                  all = F)
+
+names(plots_df)[names(plots_df) == "Beta.x"] <- "Beta.Men"
+names(plots_df)[names(plots_df) == "Beta.y"] <- "Beta.Women"
+
+# re-order so that black dots are behind colored dots
+plots_df <- plots_df[order(plots_df$Category), ]
+
+# correlation coefficient between men and women
+hr_corr <- cor(plots_df$Beta.Men, 
+               plots_df$Beta.Women)
+
+beta_corr <- cor(plots_df$Beta.Men, 
+                 plots_df$Beta.Women)
+
+# regression line for plot
+beta.lm <- lm(Beta.Women ~ Beta.Men, plots_df)
+
+options(scipen = 0)
+
+# Calculate Pearson correlation and p-value
+cor_test <- cor.test(plots_df$Beta.Men, plots_df$Beta.Women, method = "pearson")
+cor_value <- round(cor_test$estimate, 2) # Rounded correlation coefficient
+p_value <- formatC(cor_test$p.value, format = "e", digits = 2) # P-value in scientific notation
+
+
+# ggplot
+comp_plot <- 
+    ggplot(
+        plots_df,
+        aes(x = Beta.Men, 
+            y = Beta.Women, 
+            label = Exposure
+        )) + 
+    geom_point(
+        aes(color = Category),
+        size = 2.5) + 
+  annotate(
+    "text", 
+    x = mean(range(plots_df$Beta.Men)) + 0.1, # Center x-position
+    y = min(plots_df$Beta.Women),        # Bottom y-position
+    label = paste0("r = ", cor_value, "\np = ", p_value),
+    size = 3,
+    hjust = 0
+  ) +
+    scale_color_manual(values = unique(plots_df$color)) +
+    # ggtitle("Comparison of Mortality XWAS Hazard Ratios - Men vs. Women") +
+    labs(x = "XWAS beta (men)",
+         y = "XWAS beta (women)") +
+    theme_classic(base_size = 8) +
+    # theme(legend.position = "none") +
+    geom_hline(yintercept = 0, 
+               color = "gray", 
+               linetype = "dashed") + 
+    geom_vline(xintercept = 0, 
+               color = "gray", 
+               linetype = "dashed") +
+    scale_x_continuous(limits = c(-1.2,1.2), breaks = seq(-1, 2, by = 1)) +
+    scale_y_continuous(limits = c(-1.2,1.2), breaks = seq(-1, 2, by = 1)) + 
+    # show regression line between betas
+    geom_abline(slope = coef(beta.lm)[[2]], 
+                intercept = coef(beta.lm)[[1]],
+                color = "red") +
+    theme(
+        axis.title.y = element_text(face = "bold"),
+        axis.title.x = element_text(face = "bold"),
+        legend.text = element_text(size = 8, margin = margin(t = 0)),
+        legend.title = element_blank(),
+        legend.key.size = unit(0, 'lines')
+    )
+
+comp_plot 
+
+```
+
+```{r fig2_prep_all, out.width="100%"}
+
+# load XWAS results
+load("./results/ACM_XWAS_results_dec_11_2022_all_sexes_summary.RData")
+load('/Users/aargenti/Documents/metabolic_age/color_palette.RData')
+
+XWAS_total$Category[which(XWAS_total$Variable %in% c("bread_fiber", "cereal_fiber"))] <- "Diet"
+
+# set options
+options(digits = 2)
+
+### Create plots df -------------------------------------------------------------------
+
+# create new df for plots
+plots_df <- XWAS_total
+plots_df <- plots_df[!is.na(plots_df$Beta), ] # remove any tests that failed 
+plots_df$Category[which(plots_df$Variable == "gym")] <- "Physical activity" # change category
+plots_df$Category[which(plots_df$Variable == "bread_fiber")] <- "Diet" # change category
+plots_df$Category[which(plots_df$Variable == "cereal_fiber")] <- "Diet" # change category
+
+### Generate colors -------------------------------------------------------------------
+
+# generate color for each category of variable
+# try different random seeds until you like the results
+# then save the color pallette and color map with results
+
+# set.seed(789)
+# pal <- c(distinctColorPalette(k = length(unique(plots_df$Category)), altCol = FALSE, runTsne = FALSE))
+# color_map <- data.frame(sequence = unique(sort(plots_df$Category)), color = pal)
+# # 
+# save(pool_disc,
+#      pool_rep,
+#      allvars_disc,
+#      allvars_rep,
+#      XWAS_total,
+#      pal,
+#      color_map,
+#      file = "/Users/austin.argentieri/OneDrive - Nexus365/DPhil Research/UKB/Code/ACM XWAS 2021/results/ACM_XWAS_results_march_11_2021_men.RData")
+
+color_map$color[which(color_map$sequence == "Stressful life events")] <- 
+    color_map$color[which(color_map$sequence == "General health")]
+
+color_map$sequence[which(color_map$sequence == "Medications")] <- "Supplements"
+color_map$color[which(color_map$sequence == "Supplements")] <- 
+    color_map$color[which(color_map$sequence == "Urine biomarkers")]
+
+# merge color map with plots df
+plots_df <- merge(plots_df, 
+                  color_map, 
+                  by.x = "Category",
+                  by.y = "sequence", 
+                  all = T)
+
+plots_df <- plots_df[!is.na(plots_df$Beta), ] # remove any empty categories that got added in
+
+# create binary significant yes/no column for plot
+plots_df$Significant <- ifelse(plots_df$FDR.disc < 0.05 & plots_df$FDR.rep < 0.05, 
+                               "Yes", 
+                               "No")
+
+# recode as factor with no first so that the colors layer correctly in plot
+plots_df$Significant <- factor(plots_df$Significant, 
+                               levels = c("No", 
+                                          "Yes"))
+
+### Log transformation -------------------------------------------------------------------
+
+# log transform p values
+plots_df$log10.p <- -log10(plots_df$p.value) 
+
+# round log p values to 2 decimal places
+plots_df$log10.p <- format(round(plots_df$log10.p, 2), nsmall = 2)
+
+# re-class to numeric after rounding (format function converts to integer)
+plots_df$log10.p <- as.numeric(plots_df$log10.p)
+
+# set arbitraty value is logp value is inf because p-value is 0
+plots_df$log10.p[which(is.infinite(plots_df$log10.p))] <- max(plots_df$log10.p[which(!is.infinite((plots_df$log10.p)))]) + 5
+
+
+# find largest p-value (smallest log p value) that passes FDR for plot
+FDR <- plots_df[which(plots_df$FDR.disc < 0.05), ] # subset df to only those results that are FDR sig
+log_min <- min(FDR$log10.p) # find lowest log p value as line for FDR significance
+```
+
+```{r volcano_prep_all, out.width="100%"}
+
+### Prepare data for volcano plots
+
+# make log2(hr)
+plots_df$log2.HR <- log2(plots_df$Hazard.Ratio)
+
+# round beta estimates for easier reading in plot
+plots_df$log2.HR  <- format(round(plots_df$log2.HR, 2), nsmall = 2)
+plots_df$log2.HR <- as.numeric(plots_df$log2.HR) # re-class to numeric because round produces an integer
+
+# round beta estimates for easier reading in plot
+plots_df$Beta  <- format(round(plots_df$Beta, 2), nsmall = 2)
+plots_df$Beta <- as.numeric(plots_df$Beta) # re-class to numeric because round produces an integer
+
+# add in grey/black color for non-significant points
+plots_df$color <- ifelse(plots_df$FDR.rep > 0.05 |
+                           is.na(plots_df$FDR.rep),
+                         "#4c4c4c",
+                         plots_df$color)
+
+# add in "non-significant" category for plots
+plots_df$Category <- ifelse(plots_df$color == "#4c4c4c",
+                            "* Non-replicated",
+                            plots_df$Category)
+
+# re-order so that strongest hits are on top
+plots_df <- plots_df[order(plots_df$p.value), ]
+
+# labels for top 20 hits by p-value
+plots_df$labels <- plots_df$Variable
+plots_df$labels[21:nrow(plots_df)] <- ""
+
+### Pretty labels -------------------------------------------------------------------
+
+# make pretty labels for plot
+# this section will need to be tweaked for each new set of results
+plots_df$pretty_labels <- plots_df$labels
+plots_df$pretty_labels <- gsub("_England", "", plots_df$pretty_labels, fixed=TRUE)
+plots_df$pretty_labels <- gsub("_", " ", plots_df$pretty_labels, fixed=TRUE)
+plots_df$pretty_labels <- gsub("hshld", "household", plots_df$pretty_labels, fixed=TRUE)
+plots_df$pretty_labels <- gsub("freq", "frequency", plots_df$pretty_labels, fixed=TRUE)
+plots_df$pretty_labels <- gsub("prop", "proportion", plots_df$pretty_labels, fixed=TRUE)
+plots_df$pretty_labels <- gsub("pack", "smoking pack", plots_df$pretty_labels, fixed=TRUE)
+plots_df$pretty_labels <- gsub("tobacco", "tobacco use", plots_df$pretty_labels, fixed=TRUE)
+plots_df$pretty_labels[plots_df$Exposure == "accommodation_typeA flat, maisonette or apartment"] <- "living in flat or apartment"
+plots_df$pretty_labels[plots_df$Exposure == "own_or_rentRent - from local authority, local council, housing association"] <- "renting public housing"
+plots_df$pretty_labels[plots_df$Exposure == "other_exercise_4wksYes"] <- "other exercise in last 4wks (e.g., swim, cycle)"
+plots_df$pretty_labels[plots_df$Exposure == "days_activity_sum"] <- "summed days of physical activity"
+plots_df$pretty_labels[plots_df$Exposure == "smoking_statusCurrent"] <- "current smoker"
+plots_df$pretty_labels[plots_df$Exposure == "smoking_statusPrevious"] <- "previous smoker"
+plots_df$pretty_labels[plots_df$Exposure == "pack_years_prop"] <- "pack years as proportion of lifespan exposed to smoking"
+plots_df$pretty_labels[plots_df$Variable == "pleasure_walks_4wks"] <- "taken pleasure walks in past 4 wks"
+plots_df$pretty_labels[plots_df$Exposure == "hshld_vehicles"] <- "number of household vehicles"
+plots_df$pretty_labels[plots_df$Exposure == "sleep_hours_categorical>9 hours"] <- ">9 hrs sleep per day"
+plots_df$pretty_labels[plots_df$Variable == "health_satisfaction"] <- "health satisfaction"
+plots_df$pretty_labels[plots_df$Exposure == "above_activity_recommendation_incl_walkYes"] <- "meets UK physical activity guidelines"
+plots_df$pretty_labels[plots_df$Variable == "cereal"] <- "cereal intake"
+plots_df$pretty_labels[plots_df$Exposure == "walked_over_10mins_days"] <- "number of days/week walked 10+ minutes"
+plots_df$pretty_labels[plots_df$Variable == "hshld_partner"] <- "living with partner"
+plots_df$pretty_labels[plots_df$Variable == "NO2_2010"] <- "NO2 pollution"
+plots_df$pretty_labels[plots_df$Variable == "PM10_2007"] <- "PM10 pollution"
+
+
+# make sure I didn't create any erroneous pretty labels
+plots_df$pretty_labels <- ifelse(plots_df$labels != "",
+                                 plots_df$pretty_labels,
+                                 "")
+# re-order so that black dots are behind colored dots
+plots_df <- plots_df[order(plots_df$Category), ]
+```
+
+```{r volcano_all}
+library(ggrepel)
+
+# load XWAS volcano function
+source("./functions/XWAS_volcano.R")
+
+volc3 <- volcano(
+    data = plots_df,
+    x = "log2.HR",
+    y = "log10.p",
+    point.size = 2.5,
+    interactive = FALSE,
+    estimate.label = "log<sub>2</sub>(HR)",
+    estimate.label.col = "log2.HR",
+    exposure.label.col = "Exposure",
+    category = "Category",
+    color = plots_df$color,
+    title = "",
+    x.lab = expression(bold("log"[2]*" Hazard Ratio (fold change)")),
+    y.lab = expression(bold("-log"[10]*" p-value")),
+    theme = "classic",
+    theme.size = 8,
+    legend.title = "",
+    axis.title.y = element_text(size = 8),
+    axis.title.x = element_text(size = 8),
+    legend.key.size = unit(0, 'lines'),
+    legend.text = element_text(size = 8, margin = margin(t = 0))
+    # x.lim = c(-3, 3.3)
+    # generate.colors = TRUE,
+    # color.seed = 789
+) +
+  geom_text_repel(
+    aes(label = pretty_labels),
+    size = 1.5,
+    # aes(label = Exposure),
+    box.padding = unit(.3, 'lines'),
+    segment.size = 0.4,  # Adjust line width
+    # always draw lines
+    min.segment.length = 0,
+    # Add extra padding around each data point.
+    point.padding = unit(0.2, 'lines'),
+    max.overlaps = Inf,
+    force = 2,
+    seed = 5678
+    # min.segment.length = 0,
+    # point.size = 2
+  )
+
+
+# show plot
+volc3
+
+```
+
+
+
+```{r plot_combined}
+setwd("./manuscript/Revision 3/figures/")
+name = glue('Figure_2.pdf')
+width_in_inches <- 18.5 * 0.393701
+height_in_inches <- 22.5 * 0.393701
+pdf(name, width = width_in_inches, height = height_in_inches)
+
+par(oma = c(15, 3, 10, 3)) # all sides have 3 lines of space
+par(mar = rep(1,4), xpd = NA)
+
+# first align the two heatmaps
+# left_col <- align_plots(gb1, gb4, gb2, align = 'v', axis = 'l')
+
+# make heatmaps and legends grobs unit(c(bottom, left, top, right))
+gb_protAge <- grid.grabExpr(draw(protAge_map, padding = unit(c(0,10,30,20), "mm")))
+gb_lgd <- grid.grabExpr(draw(lgd1, x = unit(0.5, "npc"), y = unit(0.5, "npc")))
+
+
+# then plot in grid
+p1 <- plot_grid(NULL,
+                comp_plot, 
+                NULL,
+                volc3,
+                NULL,
+                g3abc, 
+                NULL,
+                ncol = 1,
+                nrow = 6,
+                labels = c("", "a", "", "b", "", "d", ""),
+                label_size = 16,
+                hjust = 1,
+                rel_heights = c(0.15, 1, 0.1, 1, 0.1, 1, 1),
+                vjust = c(0, -1, 0, 0, 0, -2, 0)
+)
+
+
+p3 <- plot_grid(gb_protAge, gb_lgd,
+                ncol = 1,
+                nrow = 2,
+                rel_heights = c(10,1))
+
+
+# then combine with the heatmap of protAge
+p2 <- plot_grid(NULL,
+                p1,
+                NULL,
+                p3,
+                ncol = 4,
+                nrow = 1,
+                labels = c("", "", "", "c"),
+                label_size = 16,
+                rel_widths = c(0.2, 4, 0.75, 2),
+                hjust = c(0, 0, 0, 6)
+)
+
+
+p2
+dev.off()
+```
+
+
+
+
+
+
+
+
