@@ -1,0 +1,167 @@
+```{r packages, echo=FALSE}
+library(Hmisc)
+library(dplyr)
+```
+
+```{r load}
+
+# load raw UKB telomere/metabolomics dataset
+dat <- readRDS("./data/ukb51025.rds")
+
+# dat <- readRDS("/Users/austina/OneDrive - Nexus365/DPhil Research/UKB/Datasets/7. Third dataset from UKB/ukb47736.rds")
+
+
+
+colnames(dat)
+
+```
+
+```{r telomeres, results='hide'}
+
+### telomeres
+telomere_data <- 
+  subset(dat,
+         select = c(
+           Cs(
+               f.eid,
+               f.22190.0.0,
+               f.22190.1.0,
+               f.22190.2.0,
+               f.22191.0.0,
+               f.22191.1.0,
+               f.22191.2.0,
+               f.22192.0.0,
+               f.22192.1.0,
+               f.22192.2.0,
+               f.22194.0.0,
+               f.22194.1.0,
+               f.22194.2.0	
+           )
+         ))
+
+# vector of original col names
+old_cols <- colnames(telomere_data)
+
+# rename
+telomere_data <- 
+  rename(telomere_data,
+         eid = f.eid,    
+         LTL_unadj = f.22190.0.0,
+         LTL_unadj_01 = f.22190.1.0,
+         LTL_unadj_02 = f.22190.2.0,
+         LTL_adj = f.22191.0.0,
+         LTL_adj_01 = f.22191.1.0,
+         LTL_adj_02 = f.22191.2.0,
+         LTL_zadj = f.22192.0.0,
+         LTL_zadj_01 = f.22192.1.0,
+         LTL_zadj_02 = f.22192.2.0,
+         LTL_dilution_bias = f.22194.0.0,
+         LTL_dilution_bias_01 = f.22194.1.0,
+         LTL_dilution_bias_02 = f.22194.2.0
+  )
+
+# vector of new col names
+new_cols <- colnames(telomere_data)
+
+# key that maps old col names to new col names
+column_key_telomeres <- as.data.frame(cbind(old_cols, new_cols))
+
+# check whether coded as numeric
+sapply(telomere_data, is.numeric) 
+
+# save
+# save(telomere_data, 
+#      column_key_telomeres,
+#      file = "./data/telomere_data_feb_01_2023.RData")
+
+write.csv(telomere_data, 
+     row.names = FALSE,
+     file = "./data/telomere_data_june_21_2023.csv")
+```
+
+```{r metabolomics, results='hide'}
+
+### metabolites
+metabolome_data <- 
+  subset(dat,
+         select = c(
+           Cs(
+               f.eid,
+               f.23479.0.0,
+               f.23480.0.0,
+               f.23442.0.0,
+               f.23446.0.0,
+               f.23649.0.0,
+               f.23650.0.0
+           )
+         ))
+
+# vector of original col names
+old_cols <- colnames(metabolome_data)
+
+# rename
+metabolome_data <- 
+  rename(metabolome_data,
+         eid = f.eid,    
+         NMR_albumin       = f.23479.0.0,
+         NMR_GlycA         = f.23480.0.0,
+         NMR_total_FA      = f.23442.0.0,
+         NMR_PUFA          = f.23446.0.0,
+         shipment_plate    = f.23649.0.0,
+         spectrometer      = f.23650.0.0,
+         
+  )
+
+# vector of new col names
+new_cols <- colnames(metabolome_data)
+
+# key that maps old col names to new col names
+column_key_metabolites <- as.data.frame(cbind(old_cols, new_cols))
+
+# check whether coded as numeric
+sapply(metabolome_data, is.numeric) 
+
+# make PUFA/TFA percent variable
+metabolome_data$PUFA_FA <- metabolome_data$NMR_PUFA / metabolome_data$NMR_total_FA * 100
+
+
+## recode factors
+
+# find most common levels
+sort(table(metabolome_data$spectrometer)) # 5
+
+# set as factor
+metabolome_data$spectrometer <- 
+    factor(metabolome_data$spectrometer,
+           ordered = FALSE)
+
+# set reference
+metabolome_data$spectrometer <-
+    relevel(metabolome_data$spectrometer,
+            ref = "5")
+
+# check
+levels(metabolome_data$spectrometer)
+    
+sort(table(metabolome_data$shipment_plate)) # 5
+
+
+# save
+save(metabolome_data, 
+     column_key_metabolites,
+     file = "./data/metabolomics_data_mar_22_2022.RData")
+```
+
+```{r}
+# after QC, this is how to make PUFA_FA percent var:
+PUFA / Total_FA * 100
+```
+
+
+```{r}
+hist(telomere_data$LTL_zadj)
+hist(metabolome_data$NMR_GlycA)
+hist(metabolome_data$NMR_albumin)
+
+```
+
