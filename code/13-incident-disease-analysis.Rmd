@@ -1,0 +1,757 @@
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = FALSE)
+knitr::opts_chunk$set(warning = FALSE)
+knitr::opts_chunk$set(message = FALSE)
+knitr::opts_chunk$set(results = 'asis')
+```
+
+```{r packages}
+library(survival)
+library(Hmisc)
+library(pbapply)
+library(mice)
+library(data.table)
+library(glue)
+```
+
+```{r load}
+# load analysis datasets
+load("./data/ACM_final_analysis_datasets_jan_25_2023_all_data.RData")
+
+# load NCD data
+load("./data/NCD_all_subsets_jan_22_2023.RData")
+
+# load interview baseline dx data
+load("./data/baseline_dx_data_july_07_2022.RData")
+
+# load variable categories
+categories <- read.csv("./dictionaries/Argentieri UKB dataset data dictionary.csv")
+categories$Category[which(categories$Variable == "gym")] <- "Physical activity"
+```
+
+```{r survival_vars}
+
+# load list of vars significant in cluster multivariate analyses
+exposures <- read.csv('./results/total_sig_vars_list_2024-08-15.csv')
+exposures <- as.vector(unlist(exposures[1]))
+
+
+### Create 5-year birth cohorts -------------------------------------------------------------------
+
+# function to calculate birth cohorts
+split_birth_year <- function(x){
+  x$birth_cohort <- ifelse(
+    x$birth_year >= 1935 & x$birth_year < 1940,
+    "1935-1940",
+    ifelse(
+      x$birth_year >= 1940 & x$birth_year < 1945,
+      "1940-1945",
+      ifelse(
+        x$birth_year >= 1945 & x$birth_year < 1950,
+        "1945-1950",
+        ifelse(
+          x$birth_year >= 1950 & x$birth_year < 1955,
+          "1950-1955",
+          ifelse(
+            x$birth_year >= 1955 & x$birth_year < 1960,
+            "1955-1960",
+            ifelse(
+              x$birth_year >= 1960 & x$birth_year < 1965,
+              "1960-1965",
+              ifelse(
+                x$birth_year >= 1965 & x$birth_year <= 1970, 
+                "1965-1970", 
+                NA
+              )
+            )
+          )
+        )
+      )
+    )
+  )
+    
+    x$birth_cohort <- as.factor(x$birth_cohort)
+    return(x)
+}
+
+# execute function across imputed datasets to create 5-year age bands
+all_data <- lapply(all_data, split_birth_year)
+
+
+### Scale -------------------------------------------------------------------
+
+# scale function
+scale_numeric <- function(x) { 
+    # create logical vector of numeric columns
+    nums <- sapply(x, is.numeric)
+    
+    # list of numeric variables to exclude from scaling
+    scale_exclude <- c(
+        Cs(
+            recruitment_age,
+            censor_age,
+            ACM_event_indicator,
+            eid,
+            time,
+            ACM_survival_time,
+            hazard,
+            birth_year,
+            BMI
+        )
+    )
+    
+    # exclude those columns I don't want to scale
+    nums[names(nums) %in% scale_exclude] <- FALSE # don't want to scale these
+    
+    # don't bother scaling other numeric cols not in analysis
+    nums[names(nums) %nin% exposures] <- FALSE 
+    
+    # perform scale
+    x[nums] <- scale(x[nums],
+                     scale = TRUE)
+    
+    # return entire dataset
+    return(x)
+}
+
+# scale desired numeric columns
+all_data <- lapply(all_data, scale_numeric)
+
+# set contrasts for regression
+set_contrasts <- function(x) {
+    
+    # find ordered variables
+    ord <- sapply(x, is.ordered)
+    
+    # set contrasts to only linear
+    for (k in seq(ncol(x[ord]))) {
+        contrasts(x[ord][[k]], how.many = 1) <- contr.poly(nlevels(x[ord][[k]]))
+    }
+    
+    return(x)
+    
+}
+
+# run in datasets
+all_data <- lapply(all_data, set_contrasts)
+
+```
+
+```{r merge_disease_data}
+
+# merge ICD-10 data with ACM datasets
+all_data_ncd <- lapply(all_data, function(x)
+    as.data.frame(
+        merge(x, 
+              dat_NCD_all,
+              by = "eid",
+              all = FALSE,
+              sort = FALSE)
+    )
+)
+
+# merge baseline dx data with ACM datasets
+all_data_ncd <- lapply(all_data_ncd, function(x)
+    as.data.frame(
+        merge(x, 
+              dat_dx,
+              by = "eid",
+              all = FALSE,
+              sort = FALSE)
+    )
+)
+
+rm(dat_dx, dat_NCD_all, all_data)
+invisible(gc())
+```
+
+```{r make_lists}
+
+disease_list <- c(
+    "Colorectal cancer",
+    "Lung cancer",
+    "Esophageal cancer",
+    "Liver cancer",
+    "Pancreatic cancer",
+    "Brain cancer",
+    "Leukemia",
+    "Lymphoma",
+    "Breast cancer",
+    "Ovarian cancer",
+    "Prostate cancer",
+    "Type II diabetes",
+    "Ischemic heart disease",
+    "Cerebrovascular diseases",
+    "Emphysema, COPD",
+    "Chronic liver diseases",
+    "Chronic kidney diseases",
+    "All-cause dementia",
+    "Vascular dementia",
+    "Alzheimer's disease",
+    "Parkinson's disease",
+    "Rheumatoid arthritis",
+    "Macular degeneration",
+    "Osteoporosis",
+    "Osteoarthritis",
+    "Hypertension",
+    "Obesity",
+    "Dyslipidemia"
+)
+
+outcomes <- c(
+    Cs(
+        colon_cancer,
+        lung_cancer,
+        eso_cancer,
+        liver_cancer,
+        pancreatic_cancer,
+        brain_cancer,
+        leukemia,
+        lymphoma,
+        breast_cancer,
+        ovarian_cancer,
+        prostate_cancer,
+        diabetes,
+        CVD,
+        cerebro,
+        COPD,
+        liver,
+        kidney,
+        all_dementia,
+        vasc_dementia,
+        alzheimers,
+        parkinsons,
+        rheumatoid,
+        macular,
+        osteoporosis,
+        osteoarthritis,
+        hypertension,
+        obesity,
+        dyslipidemia
+    )
+)
+
+disease_results <- as.list(seq(1, length(disease_list)))
+names(disease_results) <- disease_list
+
+```
+
+```{r prevalent_cases_list}
+
+# load list of functions to identify and exclude prevalent cases
+source("./functions/identify_prev_cases.R")
+
+identify_prev_cases <- identify_prev_cases_list[2:29]
+names(identify_prev_cases) <- outcomes
+
+```
+
+```{r Ext_Dat_Figure_1}
+
+# take first imputed dataset
+plot_data <- all_data_ncd[[1]]
+
+# subset diseases
+disease_subset <- disease_list[disease_list %nin% c("Hypertension", "Obesity", "Dyslipidemia")]
+outcomes_subset <- outcomes[outcomes %nin% c("hypertension", "obesity", "dyslipidemia")]
+
+# create df for case counts
+diag_df <- as.data.frame(matrix(nrow=length(disease_subset), ncol=3))
+colnames(diag_df) <- c("Disease", "Prevalent diagnosis", "Incident diagnosis")
+diag_df$Disease <- disease_subset
+
+# extract case counts
+for (k in seq(1,length(disease_subset))) {
+
+    event <- glue('{outcomes_subset[k]}_event')
+    survival_var <- glue('{outcomes_subset[k]}_survival_time')
+    censor_var <- glue('{outcomes_subset[k]}_censor_date')
+    dx_var <- glue('{outcomes_subset[k]}_baseline_dx')
+
+    ## Prevalent cases
+    # define all participants with NCD diagnosis before or equal to recruitment date
+    baseline_ncd <- which(plot_data[[censor_var]] <= plot_data$recruitment_date)
+    
+    # creating health indicator for baseline disease in total population
+    plot_data$prev_event <- NA
+    plot_data$prev_event[baseline_ncd] <- 1
+    plot_data$prev_event[which(plot_data[[dx_var]] == 1)] <- 1
+    plot_data$prev_event[which(is.na(plot_data$prev_event))] <- 0
+    number_prev <- as.numeric(table(plot_data$prev_event)[2])
+    
+    # add to df
+    diag_df$`Prevalent diagnosis`[k] <- number_prev
+    
+    ## Participant exclusions ----
+    
+    # function to identify prevalent disease cases at baseline
+    prev_function <- identify_prev_cases[[outcomes_subset[k]]]
+    data <- prev_function(plot_data)
+    
+    # add to df
+    number_incident <- as.numeric(table(data[[event]])[2])
+    diag_df$`Incident diagnosis`[k] <- number_incident
+}
+
+
+### mortality
+
+## Age at censoring ----
+
+# divide survival time (days) by 365.25 to get time in years
+# change to numeric because survival time is a difftime object
+plot_data$time <- 
+  as.numeric(plot_data$ACM_survival_time / 365.25) 
+# add time (years) to recruitment age to get censor age
+plot_data$censor_age <-
+  plot_data$recruitment_age + plot_data$time 
+
+```
+
+```{r plot}
+library(ggplot2)
+library(cowplot)
+library(dplyr)
+library(viridis)
+library(scales)
+
+
+# Example data creation
+set.seed(123)
+
+# 1. Area plot for mortality cases
+mort_data <- plot_data[which(plot_data$ACM_event_indicator==1), ]
+mort_data$sex <- factor(mort_data$sex, levels = c("Male", "Female"))  # Ensure Female is on top
+area_plot <- ggplot(mort_data, aes(x = censor_age, fill = sex)) +
+  geom_density(aes(y = ..count..), position = "identity", alpha = 0.6) +
+  scale_fill_manual(values = c("Male" = "#1f78b4", "Female" = "#e31a1c")) +  # Specify colors
+  scale_y_continuous(labels = scales::comma) +
+  labs(x = "Age at death (years)", y = "Mortality cases", fill = "") +
+  theme_classic() +
+  theme(
+    legend.title = element_blank(),
+    legend.position = c(0.25, 0.6),
+    legend.direction = "vertical", 
+    legend.text = element_text(size = 8),
+    legend.key.size = unit(0.4, units = "cm"),
+    axis.title = element_text(size = 10, face = "bold"),
+    axis.text = element_text(size = 8)
+  )
+
+
+# 2. Horizontal bar charts for diagnoses
+diag_df <- diag_df %>%
+  mutate(Total = `Prevalent diagnosis` + `Incident diagnosis`)
+
+diag_df_below <- diag_df %>%
+  filter(Total < 13000) %>%
+  arrange(Total)
+
+diag_df_above <- diag_df %>%
+  filter(Total >= 13000) %>%
+  arrange(Total)
+
+diag_df_below <- diag_df_below %>% 
+  pivot_longer(
+    cols = c(`Prevalent diagnosis`, `Incident diagnosis`), 
+    names_to = "Diagnosis Type", values_to = "Count"
+  )
+
+diag_df_above <- diag_df_above %>% 
+  pivot_longer(
+    cols = c(`Prevalent diagnosis`, `Incident diagnosis`), 
+    names_to = "Diagnosis Type", values_to = "Count"
+  )
+
+diag_df_below$`Diagnosis Type` <- factor(diag_df_below$`Diagnosis Type`, levels = c("Prevalent diagnosis", "Incident diagnosis"))  # Ensure Female is on top
+
+diag_df_above$`Diagnosis Type` <- factor(diag_df_above$`Diagnosis Type`, levels = c("Prevalent diagnosis", "Incident diagnosis"))  # Ensure Female is on top
+
+
+bar_chart_below <- ggplot(diag_df_below, 
+                          aes(x = reorder(Disease, Count), y = Count, fill = `Diagnosis Type`)) +
+  geom_bar(stat = "identity", position = position_stack(reverse = TRUE)) +
+  scale_fill_manual(values = viridis(n = 3)) +
+  scale_y_continuous(labels = scales::comma) +
+  coord_flip() +
+  labs(x = NULL, y = NULL, fill = "Diagnosis Type") +
+  theme_classic() +
+  theme(
+    legend.title = element_blank(),
+    legend.position = c(0.6, 0.2),
+    legend.direction = "vertical", 
+    legend.text = element_text(size = 8),
+    legend.key.size = unit(0.4, units = "cm"),
+    axis.text.y = element_text(size = 8),
+    axis.title.x = element_text(size = 10, face = "bold")
+  )
+
+bar_chart_above <- ggplot(diag_df_above, 
+                          aes(x = reorder(Disease, Count), y = Count, fill = `Diagnosis Type`)) +
+  geom_bar(stat = "identity", position = position_stack(reverse = TRUE)) +
+  scale_fill_manual(values = viridis(n = 3)) +
+  scale_y_continuous(labels = scales::comma) +
+  coord_flip() +
+  labs(x = NULL, y = "Disease cases", fill = "Diagnosis Type") +
+  theme_classic() +
+  theme(
+    legend.position = "none",
+    axis.text.y = element_text(size = 8),
+    axis.title.x = element_text(size = 10, face = "bold"),
+  )
+# Combine bar charts vertically
+bar_chart_combined <- plot_grid(
+  bar_chart_below, 
+  bar_chart_above, 
+  align="v", 
+  axis="l", 
+  ncol = 1, 
+  rel_heights = c(1, 0.65)
+)
+
+# Combine area plot and bar chart combined horizontally
+med_plot <- plot_grid(
+  area_plot, 
+  bar_chart_combined, 
+  labels = c("a", "b"),
+  label_size = 16, 
+  vjust = c(0.1, 0.1),
+  ncol = 2, 
+  rel_widths = c(1, 1)
+)
+
+final_plot <- plot_grid(
+  NULL,
+  med_plot,
+  ncol = 1,
+  nrow = 2,
+  rel_heights = c(1,15)
+)
+
+
+# save
+name = "./manuscript/Revision 3/figures/Ext_Data_fig_1.jpg"
+width_in_inches <- 18 * 0.393701
+height_in_inches <- 10  * 0.393701
+ggsave(final_plot, filename = name, width = width_in_inches, height = height_in_inches, dpi=600)
+
+
+```
+
+```{r run_models}
+
+library(parallel)
+
+# # list for results
+# disease_results <- as.list(seq(1, length(disease_list)))
+# names(disease_results) <- disease_list
+# 
+# # set global R options
+# options(scipen = 999) # turn off scientific notation
+# pboptions(type = "timer", char = "=") # initialize progress bar
+# 
+# # set number of cores for parallel running
+# cores <- detectCores(logical = FALSE)
+# cores <- cores/2
+
+cores <- 4
+
+# # extract female-specific variables
+# female_vars <- categories$Variable[categories$Category == 'Female reproductive factors']
+# female_vars <- female_vars[female_vars %in% colnames(all_data_ncd[[1]])]
+# exclude <- c(
+#   Cs(
+#     birth_age,
+#     first_birth_age,
+#     last_birth_age
+#   )
+# )
+# female_vars <- female_vars[female_vars %nin% exclude]
+# female_vars <- paste(female_vars, collapse = ' + ')
+# 
+# # extract male-specific variables
+# male_vars <- categories$Variable[categories$Category == 'Male reproductive factors']
+# male_vars <- male_vars[male_vars %in% colnames(all_data_ncd[[1]])]
+# exclude <- c(
+#   Cs(
+#     birth_age,
+#     first_birth_age,
+#     last_birth_age
+#   )
+# )
+# male_vars <- male_vars[male_vars %nin% exclude]
+# male_vars <- paste(male_vars, collapse = ' + ')
+
+# run models for each disease
+# for (k in seq_along(disease_list)) {
+for (k in seq(3,length(disease_list))) {
+
+    event <- glue('{outcomes[k]}_event')
+    survival_var <- glue('{outcomes[k]}_survival_time')
+    
+    ## Participant exclusions ----
+    
+    # function to identify prevalent disease cases at baseline
+    data <- lapply(all_data_ncd, identify_prev_cases[[outcomes[k]]])
+    
+    ## Age at censoring ----
+    
+    if (disease_list[k] %nin% c("Hypertension", "Obesity", "Dyslipidemia")) {
+      # create age at censoring variable for age-at-risk analysis
+      for(j in seq_along(data)) {
+        # divide survival time (days) by 365.25 to get time in years
+        # change to numeric because survival time is a difftime object
+        data[[j]]$time <- 
+          as.numeric(data[[j]][[survival_var]] / 365.25) 
+        # add time (years) to recruitment age to get censor age
+        data[[j]]$censor_age <-
+          data[[j]]$recruitment_age + data[[j]]$time 
+      }
+    }
+    
+    ## Model function ----
+    
+    ############### add sex-specific variables
+    
+    # set glm for cross-sectional outcomes
+    if (disease_list[k] %in% c("Hypertension", "Obesity", "Dyslipidemia")) {
+        
+      model_function <- function(x) {
+        
+        glm_formula <- glue("{event} ~ 
+            {x} + 
+            birth_cohort + sex +
+            recruitment_centre + education_years + hshld_income + ethnicity + 
+            IPAQ_activity_group + smoking_status")
+        
+        models <- lapply(data, function(y)
+          glm(as.formula(glm_formula), family = "binomial", data = y)
+        )
+        
+        pool <- pool(models)
+        rm(models)
+        return(pool)
+      }
+        
+    # otherwise use Cox model
+    } else if (disease_list[k] %in% c("Breast cancer", "Ovarian cancer", "Protstate cancer")) {
+      
+      model_function <- function(x) {
+        
+        model_formula <- glue("Surv(recruitment_age, censor_age, {event}) ~ 
+            {x} + 
+            strata(birth_cohort) +
+            recruitment_centre + education_years + hshld_income + ethnicity + 
+            IPAQ_activity_group + smoking_status")
+        
+        models <- lapply(data, function(y)
+          coxph(as.formula(model_formula), data = y)
+        )
+        
+        pool <- pool(models)
+        rm(models)
+        return(pool)
+      }
+      
+    } else {
+      
+      model_function <- function(x) {
+        
+        model_formula <- glue("Surv(recruitment_age, censor_age, {event}) ~ 
+            {x} + 
+            strata(birth_cohort, sex) +
+            recruitment_centre + education_years + hshld_income + ethnicity + 
+            IPAQ_activity_group + smoking_status")
+        
+        models <- lapply(data, function(y)
+          coxph(as.formula(model_formula), data = y)
+        )
+        
+        pool <- pool(models)
+        rm(models)
+        return(pool)
+      }
+    }
+    
+    ## Run models ----
+    
+    # create list to store model results
+    pool_models <- as.list(seq(1,length(exposures))) 
+    # run models
+    pool_models <- pblapply(exposures, model_function, cl=cores)
+    
+    ## Summaries ----
+    
+    # get list of summaries for all pooled models (minus 3 above that overlap with covariates)
+    smry <- lapply(pool_models,
+                   summary,
+                   conf.int = TRUE,
+                   conf.level = 0.95)
+    
+    # get results just for exposure
+    for (j in seq(1,length(exposures))) {
+      smry[[j]] <- smry[[j]][grepl(exposures[j], smry[[j]]$term, fixed = TRUE), ]
+    }
+    
+    # extract all model summaries from the lists and convert to single data frame of estimates
+    models_total <- rbindlist(smry)
+    
+    # rename column for exposure
+    names(models_total)[names(models_total) == "term"] <- "Exposure"
+    
+    # calculate Hazard Ratio
+    models_total$"exp(Beta)" <- exp(models_total$estimate)
+    
+    # exponentiate beta 95% CIs for HR 95% CIs
+    models_total$"exp(Beta)_2.5%" <- exp(models_total$`2.5 %`)
+    models_total$"exp(Beta)_97.5%" <- exp(models_total$`97.5 %`)
+    
+    # rename column for betas
+    names(models_total)[names(models_total) == "estimate"] <- "Beta"
+    
+    # rename column for beta 95% CIs
+    names(models_total)[names(models_total) == "2.5 %"] <- "Beta_2.5%"
+    names(models_total)[names(models_total) == "97.5 %"] <- "Beta_97.5%"
+    
+    ## Categories ----
+    
+    ## map variable names to results
+    models_total$Variable <- NA
+    # create vector of variable names
+    variables <- sort(exposures)
+    
+    # add variable names based on partial match with XWAS output exposure column with variable response level 
+    # (e.g., match "alcohol_daily_intake" to "alcohol_daily_intakeDaily or almost daily")
+    for(j in seq_along(variables)) {
+        models_total$Variable[models_total$Exposure %in% models_total$Exposure[substring(
+            models_total$Exposure,
+            1,
+            nchar(variables[[j]])) == variables[[j]]]] <- variables[[j]]
+    }
+    
+    ## add in categories according to match with variable name
+    models_total <- merge(models_total,  
+                          subset(categories, select = c("Variable", "Category")), 
+                          by = "Variable", 
+                          all = F, 
+                          sort = F)
+
+    ## FDR ----
+    
+    ## calculate FDR in the discovery analyses using benjamini-hochberg method
+    models_total$FDR <- p.adjust(models_total$p.value, method = "BH")
+    
+    ## Save ----
+    
+    # Re-order columns
+    models_total <- subset(models_total,
+                           select = c("Exposure",
+                                      "Beta",
+                                      "Beta_2.5%",
+                                      "Beta_97.5%",
+                                      "exp(Beta)",
+                                      "exp(Beta)_2.5%",
+                                      "exp(Beta)_97.5%",
+                                      "p.value",
+                                      "FDR",
+                                      "std.error",
+                                      "statistic",
+                                      "df",
+                                      "Variable",
+                                      "Category"
+                           ))
+ 
+    ### output results
+    options(scipen = 999)
+    
+    if (disease_list[[k]] %in% c("Hypertension", "Obesity", "Dyslipidemia")) {
+      
+      # subset results to columns for table
+      models_table <-
+        subset(models_total,
+               select = c("Exposure",
+                          "Variable",
+                          "Category",
+                          "Beta",
+                          "Beta_2.5%",
+                          "Beta_97.5%",
+                          "p.value",
+                          "FDR"))
+      
+      # make column for replicated yes/no
+      models_table$Significant <-
+        ifelse(models_table$FDR < 0.05,
+               "Yes",
+               "No")
+      
+      # make nicer column names
+      colnames(models_table) <-
+        c("Exposure",
+          "Variable",
+          "Category",
+          "Beta",
+          "Beta 2.5% CI",
+          "Beta 97.5% CI",
+          "P-value",
+          "FDR",
+          "Significant"
+        )
+      
+    } else {
+      
+      # subset results to columns for table
+      models_table <-
+        subset(models_total,
+               select = c("Exposure",
+                          "Variable",
+                          "Category",
+                          "exp(Beta)",
+                          "exp(Beta)_2.5%",
+                          "exp(Beta)_97.5%",
+                          "Beta",
+                          "Beta_2.5%",
+                          "Beta_97.5%",
+                          "p.value",
+                          "FDR"))
+      
+      # make column for replicated yes/no
+      models_table$Significant <-
+        ifelse(models_table$FDR < 0.05,
+               "Yes",
+               "No")
+      
+      # make nicer column names
+      colnames(models_table) <-
+        c("Exposure",
+          "Variable",
+          "Category",
+          "Hazard Ratio",
+          "HR 2.5% CI",
+          "HR 97.5% CI",
+          "Beta",
+          "Beta 2.5% CI",
+          "Beta 97.5% CI",
+          "P-value",
+          "FDR",
+          "Significant"
+        )
+    }
+    
+    # add to list of results
+    disease_results[[k]] <- models_table
+    
+    # remove disease-specific dataset from memory
+    rm(data)
+    
+    # track progress
+    cat("\r", paste("completed:", paste(k, length(disease_results), sep = "/")))
+    
+}
+```
+
+```{r save, eval=TRUE}
+library(glue)
+save(disease_results, file = glue("./results/all_disease_analysis_output_with_cs_{Sys.Date()}.RData")
+)
+
+```
