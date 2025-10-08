@@ -1,0 +1,1197 @@
+﻿Variable,Description,URL,Levels,Category,UKB dataset ID,Field ID,Notes,Description,Years collected,UKB Assessment,UKB Category
+country_birth,Country of birth (UK/elsewhere),https://biobank.ctsu.ox.ac.uk/crystal/field.cgi?id=1647,,Early life factors,f.1647.0.0,1647,,,2006-2010,ACE/Touchscreen,Early life factors
+breastfed,Breastfed as a baby,https://biobank.ctsu.ox.ac.uk/crystal/field.cgi?id=1677,,Early life factors,f.1677.0.0,1677,,,2006-2010,ACE/Touchscreen,Early life factors
+body_size_10yrs_old,Comparative body size at age 10,https://biobank.ctsu.ox.ac.uk/crystal/field.cgi?id=1687,,Early life factors,f.1687.0.0,1687,,,2006-2010,ACE/Touchscreen,Early life factors
+height_10yrs_old,Comparative height size at age 10,https://biobank.ctsu.ox.ac.uk/crystal/field.cgi?id=1697,,Early life factors,f.1697.0.0,1697,,,2006-2010,ACE/Touchscreen,Early life factors
+handedness,Handedness (chirality/laterality),https://biobank.ctsu.ox.ac.uk/crystal/field.cgi?id=1707,,Early life factors,f.1707.0.0,1707,,,2006-2010,ACE/Touchscreen,Early life factors
+adopted,Adopted as a child,https://biobank.ctsu.ox.ac.uk/crystal/field.cgi?id=1767,,Early life factors,f.1767.0.0,1767,,,2006-2010,ACE/Touchscreen,Early life factors
+part_multiple_birth,Part of a multiple birth,https://biobank.ctsu.ox.ac.uk/crystal/field.cgi?id=1777,,Early life factors,f.1777.0.0,1777,,,2006-2010,ACE/Touchscreen,Early life factors
+maternal_smoking,Maternal smoking around birth,https://biobank.ctsu.ox.ac.uk/crystal/field.cgi?id=1787,,Early life factors,f.1787.0.0,1787,,,2006-2010,ACE/Touchscreen,Early life factors
+birth_weight,Birth weight,http://biobank.ndph.ox.ac.uk/showcase/field.cgi?id=20022,,Early life factors,f.20022.0.0,20022,,,2006-2010,ACE/Verbal interview,Early life factors
+birth_weight_known,Birth weight known,http://biobank.ndph.ox.ac.uk/showcase/field.cgi?id=120,,Early life factors,f.120.0.0,120,,,2006-2010,ACE/Verbal interview,Early life factors
+country_birth_non_UK,Country of Birth (non-UK origin),http://biobank.ndph.ox.ac.uk/showcase/field.cgi?id=20115,,Early life factors,f.20115.0.0,20115,,,2006-2010,ACE/Verbal interview,Early life factors
+childhood_love,Felt loved as a child,http://biobank.ndph.ox.ac.uk/showcase/field.cgi?id=20489,,Early life factors,f.20489.0.0,20489,CTS scale recommended threshold: never/rarely vs. a few times/very often,,2016-2017,Online follow-up/Mental health questionnaire,Traumatic events
+childhood_physical_abuse,Physically abused by family as a child,http://biobank.ndph.ox.ac.uk/showcase/field.cgi?id=20488,,Early life factors,f.20488.0.0,20488,CTS scale recommended threshold: never/rarely vs. a few times/very often,,2016-2017,Online follow-up/Mental health questionnaire,Traumatic events
+childhood_hate,Felt hated by family member as a child,http://biobank.ndph.ox.ac.uk/showcase/field.cgi?id=20487,,Early life factors,f.20487.0.0,20487,CTS scale recommended threshold: never/rarely vs. a few times/very often,,2016-2017,Online follow-up/Mental health questionnaire,Traumatic events
+childhood_sex_abuse,Sexually molested as a child,http://biobank.ndph.ox.ac.uk/showcase/field.cgi?id=20490,,Early life factors,f.20490.0.0,20490,CTS scale recommended threshold: never/rarely vs. a few times/very often,,2016-2017,Online follow-up/Mental health questionnaire,Traumatic events
+childhood_doctor,Someone to take to doctor when needed as a child,http://biobank.ndph.ox.ac.uk/showcase/field.cgi?id=20491,,Early life factors,f.20491.0.0,20491,CTS scale recommended threshold: never/rarely vs. a few times/very often,,2016-2017,Online follow-up/Mental health questionnaire,Traumatic events
+self_illness_injury_assault,"Illness, injury, bereavement, stress in last 2 years",http://biobank.ndph.ox.ac.uk/showcase/field.cgi?id=6145,,Stressful life events,f.6145.0.0 - f.6145.0.5,6145,,,2006-2010,ACE/Touchscreen,Mental health
+relative_illness_injury_assault,"Illness, injury, bereavement, stress in last 2 years",http://biobank.ndph.ox.ac.uk/showcase/field.cgi?id=6145,,Stressful life events,f.6145.0.0 - f.6145.0.5,6146,,,,,
+death_relative,"Illness, injury, bereavement, stress in last 2 years",http://biobank.ndph.ox.ac.uk/showcase/field.cgi?id=6145,,Stressful life events,f.6145.0.0 - f.6145.0.5,6147,,,,,
+death_partner,"Illness, injury, bereavement, stress in last 2 years",http://biobank.ndph.ox.ac.uk/showcase/field.cgi?id=6145,,Stressful life events,f.6145.0.0 - f.6145.0.5,6148,,,,,
+divorce,"Illness, injury, bereavement, stress in last 2 years",http://biobank.ndph.ox.ac.uk/showcase/field.cgi?id=6145,,Stressful life events,f.6145.0.0 - f.6145.0.5,6149,,,,,
+financial_difficulty,"Illness, injury, bereavement, stress in last 2 years",http://biobank.ndph.ox.ac.uk/showcase/field.cgi?id=6145,,Stressful life events,f.6145.0.0 - f.6145.0.5,6150,,,,,
+family_visit_freq,Frequency of friend/family visits,http://biobank.ndph.ox.ac.uk/showcase/field.cgi?id=1031,,Social support,f.1031.0.0,1031,,,2006-2010,ACE/Touchscreen,Social support
+gym,Leisure/social activities,http://biobank.ndph.ox.ac.uk/showcase/field.cgi?id=6160,,Physical activity,f.6160.0.0 - f.6160.0.4,6160,,,2006-2010,ACE/Touchscreen,Social support
+pub,Leisure/social activities,http://biobank.ndph.ox.ac.uk/showcase/field.cgi?id=6160,,Social support,f.6160.0.0 - f.6160.0.4,6161,,,,,
+religious_group,Leisure/social activities,http://biobank.ndph.ox.ac.uk/showcase/field.cgi?id=6160,,Social support,f.6160.0.0 - f.6160.0.4,6162,,,,,
+adult_education,Leisure/social activities,http://biobank.ndph.ox.ac.uk/showcase/field.cgi?id=6160,,Social support,f.6160.0.0 - f.6160.0.4,6163,,,,,
+other_group_activity,Leisure/social activities,http://biobank.ndph.ox.ac.uk/showcase/field.cgi?id=6160,,Social support,f.6160.0.0 - f.6160.0.4,6164,,,,,
+confide_freq,Able to confide,http://biobank.ndph.ox.ac.uk/showcase/field.cgi?id=2110,,Social support,f.2110.0.0,2110,,,2006-2010,ACE/Touchscreen,Social support
+loneliness,"Loneliness, isolation",http://biobank.ndph.ox.ac.uk/showcase/field.cgi?id=2020,,Social support,f.2020.0.0,2020,,,,,Mental health
+accommodation_type,Type of accommodation lived in,http://biobank.ndph.ox.ac.uk/showcase/field.cgi?id=670,,Household,f.670.0.0,670,,,2006-2010,ACE/Touchscreen,Household
+own_or_rent,Own or rent accommodation lived in,http://biobank.ndph.ox.ac.uk/showcase/field.cgi?id=680,,Household,f.680.0.0,680,,,2006-2010,ACE/Touchscreen,Household
+gas_hob_heat,Gas or solid-fuel cooking/heating,http://biobank.ndph.ox.ac.uk/showcase/field.cgi?id=6139,,Household,f.6139.0.0 - f.6139.0.2,6139,,,2006-2010,ACE/Touchscreen,Household
+gas_fire_heat,Gas or solid-fuel cooking/heating,http://biobank.ndph.ox.ac.uk/showcase/field.cgi?id=6139,,Household,f.6139.0.0 - f.6139.0.2,6139,,,,,
+open_fire_heat,Gas or solid-fuel cooking/heating,http://biobank.ndph.ox.ac.uk/showcase/field.cgi?id=6139,,Household,f.6139.0.0 - f.6139.0.2,6139,,,,,
+gas_central_heat,Heating type(s) in home,http://biobank.ndph.ox.ac.uk/showcase/field.cgi?id=6140,,Household,f.6140.0.0 - f.6140.0.5,6140,,,2006-2010,ACE/Touchscreen,Household
+electric_storage_heat,Heating type(s) in home,http://biobank.ndph.ox.ac.uk/showcase/field.cgi?id=6140,,Household,f.6140.0.0 - f.6140.0.5,6140,,,,,
+oil_central_heat,Heating type(s) in home,http://biobank.ndph.ox.ac.uk/showcase/field.cgi?id=6140,,Household,f.6140.0.0 - f.6140.0.5,6140,,,,,
+portable_gas_heat,Heating type(s) in home,http://biobank.ndph.ox.ac.uk/showcase/field.cgi?id=6140,,Household,f.6140.0.0 - f.6140.0.5,6140,,,,,
+solid_fuel_heat,Heating type(s) in home,http://biobank.ndph.ox.ac.uk/showcase/field.cgi?id=6140,,Household,f.6140.0.0 - f.6140.0.5,6140,,,,,
+open_fire_no_central_heat,Heating type(s) in home,http://biobank.ndph.ox.ac.uk/showcase/field.cgi?id=6140,,Household,f.6140.0.0 - f.6140.0.5,6140,,,,,
+years_at_address,Length of time at current address,http://biobank.ndph.ox.ac.uk/showcase/field.cgi?id=699,,Household,f.699.0.0,699,,,2006-2010,ACE/Touchscreen,Household
+hshld_number,Number in household,http://biobank.ndph.ox.ac.uk/showcase/field.cgi?id=709,,Household,f.709.0.0,709,,,2006-2010,ACE/Touchscreen,Household
+hshld_partner,How are people in household related to participant,http://biobank.ndph.ox.ac.uk/showcase/field.cgi?id=6141,,Household,f.6141.0.0 - f.6141.0.7,6141,,,2006-2010,ACE/Touchscreen,Household
+hshld_children,How are people in household related to participant,http://biobank.ndph.ox.ac.uk/showcase/field.cgi?id=6141,,Household,f.6141.0.0 - f.6141.0.7,6141,,,,,
+hshld_siblings,How are people in household related to participant,http://biobank.ndph.ox.ac.uk/showcase/field.cgi?id=6141,,Household,f.6141.0.0 - f.6141.0.7,6141,,,,,
+hshld_parents,How are people in household related to participant,http://biobank.ndph.ox.ac.uk/showcase/field.cgi?id=6141,,Household,f.6141.0.0 - f.6141.0.7,6141,,,,,
+hshld_grandparent,How are people in household related to participant,http://biobank.ndph.ox.ac.uk/showcase/field.cgi?id=6141,,Household,f.6141.0.0 - f.6141.0.7,6141,,,,,
+hshld_grandchild,How are people in household related to participant,http://biobank.ndph.ox.ac.uk/showcase/field.cgi?id=6141,,Household,f.6141.0.0 - f.6141.0.7,6141,,,,,
+hshld_other_related,How are people in household related to participant,http://biobank.ndph.ox.ac.uk/showcase/field.cgi?id=6141,,Household,f.6141.0.0 - f.6141.0.7,6141,,,,,
+hshld_other_unrelated,How are people in household related to participant,http://biobank.ndph.ox.ac.uk/showcase/field.cgi?id=6141,,Household,f.6141.0.0 - f.6141.0.7,6141,,,,,
+hshld_vehicles,Number of vehicles in household,http://biobank.ndph.ox.ac.uk/showcase/field.cgi?id=728,,Household,f.728.0.0,728,,,2006-2010,ACE/Touchscreen,Household
+hshld_income,Average total household income before tax,http://biobank.ndph.ox.ac.uk/showcase/field.cgi?id=738,,Household,f.738.0.0,738,,,2006-2010,ACE/Touchscreen,Household
+education_college,Qualifications,http://biobank.ndph.ox.ac.uk/showcase/field.cgi?id=6138,,Education,f.6138.0.0 - f.6138.0.5,6138,,,2006-2010,ACE/Touchscreen,Education
+education_A_levels,Qualifications,http://biobank.ndph.ox.ac.uk/showcase/field.cgi?id=6138,,Education,f.6138.0.0 - f.6138.0.5,6138,,,,,
+education_O_levels,Qualifications,http://biobank.ndph.ox.ac.uk/showcase/field.cgi?id=6138,,Education,f.6138.0.0 - f.6138.0.5,6138,,,,,
+education_CSEs,Qualifications,http://biobank.ndph.ox.ac.uk/showcase/field.cgi?id=6138,,Education,f.6138.0.0 - f.6138.0.5,6138,,,,,
+education_NVQ,Qualifications,http://biobank.ndph.ox.ac.uk/showcase/field.cgi?id=6138,,Education,f.6138.0.0 - f.6138.0.5,6138,,,,,
+education_other_professional,Qualifications,http://biobank.ndph.ox.ac.uk/showcase/field.cgi?id=6138,,Education,f.6138.0.0 - f.6138.0.5,6138,,,,,
+education_none,Qualifications,http://biobank.ndph.ox.ac.uk/showcase/field.cgi?id=6138,,Education,f.6138.0.0 - f.6138.0.5,6138,,,,,
+education_years,Years of education (derived),,,Education,NA,NA,,,,,
+education_age_complete,Age completed full time education,http://biobank.ndph.ox.ac.uk/showcase/field.cgi?id=845,,Education,f.845.0.0,845,,,2006-2010,ACE/Touchscreen,Education
+employment_corrected,Current employment status - corrected,http://biobank.ndph.ox.ac.uk/showcase/field.cgi?id=20119,,Employment,f.20119.0.0,20119,,,2006-2010,ACE/Touchscreen,Employment
+employment_distance,Distance between home and job workplace,http://biobank.ndph.ox.ac.uk/showcase/field.cgi?id=796,,Employment,f.796.0.0,796,,,2006-2010,ACE/Touchscreen,Employment
+employed,Current employment status,http://biobank.ndph.ox.ac.uk/showcase/field.cgi?id=6142,,Employment,f.6142.0.0 - f.6142.0.6,6142,,,2006-2010,ACE/Touchscreen,Employment
+retired,Current employment status,http://biobank.ndph.ox.ac.uk/showcase/field.cgi?id=6142,,Employment,f.6142.0.0 - f.6142.0.6,6142,,,,,
+home_maker,Current employment status,http://biobank.ndph.ox.ac.uk/showcase/field.cgi?id=6142,,Employment,f.6142.0.0 - f.6142.0.6,6142,,,,,
+unemployed_disability,Current employment status,http://biobank.ndph.ox.ac.uk/showcase/field.cgi?id=6142,,Employment,f.6142.0.0 - f.6142.0.6,6142,,,,,
+unemployed,Current employment status,http://biobank.ndph.ox.ac.uk/showcase/field.cgi?id=6142,,Employment,f.6142.0.0 - f.6142.0.6,6142,,,,,
+volunteer,Current employment status,http://biobank.ndph.ox.ac.uk/showcase/field.cgi?id=6142,,Employment,f.6142.0.0 - f.6142.0.6,6142,,,,,
+student,Current employment status,http://biobank.ndph.ox.ac.uk/showcase/field.cgi?id=6142,,Employment,f.6142.0.0 - f.6142.0.6,6142,,,,,
+employment_years,Time employed in main current job,http://biobank.ndph.ox.ac.uk/showcase/field.cgi?id=757,,Employment,f.757.0.0,757,,,2006-2010,ACE/Touchscreen,Employment
+employment_hours,Length of working week for main job,http://biobank.ndph.ox.ac.uk/showcase/field.cgi?id=767,,Employment,f.767.0.0,767,,,2006-2010,ACE/Touchscreen,Employment
+employment_travel_freq,Frequency of travelling from home to job workplace,http://biobank.ndph.ox.ac.uk/showcase/field.cgi?id=777,,Employment,f.777.0.0,777,,,2006-2010,ACE/Touchscreen,Employment
+car_commute,Transport type for commuting to job workplace,http://biobank.ndph.ox.ac.uk/showcase/field.cgi?id=6143,,Employment,f.6143.0.0 - f.6143.0.3,6143,,,2006-2010,ACE/Touchscreen,Employment
+walk_commute,Transport type for commuting to job workplace,http://biobank.ndph.ox.ac.uk/showcase/field.cgi?id=6143,,Employment,f.6143.0.0 - f.6143.0.3,6143,,,,,
+public_transport_commute,Transport type for commuting to job workplace,http://biobank.ndph.ox.ac.uk/showcase/field.cgi?id=6143,,Employment,f.6143.0.0 - f.6143.0.3,6143,,,,,
+cycle_commute,Transport type for commuting to job workplace,http://biobank.ndph.ox.ac.uk/showcase/field.cgi?id=6143,,Employment,f.6143.0.0 - f.6143.0.3,6143,,,,,
+employment_standing,Job involves mainly walking or standing,http://biobank.ndph.ox.ac.uk/showcase/field.cgi?id=806,,Employment,f.806.0.0,806,,,2006-2010,ACE/Touchscreen,Employment
+employment_heavy_manual,Job involves heavy manual or physical work,http://biobank.ndph.ox.ac.uk/showcase/field.cgi?id=816,,Employment,f.816.0.0,816,,,2006-2010,ACE/Touchscreen,Employment
+shift_work,Job involves shift work,http://biobank.ndph.ox.ac.uk/showcase/field.cgi?id=826,,Employment,f.826.0.0,826,,,2006-2010,ACE/Touchscreen,Employment
+night_shift_work,Job involves night shift work,http://biobank.ndph.ox.ac.uk/showcase/field.cgi?id=3426,,Employment,f.3426.0.0,3426,,,2006-2010,ACE/Touchscreen,Employment
+noisy_workplace,Noisy workplace,http://biobank.ndph.ox.ac.uk/showcase/field.cgi?id=4825,,Employment,f.4825.0.0,4825,,,2006-2010,ACE/Touchscreen,Hearing
+immigration_year,Year immigrated to UK (United Kingdom),http://biobank.ndph.ox.ac.uk/showcase/field.cgi?id=3659,,Other sociodemographics,f.3659.0.0,3659,,,2006-2010,ACE/Touchscreen,Ethnicity
+ethnicity_old,Ethnic background,http://biobank.ndph.ox.ac.uk/showcase/field.cgi?id=21000,,Other sociodemographics,f.21000.0.0,21000,,,,,
+ethnicity,"Recoded ethnicity to have fewer categories: black, white, mixed, asian, other",,,Other sociodemographics,,,,,2006-2010,ACE/Touchscreen,Ethnicity
+attendance_allowance,Attendance/disability/mobility allowance,http://biobank.ndph.ox.ac.uk/showcase/field.cgi?id=6146,,Other sociodemographics,f.6146.0.0 - f.6146.0.2,6146,,,2006-2010,ACE/Touchscreen,Other sociodemographic
+disability_allowance,Attendance/disability/mobility allowance,http://biobank.ndph.ox.ac.uk/showcase/field.cgi?id=6146,,Other sociodemographics,f.6146.0.0 - f.6146.0.2,6146,,,,,
+blue_badge,Attendance/disability/mobility allowance,http://biobank.ndph.ox.ac.uk/showcase/field.cgi?id=6146,,Other sociodemographics,f.6146.0.0 - f.6146.0.2,6146,,,,,
+private_healthcare,Private healthcare,http://biobank.ndph.ox.ac.uk/showcase/field.cgi?id=4674,,Other sociodemographics,f.4674.0.0,4674,,,2006-2010,ACE/Touchscreen,Other sociodemographic
+recruitment_age,Age at recruitment,http://biobank.ndph.ox.ac.uk/showcase/field.cgi?id=21022,,Other sociodemographics,f.21022.0.0,21022,,,2006-2010,Population characteristics,Baseline characteristics
+birth_year,Year of birth,http://biobank.ndph.ox.ac.uk/showcase/field.cgi?id=34,,Other sociodemographics,f.34.0.0,34,,,2006-2010,Population characteristics,Baseline characteristics
+birth_month,Month of birth,https://biobank.ndph.ox.ac.uk/showcase/field.cgi?id=52,,Other sociodemographics,f.52.0.0,52,,,,,
+genetic_sex,Genetic sez,https://biobank.ndph.ox.ac.uk/showcase/field.cgi?id=22001,,Other sociodemographics,f.22001.0.0,22001,,,,,
+sex,Sex,http://biobank.ndph.ox.ac.uk/showcase/field.cgi?id=31,,Other sociodemographics,f.31.0.0,31,,,,,
+recruitment_centre,UK Biobank assessment centre,http://biobank.ndph.ox.ac.uk/showcase/field.cgi?id=54,,Other sociodemographics,f.54.0.0,54,,,2006-2010,ACE/Recruitment,Reception
+recruitment_date,Date of attending assessment centre,http://biobank.ndph.ox.ac.uk/showcase/field.cgi?id=53,,Other sociodemographics,f.53.0.0,53,,,,,
+father_alzheimers,Illnesses of father,http://biobank.ndph.ox.ac.uk/showcase/field.cgi?id=20107,,Family medical history,f.20107.0.0 - f.20107.0.9,20107,,,2006-2010,ACE/Touchscreen,Family history
+father_severe_depression,Illnesses of father,http://biobank.ndph.ox.ac.uk/showcase/field.cgi?id=20107,,Family medical history,f.20107.0.0 - f.20107.0.9,20107,,,,,
+father_parkinsons,Illnesses of father,http://biobank.ndph.ox.ac.uk/showcase/field.cgi?id=20107,,Family medical history,f.20107.0.0 - f.20107.0.9,20107,,,,,
+father_diabetes,Illnesses of father,http://biobank.ndph.ox.ac.uk/showcase/field.cgi?id=20107,,Family medical history,f.20107.0.0 - f.20107.0.9,20107,,,,,
+father_high_blood_pressure,Illnesses of father,http://biobank.ndph.ox.ac.uk/showcase/field.cgi?id=20107,,Family medical history,f.20107.0.0 - f.20107.0.9,20107,,,,,
+father_bronchitis_emphysema,Illnesses of father,http://biobank.ndph.ox.ac.uk/showcase/field.cgi?id=20107,,Family medical history,f.20107.0.0 - f.20107.0.9,20107,,,,,
+father_prostate_cancer,Illnesses of father,http://biobank.ndph.ox.ac.uk/showcase/field.cgi?id=20107,,Family medical history,f.20107.0.0 - f.20107.0.9,20107,,,,,
+father_bowel_cancer,Illnesses of father,http://biobank.ndph.ox.ac.uk/showcase/field.cgi?id=20107,,Family medical history,f.20107.0.0 - f.20107.0.9,20107,,,,,
+father_lung_cancer,Illnesses of father,http://biobank.ndph.ox.ac.uk/showcase/field.cgi?id=20107,,Family medical history,f.20107.0.0 - f.20107.0.9,20107,,,,,
+father_stroke,Illnesses of father,http://biobank.ndph.ox.ac.uk/showcase/field.cgi?id=20107,,Family medical history,f.20107.0.0 - f.20107.0.9,20107,,,,,
+father_heart_disease,Illnesses of father,http://biobank.ndph.ox.ac.uk/showcase/field.cgi?id=20107,,Family medical history,f.20107.0.0 - f.20107.0.9,20107,,,,,
+mother_alzheimers,Illnesses of mother,http://biobank.ndph.ox.ac.uk/showcase/field.cgi?id=20110,,Family medical history,f.20110.0.0 - f.20110.0.10,20110,,,2006-2010,ACE/Touchscreen,Family history
+mother_severe_depression,Illnesses of mother,http://biobank.ndph.ox.ac.uk/showcase/field.cgi?id=20110,,Family medical history,f.20110.0.0 - f.20110.0.10,20110,,,,,
+mother_parkinsons,Illnesses of mother,http://biobank.ndph.ox.ac.uk/showcase/field.cgi?id=20110,,Family medical history,f.20110.0.0 - f.20110.0.10,20110,,,,,
+mother_diabetes,Illnesses of mother,http://biobank.ndph.ox.ac.uk/showcase/field.cgi?id=20110,,Family medical history,f.20110.0.0 - f.20110.0.10,20110,,,,,
+mother_high_blood_pressure,Illnesses of mother,http://biobank.ndph.ox.ac.uk/showcase/field.cgi?id=20110,,Family medical history,f.20110.0.0 - f.20110.0.10,20110,,,,,
+mother_bronchitis_emphysema,Illnesses of mother,http://biobank.ndph.ox.ac.uk/showcase/field.cgi?id=20110,,Family medical history,f.20110.0.0 - f.20110.0.10,20110,,,,,
+mother_breast_cancer,Illnesses of mother,http://biobank.ndph.ox.ac.uk/showcase/field.cgi?id=20110,,Family medical history,f.20110.0.0 - f.20110.0.10,20110,,,,,
+mother_bowel_cancer,Illnesses of mother,http://biobank.ndph.ox.ac.uk/showcase/field.cgi?id=20110,,Family medical history,f.20110.0.0 - f.20110.0.10,20110,,,,,
+mother_lung_cancer,Illnesses of mother,http://biobank.ndph.ox.ac.uk/showcase/field.cgi?id=20110,,Family medical history,f.20110.0.0 - f.20110.0.10,20110,,,,,
+mother_stroke,Illnesses of mother,http://biobank.ndph.ox.ac.uk/showcase/field.cgi?id=20110,,Family medical history,f.20110.0.0 - f.20110.0.10,20110,,,,,
+mother_heart_disease,Illnesses of mother,http://biobank.ndph.ox.ac.uk/showcase/field.cgi?id=20110,,Family medical history,f.20110.0.0 - f.20110.0.10,20110,,,,,
+sibling_alzheimers,Illnesses of siblings,http://biobank.ndph.ox.ac.uk/showcase/field.cgi?id=20111,,Family medical history,f.20111.0.0 - f.20111.0.11,20111,,,2006-2010,ACE/Touchscreen,Family history
+sibling_severe_depression,Illnesses of siblings,http://biobank.ndph.ox.ac.uk/showcase/field.cgi?id=20111,,Family medical history,f.20111.0.0 - f.20111.0.11,20111,,,,,
+sibling_parkinsons,Illnesses of siblings,http://biobank.ndph.ox.ac.uk/showcase/field.cgi?id=20111,,Family medical history,f.20111.0.0 - f.20111.0.11,20111,,,,,
+sibling_diabetes,Illnesses of siblings,http://biobank.ndph.ox.ac.uk/showcase/field.cgi?id=20111,,Family medical history,f.20111.0.0 - f.20111.0.11,20111,,,,,
+sibling_high_blood_pressure,Illnesses of siblings,http://biobank.ndph.ox.ac.uk/showcase/field.cgi?id=20111,,Family medical history,f.20111.0.0 - f.20111.0.11,20111,,,,,
+sibling_bronchitis_emphysema,Illnesses of siblings,http://biobank.ndph.ox.ac.uk/showcase/field.cgi?id=20111,,Family medical history,f.20111.0.0 - f.20111.0.11,20111,,,,,
+sibling_breast_cancer,Illnesses of siblings,http://biobank.ndph.ox.ac.uk/showcase/field.cgi?id=20111,,Family medical history,f.20111.0.0 - f.20111.0.11,20111,,,,,
+sibling_prostate_cancer,Illnesses of siblings,http://biobank.ndph.ox.ac.uk/showcase/field.cgi?id=20111,,Family medical history,f.20111.0.0 - f.20111.0.11,20111,,,,,
+sibling_bowel_cancer,Illnesses of siblings,http://biobank.ndph.ox.ac.uk/showcase/field.cgi?id=20111,,Family medical history,f.20111.0.0 - f.20111.0.11,20111,,,,,
+sibling_lung_cancer,Illnesses of siblings,http://biobank.ndph.ox.ac.uk/showcase/field.cgi?id=20111,,Family medical history,f.20111.0.0 - f.20111.0.11,20111,,,,,
+sibling_stroke,Illnesses of siblings,http://biobank.ndph.ox.ac.uk/showcase/field.cgi?id=20111,,Family medical history,f.20111.0.0 - f.20111.0.11,20111,,,,,
+sibling_heart_disease,Illnesses of siblings,http://biobank.ndph.ox.ac.uk/showcase/field.cgi?id=20111,,Family medical history,f.20111.0.0 - f.20111.0.11,20111,,,,,
+death_close_family,Non-accidental death in close genetic family,http://biobank.ndph.ox.ac.uk/showcase/field.cgi?id=4501,,Family medical history,f.4501.0.0,4501,,,2006-2010,ACE/Touchscreen,Family history
+father_alive,Father still alive,http://biobank.ndph.ox.ac.uk/showcase/field.cgi?id=1797,,Family medical history,f.1797.0.0,1797,,,2006-2010,ACE/Touchscreen,Family history
+adopted_father_alive,Adopted father still alive,http://biobank.ndph.ox.ac.uk/showcase/field.cgi?id=3912,,Family medical history,f.3912.0.0,3912,,,2006-2010,ACE/Touchscreen,Family history
+father_age,Father's age,http://biobank.ndph.ox.ac.uk/showcase/field.cgi?id=2946,,Family medical history,f.2946.0.0,2946,,,2006-2010,ACE/Touchscreen,Family history
+father_age_death,Father's age at death,http://biobank.ndph.ox.ac.uk/showcase/field.cgi?id=1807,,Family medical history,f.1807.0.0,1807,,,2006-2010,ACE/Touchscreen,Family history
+mother_alive,Mother still alive,http://biobank.ndph.ox.ac.uk/showcase/field.cgi?id=1835,,Family medical history,f.1835.0.0,1835,,,2006-2010,ACE/Touchscreen,Family history
+adopted_mother_alive,Adopted mother still alive,http://biobank.ndph.ox.ac.uk/showcase/field.cgi?id=3942,,Family medical history,f.3942.0.0,3942,,,2006-2010,ACE/Touchscreen,Family history
+mother_age,Mother's age,http://biobank.ndph.ox.ac.uk/showcase/field.cgi?id=1845,,Family medical history,f.1845.0.0,1845,,,2006-2010,ACE/Touchscreen,Family history
+mother_age_death,Mother's age at death,http://biobank.ndph.ox.ac.uk/showcase/field.cgi?id=3526,,Family medical history,f.3526.0.0,3526,,,2006-2010,ACE/Touchscreen,Family history
+number_brothers,Number of full brothers,http://biobank.ndph.ox.ac.uk/showcase/field.cgi?id=1873,,Family medical history,f.1873.0.0,1873,,,2006-2010,ACE/Touchscreen,Family history
+number_adopted_brothers,Number of adopted brothers,http://biobank.ndph.ox.ac.uk/showcase/field.cgi?id=3972,,Family medical history,f.3972.0.0,3972,,,2006-2010,ACE/Touchscreen,Family history
+number_sisters,Number of full sisters,http://biobank.ndph.ox.ac.uk/showcase/field.cgi?id=1883,,Family medical history,f.1883.0.0,1883,,,2006-2010,ACE/Touchscreen,Family history
+number_adopted_sisters,Number of adopted sisters,http://biobank.ndph.ox.ac.uk/showcase/field.cgi?id=3982,,Family medical history,f.3982.0.0,3982,,,2006-2010,ACE/Touchscreen,Family history
+number_older_siblings,Number of older siblings,http://biobank.ndph.ox.ac.uk/showcase/field.cgi?id=5057,,Family medical history,f.5057.0.0,5057,,,2006-2010,ACE/Touchscreen,Family history
+heart_attack_diagnosis,Vascular/heart problems diagnosed by doctor,http://biobank.ndph.ox.ac.uk/showcase/field.cgi?id=6150,,Medical conditions,f.6150.0.0 - f.6150.0.3,6150,,,2006-2010,ACE/Touchscreen,Medical conditions
+stroke_diagnosis,Vascular/heart problems diagnosed by doctor,http://biobank.ndph.ox.ac.uk/showcase/field.cgi?id=6150,,Medical conditions,f.6150.0.0 - f.6150.0.3,6150,,,,,
+angina_diagnosis,Vascular/heart problems diagnosed by doctor,http://biobank.ndph.ox.ac.uk/showcase/field.cgi?id=6150,,Medical conditions,f.6150.0.0 - f.6150.0.3,6150,,,,,
+high_blood_pressure_diagnosis,Vascular/heart problems diagnosed by doctor,http://biobank.ndph.ox.ac.uk/showcase/field.cgi?id=6150,,Medical conditions,f.6150.0.0 - f.6150.0.3,6150,,,,,
+MI_diagnosis_age,Age heart attack diagnosed,http://biobank.ndph.ox.ac.uk/showcase/field.cgi?id=3894,,Medical conditions,f.3894.0.0,3894,,,2006-2010,ACE/Touchscreen,Medical conditions
+angina_diagnosis_age,Age angina diagnosed,http://biobank.ndph.ox.ac.uk/showcase/field.cgi?id=3627,,Medical conditions,f.3627.0.0,3627,,,2006-2010,ACE/Touchscreen,Medical conditions
+stroke_diagnosis_age,Age stroke diagnosed,http://biobank.ndph.ox.ac.uk/showcase/field.cgi?id=4056,,Medical conditions,f.4056.0.0,4056,,,2006-2010,ACE/Touchscreen,Medical conditions
+bp_diagnosis_age,Age high blood pressure diagnosed,http://biobank.ndph.ox.ac.uk/showcase/field.cgi?id=2966,,Medical conditions,f.2966.0.0,2966,,,2006-2010,ACE/Touchscreen,Medical conditions
+asthma_diagnosis,"Blood clot, DVT, bronchitis, emphysema, asthma, rhinitis, eczema, allergy diagnosed by doctor",http://biobank.ndph.ox.ac.uk/showcase/field.cgi?id=6152,,Medical conditions,f.6152.0.0,6152,,,2006-2010,ACE/Touchscreen,Medical conditions
+DVT_diagnosis,"Blood clot, DVT, bronchitis, emphysema, asthma, rhinitis, eczema, allergy diagnosed by doctor",http://biobank.ndph.ox.ac.uk/showcase/field.cgi?id=6152,,Medical conditions,f.6152.0.1 - f.6152.0.4,6152,,,,,
+hayfever_diagnosis,"Blood clot, DVT, bronchitis, emphysema, asthma, rhinitis, eczema, allergy diagnosed by doctor",http://biobank.ndph.ox.ac.uk/showcase/field.cgi?id=6152,,Medical conditions,f.6152.0.1 - f.6152.0.4,6152,,,,,
+bronchitis_emphysema_diagnosis,"Blood clot, DVT, bronchitis, emphysema, asthma, rhinitis, eczema, allergy diagnosed by doctor",http://biobank.ndph.ox.ac.uk/showcase/field.cgi?id=6152,,Medical conditions,f.6152.0.1 - f.6152.0.4,6152,,,,,
+blood_clot_lung_diagnosis,"Blood clot, DVT, bronchitis, emphysema, asthma, rhinitis, eczema, allergy diagnosed by doctor",http://biobank.ndph.ox.ac.uk/showcase/field.cgi?id=6152,,Medical conditions,f.6152.0.1 - f.6152.0.4,6152,,,,,
+DVT_diagnosis_age,"Age deep-vein thrombosis (DVT, blood clot in leg) diagnosed",http://biobank.ndph.ox.ac.uk/showcase/field.cgi?id=4012,,Medical conditions,f.4012.0.0,4012,,,2006-2010,ACE/Touchscreen,Medical conditions
+pulm_embolism_diagnosis_age,Age pulmonary embolism (blood clot in lung) diagnosed,http://biobank.ndph.ox.ac.uk/showcase/field.cgi?id=4022,,Medical conditions,f.4022.0.0,4022,,,2006-2010,ACE/Touchscreen,Medical conditions
+emphysema_diagnosis_age,Age emphysema/chronic bronchitis diagnosed,http://biobank.ndph.ox.ac.uk/showcase/field.cgi?id=3992,,Medical conditions,f.3992.0.0,3992,,,2006-2010,ACE/Touchscreen,Medical conditions
+asthma_diagnosis_age,Age asthma diagnosed,http://biobank.ndph.ox.ac.uk/showcase/field.cgi?id=3786,,Medical conditions,f.3786.0.0,3786,,,2006-2010,ACE/Touchscreen,Medical conditions
+rhinitis_diagnosis_age,"Age hay fever, rhinitis or eczema diagnosed",http://biobank.ndph.ox.ac.uk/showcase/field.cgi?id=3761,,Medical conditions,f.3761.0.0,3761,,,2006-2010,ACE/Touchscreen,Medical conditions
+diabetes_diagnosis,Diabetes diagnosed by doctor,http://biobank.ndph.ox.ac.uk/showcase/field.cgi?id=2443,,Medical conditions,f.2443.0.0,2443,,,2006-2010,ACE/Touchscreen,Medical conditions
+gest_diabetes_only,Gestational diabetes only,http://biobank.ndph.ox.ac.uk/showcase/field.cgi?id=4041,,Medical conditions,f.4041.0.0,4041,,,2006-2010,ACE/Touchscreen,Medical conditions
+diabetes_diagnosis_age,Age diabetes diagnosed,http://biobank.ndph.ox.ac.uk/showcase/field.cgi?id=2976,,Medical conditions,f.2976.0.0,2976,,,2006-2010,ACE/Touchscreen,Medical conditions
+diabetes_insulin_1yr,Started insulin within one year diagnosis of diabetes,http://biobank.ndph.ox.ac.uk/showcase/field.cgi?id=2986,,Medical conditions,f.2986.0.0,2986,,,2006-2010,ACE/Touchscreen,Medical conditions
+cancer_diagnosis,Cancer diagnosed by doctor,http://biobank.ndph.ox.ac.uk/showcase/field.cgi?id=2453,,Medical conditions,f.2453.0.0,2453,,,2006-2010,ACE/Touchscreen,Medical conditions
+fracture_last_5yrs,Fractured/broken bones in last 5 years,http://biobank.ndph.ox.ac.uk/showcase/field.cgi?id=2463,,Medical conditions,f.2463.0.0,2463,,,2006-2010,ACE/Touchscreen,Medical conditions
+fracture_fall,Fracture resulting from simple fall,http://biobank.ndph.ox.ac.uk/showcase/field.cgi?id=3005,,Medical conditions,f.3005.0.0,3005,,,2006-2010,ACE/Touchscreen,Medical conditions
+other_diagnosis,Other serious medical condition/disability diagnosed by doctor,http://biobank.ndph.ox.ac.uk/showcase/field.cgi?id=2473,,Medical conditions,f.2473.0.0,2473,,,2006-2010,ACE/Touchscreen,Medical conditions
+number_cancers,Number of self-reported cancers,http://biobank.ndph.ox.ac.uk/showcase/field.cgi?id=134,,Medical conditions,f.134.0.0,134,,,2006-2010,ACE/Verbal interview,Medical conditions
+number_illnesses,Number of self-reported non-cancer illnesses,http://biobank.ndph.ox.ac.uk/showcase/field.cgi?id=135,,Medical conditions,f.135.0.0,135,,,2006-2010,ACE/Verbal interview,Medical conditions
+,"Cancer code, self-reported",http://biobank.ndph.ox.ac.uk/showcase/field.cgi?id=20001,,Medical conditions,f.20001.0.0,20001,,,2006-2010,ACE/Verbal interview,Medical conditions
+,,,,,f.20001.0.1,,,,,,
+,,,,,f.20001.0.2,,,,,,
+,,,,,f.20001.0.3,,,,,,
+,,,,,f.20001.0.4,,,,,,
+,,,,,f.20001.0.5,,,,,,
+,"Non-cancer illness code, self-reported",http://biobank.ndph.ox.ac.uk/showcase/field.cgi?id=20002,,,f.20002.0.0,20002,,,2006-2010,ACE/Verbal interview,Medical conditions
+,,,,,f.20002.0.1,,,,,,
+,,,,,f.20002.0.2,,,,,,
+,,,,,f.20002.0.3,,,,,,
+,,,,,f.20002.0.4,,,,,,
+,,,,,f.20002.0.5,,,,,,
+,,,,,f.20002.0.6,,,,,,
+,,,,,f.20002.0.7,,,,,,
+,,,,,f.20002.0.8,,,,,,
+,,,,,f.20002.0.9,,,,,,
+,,,,,f.20002.0.10,,,,,,
+,,,,,f.20002.0.11,,,,,,
+,,,,,f.20002.0.12,,,,,,
+,,,,,f.20002.0.13,,,,,,
+,,,,,f.20002.0.14,,,,,,
+,,,,,f.20002.0.15,,,,,,
+,,,,,f.20002.0.16,,,,,,
+,,,,,f.20002.0.17,,,,,,
+,,,,,f.20002.0.18,,,,,,
+,,,,,f.20002.0.19,,,,,,
+,,,,,f.20002.0.20,,,,,,
+,,,,,f.20002.0.21,,,,,,
+,,,,,f.20002.0.22,,,,,,
+,,,,,f.20002.0.23,,,,,,
+,,,,,f.20002.0.24,,,,,,
+,,,,,f.20002.0.25,,,,,,
+,,,,,f.20002.0.26,,,,,,
+,,,,,f.20002.0.27,,,,,,
+,,,,,f.20002.0.28,,,,,,
+,,,,,f.20002.0.29,,,,,,
+,,,,,f.20002.0.30,,,,,,
+,,,,,f.20002.0.31,,,,,,
+,,,,,f.20002.0.32,,,,,,
+,,,,,f.20002.0.33,,,,,,
+,,,,,,,,,,,
+glasses,Wears glasses or contact lenses,http://biobank.ndph.ox.ac.uk/showcase/field.cgi?id=2207,,Medical conditions,f.2207.0.0,2207,,,2006-2010,ACE/Touchscreen,Eyesight
+glasses_age,Age started wearing glasses or contact lenses,http://biobank.ndph.ox.ac.uk/showcase/field.cgi?id=2217,,Medical conditions,f.2217.0.0,2217,,,2006-2010,ACE/Touchscreen,Eyesight
+glasses_myopia,Reason for glasses/contact lenses,http://biobank.ndph.ox.ac.uk/showcase/field.cgi?id=6147,,Medical conditions,f.6147.0.0 - f.6147.0.5,6147,,,2006-2010,ACE/Touchscreen,Eyesight
+glasses_presbyopia,Reason for glasses/contact lenses,http://biobank.ndph.ox.ac.uk/showcase/field.cgi?id=6147,,Medical conditions,f.6147.0.0 - f.6147.0.5,6147,,,,,
+glasses_hypermetropia,Reason for glasses/contact lenses,http://biobank.ndph.ox.ac.uk/showcase/field.cgi?id=6147,,Medical conditions,f.6147.0.0 - f.6147.0.5,6147,,,,,
+glasses_amblyopia,Reason for glasses/contact lenses,http://biobank.ndph.ox.ac.uk/showcase/field.cgi?id=6147,,Medical conditions,f.6147.0.0 - f.6147.0.5,6147,,,,,
+glasses_astigmatism,Reason for glasses/contact lenses,http://biobank.ndph.ox.ac.uk/showcase/field.cgi?id=6147,,Medical conditions,f.6147.0.0 - f.6147.0.5,6147,,,,,
+glasses_strabismus,Reason for glasses/contact lenses,http://biobank.ndph.ox.ac.uk/showcase/field.cgi?id=6147,,Medical conditions,f.6147.0.0 - f.6147.0.5,6147,,,,,
+glasses_other,Reason for glasses/contact lenses,http://biobank.ndph.ox.ac.uk/showcase/field.cgi?id=6147,,Medical conditions,f.6147.0.0 - f.6147.0.5,6147,,,,,
+myopia_eye,Which eye(s) affected by myopia (short sight),http://biobank.ndph.ox.ac.uk/showcase/field.cgi?id=5843,,Medical conditions,f.5843.0.0,5843,,,2006-2010,ACE/Touchscreen,Eyesight
+hypertropia_eye,Which eye(s) affected by hypermetropia (long sight),http://biobank.ndph.ox.ac.uk/showcase/field.cgi?id=5832,,Medical conditions,f.5832.0.0,5832,,,2006-2010,ACE/Touchscreen,Eyesight
+presbyopia_eye,Which eye(s) affected by presbyopia,http://biobank.ndph.ox.ac.uk/showcase/field.cgi?id=5610,,Medical conditions,f.5610.0.0,5610,,,2006-2010,ACE/Touchscreen,Eyesight
+astigmatism_eye,Which eye(s) affected by astigmatism,http://biobank.ndph.ox.ac.uk/showcase/field.cgi?id=5855,,Medical conditions,f.5855.0.0,5855,,,2006-2010,ACE/Touchscreen,Eyesight
+strabismus_eye,Which eye(s) affected by strabismus (squint),http://biobank.ndph.ox.ac.uk/showcase/field.cgi?id=6205,,Medical conditions,f.6205.0.0,6205,,,2006-2010,ACE/Touchscreen,Eyesight
+amblyopia_eye,Which eye(s) affected by amblyopia (lazy eye),http://biobank.ndph.ox.ac.uk/showcase/field.cgi?id=5408,,Medical conditions,f.5408.0.0,5408,,,2006-2010,ACE/Touchscreen,Eyesight
+other_eye,Which eye(s) affected by other eye condition,http://biobank.ndph.ox.ac.uk/showcase/field.cgi?id=5877,,Medical conditions,f.5877.0.0,5877,,,2006-2010,ACE/Touchscreen,Eyesight
+other_serious_eye,Which eye(s) affected by other serious eye condition,http://biobank.ndph.ox.ac.uk/showcase/field.cgi?id=5934,,Medical conditions,f.5934.0.0,5934,,,2006-2010,ACE/Touchscreen,Eyesight
+other_eye_problems,Other eye problems,http://biobank.ndph.ox.ac.uk/showcase/field.cgi?id=2227,,Medical conditions,f.2227.0.0,2227,,,2006-2010,ACE/Touchscreen,Eyesight
+glaucoma,Eye problems/disorders,http://biobank.ndph.ox.ac.uk/showcase/field.cgi?id=6148,,Medical conditions,f.6148.0.0 - f.6148.0.3,6148,,,2006-2010,ACE/Touchscreen,Eyesight
+macular_degeneration,Eye problems/disorders,http://biobank.ndph.ox.ac.uk/showcase/field.cgi?id=6148,,Medical conditions,f.6148.0.0 - f.6148.0.4,6148,,,,,
+cataract,Eye problems/disorders,http://biobank.ndph.ox.ac.uk/showcase/field.cgi?id=6148,,Medical conditions,f.6148.0.0 - f.6148.0.5,6148,,,,,
+other_serious_eye_condition,Eye problems/disorders,http://biobank.ndph.ox.ac.uk/showcase/field.cgi?id=6148,,Medical conditions,f.6148.0.0 - f.6148.0.6,6148,,,,,
+trauma_vision_loss,Eye problems/disorders,http://biobank.ndph.ox.ac.uk/showcase/field.cgi?id=6148,,Medical conditions,f.6148.0.0 - f.6148.0.7,6148,,,,,
+diabetes_eye,Which eye(s) affected by diabetes-related eye disease,http://biobank.ndph.ox.ac.uk/showcase/field.cgi?id=5890,,Medical conditions,f.5890.0.0,5890,,,2006-2010,ACE/Touchscreen,Eyesight
+glaucoma_eye,Which eye(s) affected by glaucoma,http://biobank.ndph.ox.ac.uk/showcase/field.cgi?id=6119,,Medical conditions,f.6119.0.0,6119,,,2006-2010,ACE/Touchscreen,Eyesight
+injury_eye,Which eye(s) affected by injury or trauma resulting in loss of vision,http://biobank.ndph.ox.ac.uk/showcase/field.cgi?id=5419,,Medical conditions,f.5419.0.0,5419,,,2006-2010,ACE/Touchscreen,Eyesight
+cataract_eye,Which eye(s) are affected by cataract,http://biobank.ndph.ox.ac.uk/showcase/field.cgi?id=5441,,Medical conditions,f.5441.0.0,5441,,,2006-2010,ACE/Touchscreen,Eyesight
+macular_degeneration_eye,Which eye(s) affected by macular degeneration,http://biobank.ndph.ox.ac.uk/showcase/field.cgi?id=5912,,Medical conditions,f.5912.0.0,5912,,,2006-2010,ACE/Touchscreen,Eyesight
+diabetes_eye_age,Age when diabetes-related eye disease diagnosed,http://biobank.ndph.ox.ac.uk/showcase/field.cgi?id=5901,,Medical conditions,f.5901.0.0,5901,,,2006-2010,ACE/Touchscreen,Eyesight
+glaucoma_age,Age glaucoma diagnosed,http://biobank.ndph.ox.ac.uk/showcase/field.cgi?id=4689,,Medical conditions,f.4689.0.0,4689,,,2006-2010,ACE/Touchscreen,Eyesight
+injury_eye_age,Age when loss of vision due to injury or trauma diagnosed,http://biobank.ndph.ox.ac.uk/showcase/field.cgi?id=5430,,Medical conditions,f.5430.0.0,5430,,,2006-2010,ACE/Touchscreen,Eyesight
+cataract_age,Age cataract diagnosed,http://biobank.ndph.ox.ac.uk/showcase/field.cgi?id=4700,,Medical conditions,f.4700.0.0,4700,,,2006-2010,ACE/Touchscreen,Eyesight
+macular_degeneration_age,Age macular degeneration diagnosed,http://biobank.ndph.ox.ac.uk/showcase/field.cgi?id=5923,,Medical conditions,f.5923.0.0,5923,,,2006-2010,ACE/Touchscreen,Eyesight
+other_serious_eye_age,Age other serious eye condition diagnosed,http://biobank.ndph.ox.ac.uk/showcase/field.cgi?id=5945,,Medical conditions,f.5945.0.0,5945,,,2006-2010,ACE/Touchscreen,Eyesight
+bleeding_gums,Mouth/teeth dental problems,http://biobank.ndph.ox.ac.uk/showcase/field.cgi?id=6149,,Medical conditions,f.6149.0.0 - f.6149.0.5,6149,,,2006-2010,ACE/Touchscreen,Mouth
+dentures,Mouth/teeth dental problems,http://biobank.ndph.ox.ac.uk/showcase/field.cgi?id=6149,,Medical conditions,f.6149.0.0 - f.6149.0.6,6149,,,,,
+toothache,Mouth/teeth dental problems,http://biobank.ndph.ox.ac.uk/showcase/field.cgi?id=6149,,Medical conditions,f.6149.0.0 - f.6149.0.7,6149,,,,,
+mouth_ulcers,Mouth/teeth dental problems,http://biobank.ndph.ox.ac.uk/showcase/field.cgi?id=6149,,Medical conditions,f.6149.0.0 - f.6149.0.8,6149,,,,,
+painful_gums,Mouth/teeth dental problems,http://biobank.ndph.ox.ac.uk/showcase/field.cgi?id=6149,,Medical conditions,f.6149.0.0 - f.6149.0.9,6149,,,,,
+loose_teeth,Mouth/teeth dental problems,http://biobank.ndph.ox.ac.uk/showcase/field.cgi?id=6149,,Medical conditions,f.6149.0.0 - f.6149.0.10,6149,,,,,
+overall_health,Overall health rating,http://biobank.ndph.ox.ac.uk/showcase/field.cgi?id=2178,,General health,f.2178.0.0,2178,,,2006-2010,ACE/Touchscreen,General health
+chronic_illness,"Long-standing illness, disability or infirmity",http://biobank.ndph.ox.ac.uk/showcase/field.cgi?id=2188,,General health,f.2188.0.0,2188,,,2006-2010,ACE/Touchscreen,General health
+falls_last_1yr,Falls in the last year,http://biobank.ndph.ox.ac.uk/showcase/field.cgi?id=2296,,General health,f.2296.0.0,2296,,,2006-2010,ACE/Touchscreen,General health
+weight_change_last_1yr,Weight change compared with 1 year ago,https://biobank.ctsu.ox.ac.uk/crystal/field.cgi?id=2306,,General health,f.2306.0.0,2306,,,2006-2010,ACE/Touchscreen,General health
+chest_weeze_last_1yr,Wheeze or whistling in the chest in last year,http://biobank.ndph.ox.ac.uk/showcase/field.cgi?id=2316,,Medical conditions,f.2316.0.0,2316,,,2006-2010,ACE/Touchscreen,Breathing
+shortness_breath,Shortness of breath walking on level ground,http://biobank.ndph.ox.ac.uk/showcase/field.cgi?id=4717,,Medical conditions,f.4717.0.0,4717,,,2006-2010,ACE/Touchscreen,Breathing
+leg_pain_walking,Leg pain on walking,http://biobank.ndph.ox.ac.uk/showcase/field.cgi?id=4728,,Medical conditions,f.4728.0.0,4728,,,2006-2010,ACE/Touchscreen,Claudication and PAD
+leg_pain_standing,Leg pain when standing still or sitting,http://biobank.ndph.ox.ac.uk/showcase/field.cgi?id=5452,,Medical conditions,f.5452.0.0,5452,,,2006-2010,ACE/Touchscreen,Claudication and PAD
+leg_pain_calves,Leg pain in calf/calves,http://biobank.ndph.ox.ac.uk/showcase/field.cgi?id=5463,,Medical conditions,f.5463.0.0,5463,,,2006-2010,ACE/Touchscreen,Claudication and PAD
+leg_pain_walking_uphill,Leg pain when walking uphill or hurrying,http://biobank.ndph.ox.ac.uk/showcase/field.cgi?id=5474,,Medical conditions,f.5474.0.0,5474,,,2006-2010,ACE/Touchscreen,Claudication and PAD
+leg_pain_walking_normal,Leg pain when walking normally,http://biobank.ndph.ox.ac.uk/showcase/field.cgi?id=5485,,Medical conditions,f.5485.0.0,5485,,,2006-2010,ACE/Touchscreen,Claudication and PAD
+leg_pain_walking_disappears,Leg pain when walking ever disappears while walking,http://biobank.ndph.ox.ac.uk/showcase/field.cgi?id=5496,,Medical conditions,f.5496.0.0,5496,,,2006-2010,ACE/Touchscreen,Claudication and PAD
+leg_pain_walking_action,Leg pain on walking : action taken,http://biobank.ndph.ox.ac.uk/showcase/field.cgi?id=5507,,Medical conditions,f.5507.0.0,5507,,,2006-2010,ACE/Touchscreen,Claudication and PAD
+leg_pain_walking_standing,Leg pain on walking : effect of standing still,http://biobank.ndph.ox.ac.uk/showcase/field.cgi?id=5518,,Medical conditions,f.5518.0.0,5518,,,2006-2010,ACE/Touchscreen,Claudication and PAD
+leg_artery_surgery,Surgery on leg arteries (other than for varicose veins),http://biobank.ndph.ox.ac.uk/showcase/field.cgi?id=5529,,Medical conditions,f.5529.0.0,5529,,,2006-2010,ACE/Touchscreen,Claudication and PAD
+leg_surgery,Surgery/amputation of toe or leg,http://biobank.ndph.ox.ac.uk/showcase/field.cgi?id=5540,,Medical conditions,f.5540.0.0,5540,,,2006-2010,ACE/Touchscreen,Claudication and PAD
+neck_pain_1month,Pain type(s) experienced in last month,http://biobank.ndph.ox.ac.uk/showcase/field.cgi?id=6159,,Medical conditions,f.6159.0.0 - f.6159.0.6,6159,,,2006-2010,ACE/Touchscreen,Pain
+whole_body_pain_1month,Pain type(s) experienced in last month,http://biobank.ndph.ox.ac.uk/showcase/field.cgi?id=6159,,Medical conditions,f.6159.0.0 - f.6159.0.7,6159,,,,,
+headaches_1month,Pain type(s) experienced in last month,http://biobank.ndph.ox.ac.uk/showcase/field.cgi?id=6159,,Medical conditions,f.6159.0.0 - f.6159.0.8,6159,,,,,
+knee_pain_1month,Pain type(s) experienced in last month,http://biobank.ndph.ox.ac.uk/showcase/field.cgi?id=6159,,Medical conditions,f.6159.0.0 - f.6159.0.9,6159,,,,,
+stomach_pain_1month,Pain type(s) experienced in last month,http://biobank.ndph.ox.ac.uk/showcase/field.cgi?id=6159,,Medical conditions,f.6159.0.0 - f.6159.0.10,6159,,,,,
+facial_pain_1month,Pain type(s) experienced in last month,http://biobank.ndph.ox.ac.uk/showcase/field.cgi?id=6159,,Medical conditions,f.6159.0.0 - f.6159.0.11,6159,,,,,
+back_pain_1month,Pain type(s) experienced in last month,http://biobank.ndph.ox.ac.uk/showcase/field.cgi?id=6159,,Medical conditions,f.6159.0.0 - f.6159.0.12,6159,,,,,
+hip_pain_1month,Pain type(s) experienced in last month,http://biobank.ndph.ox.ac.uk/showcase/field.cgi?id=6159,,Medical conditions,f.6159.0.0 - f.6159.0.13,6159,,,,,
+headaches_3months,Headaches for 3+ months,http://biobank.ndph.ox.ac.uk/showcase/field.cgi?id=3799,,Medical conditions,f.3799.0.0,3799,,,2006-2010,ACE/Touchscreen,Pain
+facial_pain_3months,Facial pains for 3+ months,http://biobank.ndph.ox.ac.uk/showcase/field.cgi?id=4067,,Medical conditions,f.4067.0.0,4067,,,2006-2010,ACE/Touchscreen,Pain
+neck_pain_3months,Neck/shoulder pain for 3+ months,http://biobank.ndph.ox.ac.uk/showcase/field.cgi?id=3404,,Medical conditions,f.3404.0.0,3404,,,2006-2010,ACE/Touchscreen,Pain
+back_pain_3months,Back pain for 3+ months,http://biobank.ndph.ox.ac.uk/showcase/field.cgi?id=3571,,Medical conditions,f.3571.0.0,3571,,,2006-2010,ACE/Touchscreen,Pain
+stomach_pain_3months,Stomach/abdominal pain for 3+ months,http://biobank.ndph.ox.ac.uk/showcase/field.cgi?id=3741,,Medical conditions,f.3741.0.0,3741,,,2006-2010,ACE/Touchscreen,Pain
+hip_pain_3months,Hip pain for 3+ months,http://biobank.ndph.ox.ac.uk/showcase/field.cgi?id=3414,,Medical conditions,f.3414.0.0,3414,,,2006-2010,ACE/Touchscreen,Pain
+knee_pain_3months,Knee pain for 3+ months,http://biobank.ndph.ox.ac.uk/showcase/field.cgi?id=3773,,Medical conditions,f.3773.0.0,3773,,,2006-2010,ACE/Touchscreen,Pain
+general_pain_3months,General pain for 3+ months,http://biobank.ndph.ox.ac.uk/showcase/field.cgi?id=2956,,Medical conditions,f.2956.0.0,2956,,,2006-2010,ACE/Touchscreen,Pain
+chest_pain,Chest pain or discomfort,http://biobank.ndph.ox.ac.uk/showcase/field.cgi?id=2335,,Medical conditions,f.2335.0.0,2335,,,2006-2010,ACE/Touchscreen,Chest pain
+chest_pain_walking_normal,Chest pain or discomfort walking normally,http://biobank.ndph.ox.ac.uk/showcase/field.cgi?id=3606,,Medical conditions,f.3606.0.0,3606,,,2006-2010,ACE/Touchscreen,Chest pain
+chest_pain_ceases_still,Chest pain due to walking ceases when standing still,http://biobank.ndph.ox.ac.uk/showcase/field.cgi?id=3616,,Medical conditions,f.3616.0.0,3616,,,2006-2010,ACE/Touchscreen,Chest pain
+chest_pain_walking_uphill,Chest pain or discomfort when walking uphill or hurrying,http://biobank.ndph.ox.ac.uk/showcase/field.cgi?id=3751,,Medical conditions,f.3751.0.0,3751,,,2006-2010,ACE/Touchscreen,Chest pain
+major_operations,Had major operations,http://biobank.ndph.ox.ac.uk/showcase/field.cgi?id=2415,,Medical conditions,f.2415.0.0,2415,,,2006-2010,ACE/Touchscreen,Operations
+other_operations,Had other major operations,http://biobank.ndph.ox.ac.uk/showcase/field.cgi?id=2844,,Medical conditions,f.2844.0.0,2844,,,2006-2010,ACE/Touchscreen,Operations
+number_operations,"Number of operations, self-reported",http://biobank.ndph.ox.ac.uk/showcase/field.cgi?id=136,,Medical conditions,f.136.0.0,136,,,2006-2010,ACE/Verbal interview,Operations
+pace_maker,Pace-maker,http://biobank.ndph.ox.ac.uk/showcase/field.cgi?id=3079,,Medical conditions,f.3079.0.0,3079,,,2006-2010,ACE/Verbal interview,Operations
+hearing_difficulty,Hearing difficulty/problems,http://biobank.ndph.ox.ac.uk/showcase/field.cgi?id=2247,,Medical conditions,f.2247.0.0,2247,,,2006-2010,ACE/Touchscreen,Hearing
+hearing_difficulty_background,Hearing difficulty/problems with background noise,http://biobank.ndph.ox.ac.uk/showcase/field.cgi?id=2257,,Medical conditions,f.2257.0.0,2257,,,2006-2010,ACE/Touchscreen,Hearing
+hearing_aid,Hearing aid user,http://biobank.ndph.ox.ac.uk/showcase/field.cgi?id=3393,,Medical conditions,f.3393.0.0,3393,,,2006-2010,ACE/Touchscreen,Hearing
+cochlear_implant,Cochlear implant,http://biobank.ndph.ox.ac.uk/showcase/field.cgi?id=4792,,Medical conditions,f.4792.0.0,4792,,,2006-2010,ACE/Touchscreen,Hearing
+tinnitus,Tinnitus,http://biobank.ndph.ox.ac.uk/showcase/field.cgi?id=4803,,Medical conditions,f.4803.0.0,4803,,,2006-2010,ACE/Touchscreen,Hearing
+tinnitus_severity,Tinnitus severity/nuisance,http://biobank.ndph.ox.ac.uk/showcase/field.cgi?id=4814,,Medical conditions,f.4814.0.0,4814,,,2006-2010,ACE/Touchscreen,Hearing
+loud_music_exposure,Loud music exposure frequency,http://biobank.ndph.ox.ac.uk/showcase/field.cgi?id=4836,,Medical conditions,f.4836.0.0,4836,,,2006-2010,ACE/Touchscreen,Hearing
+bowel_cancer_screening,Ever had bowel cancer screening,http://biobank.ndph.ox.ac.uk/showcase/field.cgi?id=2345,,Medical conditions,f.2345.0.0,2345,,,2006-2010,ACE/Touchscreen,Cancer screening
+bowel_cancer_screening_time,Most recent bowel cancer screening,http://biobank.ndph.ox.ac.uk/showcase/field.cgi?id=2355,,Medical conditions,f.2355.0.0,2355,,,2006-2010,ACE/Touchscreen,Cancer screening
+PSA_test,Ever had prostate specific antigen (PSA) test,http://biobank.ndph.ox.ac.uk/showcase/field.cgi?id=2365,,Medical conditions,f.2365.0.0,2365,,,2006-2010,ACE/Touchscreen,Cancer screening
+PSA_test_time,Time since last prostate specific antigen (PSA) test,http://biobank.ndph.ox.ac.uk/showcase/field.cgi?id=3809,,Medical conditions,f.3809.0.0,3809,,,2006-2010,ACE/Touchscreen,Cancer screening
+cholesterol_meds,"Medication for cholesterol, blood pressure or diabetes",https://biobank.ctsu.ox.ac.uk/crystal/field.cgi?id=6177,,Medications,f.6177.0.0 - f.6177.0.2,6177,,,2006-2010,ACE/Touchscreen,Medications
+blood_pressure_meds,"Medication for cholesterol, blood pressure or diabetes",https://biobank.ctsu.ox.ac.uk/crystal/field.cgi?id=6177,,Medications,f.6177.0.0 - f.6177.0.2,6177,,,,,
+insulin,"Medication for cholesterol, blood pressure or diabetes",https://biobank.ctsu.ox.ac.uk/crystal/field.cgi?id=6177,,Medications,f.6177.0.0 - f.6177.0.2,6177,,,,,
+cholesterol_meds_v2,"Medication for cholesterol, blood pressure, diabetes, or take exogenous hormones",https://biobank.ctsu.ox.ac.uk/crystal/field.cgi?id=6153,,Medications,f.6153.0.0 - f.6153.0.3,6153,,,2006-2010,ACE/Touchscreen,Medications
+blood_pressure_meds_v2,"Medication for cholesterol, blood pressure, diabetes, or take exogenous hormones",https://biobank.ctsu.ox.ac.uk/crystal/field.cgi?id=6153,,Medications,f.6153.0.0 - f.6153.0.3,6153,,,,,
+insulin_v2,"Medication for cholesterol, blood pressure, diabetes, or take exogenous hormones",https://biobank.ctsu.ox.ac.uk/crystal/field.cgi?id=6153,,Medications,f.6153.0.0 - f.6153.0.3,6153,,,,,
+other_meds,Taking other prescription medications,https://biobank.ctsu.ox.ac.uk/crystal/field.cgi?id=2492,,Medications,f.2492.0.0,2492,,,2006-2010,ACE/Touchscreen,Medications
+aspirin,"Medication for pain relief, constipation, heartburn",https://biobank.ctsu.ox.ac.uk/crystal/field.cgi?id=6154,,Medications,f.6154.0.0 - f.6154.0.5,6154,,,2006-2010,ACE/Touchscreen,Medications
+paracetamol,"Medication for pain relief, constipation, heartburn",https://biobank.ctsu.ox.ac.uk/crystal/field.cgi?id=6154,,Medications,f.6154.0.0 - f.6154.0.5,6154,,,,,
+ibuprofen,"Medication for pain relief, constipation, heartburn",https://biobank.ctsu.ox.ac.uk/crystal/field.cgi?id=6154,,Medications,f.6154.0.0 - f.6154.0.5,6154,,,,,
+omeprazole,"Medication for pain relief, constipation, heartburn",https://biobank.ctsu.ox.ac.uk/crystal/field.cgi?id=6154,,Medications,f.6154.0.0 - f.6154.0.5,6154,,,,,
+ranitidine,"Medication for pain relief, constipation, heartburn",https://biobank.ctsu.ox.ac.uk/crystal/field.cgi?id=6154,,Medications,f.6154.0.0 - f.6154.0.5,6154,,,,,
+laxatives,"Medication for pain relief, constipation, heartburn",https://biobank.ctsu.ox.ac.uk/crystal/field.cgi?id=6154,,Medications,f.6154.0.0 - f.6154.0.5,6154,,,,,
+number_medications,Number of treatments/medications taken,http://biobank.ndph.ox.ac.uk/showcase/field.cgi?id=137,,Medications,f.137.0.0,137,,,2006-2010,ACE/Verbal interview,Medications
+multivitamin_supplements,Vitamin and mineral supplements,https://biobank.ctsu.ox.ac.uk/crystal/field.cgi?id=6155,,Supplements,f.6155.0.0 - f.6155.0.6,6155,,,2006-2010,ACE/Touchscreen,Medications
+vitamin_A_supplements,Vitamin and mineral supplements,https://biobank.ctsu.ox.ac.uk/crystal/field.cgi?id=6155,,Supplements,f.6155.0.0 - f.6155.0.6,6155,,,,,
+vitamin_B_supplements,Vitamin and mineral supplements,https://biobank.ctsu.ox.ac.uk/crystal/field.cgi?id=6155,,Supplements,f.6155.0.0 - f.6155.0.6,6155,,,,,
+vitamin_C_supplements,Vitamin and mineral supplements,https://biobank.ctsu.ox.ac.uk/crystal/field.cgi?id=6155,,Supplements,f.6155.0.0 - f.6155.0.6,6155,,,,,
+vitamin_D_supplements,Vitamin and mineral supplements,https://biobank.ctsu.ox.ac.uk/crystal/field.cgi?id=6155,,Supplements,f.6155.0.0 - f.6155.0.6,6155,,,,,
+vitamin_E_supplements,Vitamin and mineral supplements,https://biobank.ctsu.ox.ac.uk/crystal/field.cgi?id=6155,,Supplements,f.6155.0.0 - f.6155.0.6,6155,,,,,
+folate_supplements,Vitamin and mineral supplements,https://biobank.ctsu.ox.ac.uk/crystal/field.cgi?id=6155,,Supplements,f.6155.0.0 - f.6155.0.6,6155,,,,,
+fish_oil_supplements,Mineral and other dietary supplements,https://biobank.ctsu.ox.ac.uk/crystal/field.cgi?id=6179,,Supplements,f.6179.0.0 - f.6179.0.5,6179,,,2006-2010,ACE/Touchscreen,Medications
+calcium_supplements,Mineral and other dietary supplements,https://biobank.ctsu.ox.ac.uk/crystal/field.cgi?id=6179,,Supplements,f.6179.0.0 - f.6179.0.5,6179,,,,,
+selenium_supplements,Mineral and other dietary supplements,https://biobank.ctsu.ox.ac.uk/crystal/field.cgi?id=6179,,Supplements,f.6179.0.0 - f.6179.0.5,6179,,,,,
+glucosamine_supplements,Mineral and other dietary supplements,https://biobank.ctsu.ox.ac.uk/crystal/field.cgi?id=6179,,Supplements,f.6179.0.0 - f.6179.0.5,6179,,,,,
+iron_supplements,Mineral and other dietary supplements,https://biobank.ctsu.ox.ac.uk/crystal/field.cgi?id=6179,,Supplements,f.6179.0.0 - f.6179.0.5,6179,,,,,
+zinc_supplements,Mineral and other dietary supplements,https://biobank.ctsu.ox.ac.uk/crystal/field.cgi?id=6179,,Supplements,f.6179.0.0 - f.6179.0.5,6179,,,,,
+age_facial_hair,Relative age of first facial hair,http://biobank.ndph.ox.ac.uk/showcase/field.cgi?id=2375,,Male reproductive factors,f.2375.0.0,2375,,,2006-2010,ACE/Touchscreen,Male-specific factors
+age_voice,Relative age voice broke,http://biobank.ndph.ox.ac.uk/showcase/field.cgi?id=2385,,Male reproductive factors,f.2385.0.0,2385,,,2006-2010,ACE/Touchscreen,Male-specific factors
+balding,Hair/balding pattern,http://biobank.ndph.ox.ac.uk/showcase/field.cgi?id=2395,,Male reproductive factors,f.2395.0.0,2395,,,2006-2010,ACE/Touchscreen,Male-specific factors
+number_children,Number of children fathered,http://biobank.ndph.ox.ac.uk/showcase/field.cgi?id=2405,,Male reproductive factors,f.2405.0.0,2405,,,2006-2010,ACE/Touchscreen,Male-specific factors
+mammogram,Ever had breast cancer screening / mammogram,http://biobank.ndph.ox.ac.uk/showcase/field.cgi?id=2674,,Female reproductive factors,f.2674.0.0,2674,,,2006-2010,ACE/Touchscreen,Female-specific factors
+mammogram_years_since,Years since last breast cancer screening / mammogram,http://biobank.ndph.ox.ac.uk/showcase/field.cgi?id=2684,,Female reproductive factors,f.2684.0.0,2684,,,2006-2010,ACE/Touchscreen,Female-specific factors
+cervical_smear,Ever had cervical smear test,http://biobank.ndph.ox.ac.uk/showcase/field.cgi?id=2694,,Female reproductive factors,f.2694.0.0,2694,,,2006-2010,ACE/Touchscreen,Female-specific factors
+cervical_smear_years_since,Years since last cervical smear test,http://biobank.ndph.ox.ac.uk/showcase/field.cgi?id=2704,,Female reproductive factors,f.2704.0.0,2704,,,2006-2010,ACE/Touchscreen,Female-specific factors
+menarche_age,Age when periods started (menarche),http://biobank.ndph.ox.ac.uk/showcase/field.cgi?id=2714,,Female reproductive factors,f.2714.0.0,2714,,,2006-2010,ACE/Touchscreen,Female-specific factors
+menopause,Had menopause,http://biobank.ndph.ox.ac.uk/showcase/field.cgi?id=2724,,Female reproductive factors,f.2724.0.0,2724,,,2006-2010,ACE/Touchscreen,Female-specific factors
+menopause_age,Age at menopause (last menstrual period),http://biobank.ndph.ox.ac.uk/showcase/field.cgi?id=3581,,Female reproductive factors,f.3581.0.0,3581,,,2006-2010,ACE/Touchscreen,Female-specific factors
+period_time_since,Time since last menstrual period,http://biobank.ndph.ox.ac.uk/showcase/field.cgi?id=3700,,Female reproductive factors,f.3700.0.0,3700,,,2006-2010,ACE/Touchscreen,Female-specific factors
+menstrual_cycle_length,Length of menstrual cycle,http://biobank.ndph.ox.ac.uk/showcase/field.cgi?id=3710,,Female reproductive factors,f.3710.0.0,3710,,,2006-2010,ACE/Touchscreen,Female-specific factors
+menstruating_today,Menstruating today,http://biobank.ndph.ox.ac.uk/showcase/field.cgi?id=3720,,Female reproductive factors,f.3720.0.0,3720,,,2006-2010,ACE/Touchscreen,Female-specific factors
+number_births,Number of live births,http://biobank.ndph.ox.ac.uk/showcase/field.cgi?id=2734,,Female reproductive factors,f.2734.0.0,2734,,,2006-2010,ACE/Touchscreen,Female-specific factors
+first_child_birth_weight,Birth weight of first child,http://biobank.ndph.ox.ac.uk/showcase/field.cgi?id=2744,,Female reproductive factors,f.2744.0.0,2744,,,2006-2010,ACE/Touchscreen,Female-specific factors
+birth_age,Age of primiparous women at birth of child,http://biobank.ndph.ox.ac.uk/showcase/field.cgi?id=3872,,Female reproductive factors,f.3872.0.0,3872,,,2006-2010,ACE/Touchscreen,Female-specific factors
+first_birth_age,Age at first live birth,http://biobank.ndph.ox.ac.uk/showcase/field.cgi?id=2754,,Female reproductive factors,f.2754.0.0,2754,,,2006-2010,ACE/Touchscreen,Female-specific factors
+last_birth_age,Age at last live birth,http://biobank.ndph.ox.ac.uk/showcase/field.cgi?id=2764,,Female reproductive factors,f.2764.0.0,2764,,,2006-2010,ACE/Touchscreen,Female-specific factors
+stillbirth,"Ever had stillbirth, spontaneous miscarriage or termination",http://biobank.ndph.ox.ac.uk/showcase/field.cgi?id=2774,,Female reproductive factors,f.2774.0.0,2774,,,2006-2010,ACE/Touchscreen,Female-specific factors
+number_stillbirths,Number of stillbirths,http://biobank.ndph.ox.ac.uk/showcase/field.cgi?id=3829,,Female reproductive factors,f.3829.0.0,3829,,,2006-2010,ACE/Touchscreen,Female-specific factors
+number_miscarriages,Number of spontaneous miscarriages,http://biobank.ndph.ox.ac.uk/showcase/field.cgi?id=3839,,Female reproductive factors,f.3839.0.0,3839,,,2006-2010,ACE/Touchscreen,Female-specific factors
+number_pregnancy_terminations,Number of pregnancy terminations,http://biobank.ndph.ox.ac.uk/showcase/field.cgi?id=3849,,Female reproductive factors,f.3849.0.0,3849,,,2006-2010,ACE/Touchscreen,Female-specific factors
+oral_contraceptive,Ever taken oral contraceptive pill,http://biobank.ndph.ox.ac.uk/showcase/field.cgi?id=2784,,Female reproductive factors,f.2784.0.0,2784,,,2006-2010,ACE/Touchscreen,Female-specific factors
+oral_contraceptive_age_first,Age started oral contraceptive pill,http://biobank.ndph.ox.ac.uk/showcase/field.cgi?id=2794,,Female reproductive factors,f.2794.0.0,2794,,,2006-2010,ACE/Touchscreen,Female-specific factors
+oral_contraceptive_age_last,Age when last used oral contraceptive pill,http://biobank.ndph.ox.ac.uk/showcase/field.cgi?id=2804,,Female reproductive factors,f.2804.0.0,2804,,,2006-2010,ACE/Touchscreen,Female-specific factors
+HRT,Ever used hormone-replacement therapy (HRT),http://biobank.ndph.ox.ac.uk/showcase/field.cgi?id=2814,,Female reproductive factors,f.2814.0.0,2814,,,2006-2010,ACE/Touchscreen,Female-specific factors
+HRT_age_first,Age started hormone-replacement therapy (HRT),http://biobank.ndph.ox.ac.uk/showcase/field.cgi?id=3536,,Female reproductive factors,f.3536.0.0,3536,,,2006-2010,ACE/Touchscreen,Female-specific factors
+HRT_age_last,Age last used hormone-replacement therapy (HRT),http://biobank.ndph.ox.ac.uk/showcase/field.cgi?id=3546,,Female reproductive factors,f.3546.0.0,3546,,,2006-2010,ACE/Touchscreen,Female-specific factors
+hysterectomy,Ever had hysterectomy (womb removed),http://biobank.ndph.ox.ac.uk/showcase/field.cgi?id=3591,,Female reproductive factors,f.3591.0.0,3591,,,2006-2010,ACE/Touchscreen,Female-specific factors
+hysterectomy_age,Age at hysterectomy,http://biobank.ndph.ox.ac.uk/showcase/field.cgi?id=2824,,Female reproductive factors,f.2824.0.0,2824,,,2006-2010,ACE/Touchscreen,Female-specific factors
+bilateral_oophorectomy,Bilateral oophorectomy (both ovaries removed),http://biobank.ndph.ox.ac.uk/showcase/field.cgi?id=2834,,Female reproductive factors,f.2834.0.0,2834,,,2006-2010,ACE/Touchscreen,Female-specific factors
+bilateral_oophorectomy_age,Age at bilateral oophorectomy (both ovaries removed),http://biobank.ndph.ox.ac.uk/showcase/field.cgi?id=3882,,Female reproductive factors,f.3882.0.0,3882,,,2006-2010,ACE/Touchscreen,Female-specific factors
+pregnant,Pregnant,http://biobank.ndph.ox.ac.uk/showcase/field.cgi?id=3140,,Female reproductive factors,f.3140.0.0,3140,,,2006-2010,ACE/Verbal interview,Medical conditions
+bipolar_MDD,Bipolar and major depression status,http://biobank.ndph.ox.ac.uk/showcase/field.cgi?id=20126,,Mental health,f.20126.0.0,20126,,,2006-2010,ACE/Touchscreen,Mental health
+bipolar,bipolar_MDD split according to any bipolar vs other (derived),NA,,Mental health,NA,NA,,,2006-2011,,Mental health
+MDD,bipolar_MDD turned into ordinal with none < single depression episode < problale recurrent depression (moderate) < probable recurrent depression (severe) . None is defined as none + bipolar (derived),NA,,Mental health,NA,NA,,,,,Mental health
+neuroticism,Neuroticism score,http://biobank.ndph.ox.ac.uk/showcase/field.cgi?id=20127,,Mental health,f.20127.0.0,20127,,,2006-2010,ACE/Touchscreen,Mental health
+mood_swings,Mood swings,http://biobank.ndph.ox.ac.uk/showcase/field.cgi?id=1920,,Mental health,f.1920.0.0,1920,,,2006-2010,ACE/Touchscreen,Mental health
+miserableness,Miserableness,http://biobank.ndph.ox.ac.uk/showcase/field.cgi?id=1930,,Mental health,f.1930.0.0,1930,,,2006-2010,ACE/Touchscreen,Mental health
+irritability,Irritability,http://biobank.ndph.ox.ac.uk/showcase/field.cgi?id=1940,,Mental health,f.1940.0.0,1940,,,2006-2010,ACE/Touchscreen,Mental health
+sensitivity,Sensitivity / hurt feelings,http://biobank.ndph.ox.ac.uk/showcase/field.cgi?id=1950,,Mental health,f.1950.0.0,1950,,,2006-2010,ACE/Touchscreen,Mental health
+fed_up_feelings,Fed-up feelings,http://biobank.ndph.ox.ac.uk/showcase/field.cgi?id=1960,,Mental health,f.1960.0.0,1960,,,2006-2010,ACE/Touchscreen,Mental health
+nervous,Nervous feelings,http://biobank.ndph.ox.ac.uk/showcase/field.cgi?id=1970,,Mental health,f.1970.0.0,1970,,,2006-2010,ACE/Touchscreen,Mental health
+worrier,Worrier / anxious feelings,http://biobank.ndph.ox.ac.uk/showcase/field.cgi?id=1980,,Mental health,f.1980.0.0,1980,,,2006-2010,ACE/Touchscreen,Mental health
+tense,Tense / 'highly strung',http://biobank.ndph.ox.ac.uk/showcase/field.cgi?id=1990,,Mental health,f.1990.0.0,1990,,,2006-2010,ACE/Touchscreen,Mental health
+worry_embarassment,Worry too long after embarrassment,http://biobank.ndph.ox.ac.uk/showcase/field.cgi?id=2000,,Mental health,f.2000.0.0,2000,,,2006-2010,ACE/Touchscreen,Mental health
+nerves,Suffer from 'nerves',http://biobank.ndph.ox.ac.uk/showcase/field.cgi?id=2010,,Mental health,f.2010.0.0,2010,,,2006-2010,ACE/Touchscreen,Mental health
+guilty_feelings,Guilty feelings,http://biobank.ndph.ox.ac.uk/showcase/field.cgi?id=2030,,Mental health,f.2030.0.0,2030,,,2006-2010,ACE/Touchscreen,Mental health
+risk_taking,Risk taking,http://biobank.ndph.ox.ac.uk/showcase/field.cgi?id=2040,,Mental health,f.2040.0.0,2040,,,2006-2010,ACE/Touchscreen,Mental health
+happiness,Happiness,http://biobank.ndph.ox.ac.uk/showcase/field.cgi?id=4526,,Life satisfaction,f.4526.0.0,4526,,,2006-2010,ACE/Touchscreen,Mental health
+job_satisfaction,Work/job satisfaction,http://biobank.ndph.ox.ac.uk/showcase/field.cgi?id=4537,,Life satisfaction,f.4537.0.0,4537,,,2006-2010,ACE/Touchscreen,Mental health
+health_satisfaction,Health satisfaction,http://biobank.ndph.ox.ac.uk/showcase/field.cgi?id=4548,,Life satisfaction,f.4548.0.0,4548,,,2006-2010,ACE/Touchscreen,Mental health
+family_satisfaction,Family relationship satisfaction,http://biobank.ndph.ox.ac.uk/showcase/field.cgi?id=4559,,Life satisfaction,f.4559.0.0,4559,,,2006-2010,ACE/Touchscreen,Mental health
+friends_satisfaction,Friendships satisfaction,http://biobank.ndph.ox.ac.uk/showcase/field.cgi?id=4570,,Life satisfaction,f.4570.0.0,4570,,,2006-2010,ACE/Touchscreen,Mental health
+financial_satisfaction,Financial situation satisfaction,http://biobank.ndph.ox.ac.uk/showcase/field.cgi?id=4581,,Life satisfaction,f.4581.0.0,4581,,,2006-2010,ACE/Touchscreen,Mental health
+depressed_mood_freq,Frequency of depressed mood in last 2 weeks,http://biobank.ndph.ox.ac.uk/showcase/field.cgi?id=2050,,Mental health,f.2050.0.0,2050,,,2006-2010,ACE/Touchscreen,Mental health
+unenthusiasm_freq,Frequency of unenthusiasm / disinterest in last 2 weeks,http://biobank.ndph.ox.ac.uk/showcase/field.cgi?id=2060,,Mental health,f.2060.0.0,2060,,,2006-2010,ACE/Touchscreen,Mental health
+tenseness_freq,Frequency of tenseness / restlessness in last 2 weeks,http://biobank.ndph.ox.ac.uk/showcase/field.cgi?id=2070,,Mental health,f.2070.0.0,2070,,,2006-2010,ACE/Touchscreen,Mental health
+tiredness_freq,Frequency of tiredness / lethargy in last 2 weeks,http://biobank.ndph.ox.ac.uk/showcase/field.cgi?id=2080,,Mental health,f.2080.0.0,2080,,,2006-2010,ACE/Touchscreen,Mental health
+doctor_visit_mental_health,"Seen doctor (GP) for nerves, anxiety, tension or depression",http://biobank.ndph.ox.ac.uk/showcase/field.cgi?id=2090,,Mental health,f.2090.0.0,2090,,,2006-2010,ACE/Touchscreen,Mental health
+psychiatrist_visit_mental_health,"Seen a psychiatrist for nerves, anxiety, tension or depression",http://biobank.ndph.ox.ac.uk/showcase/field.cgi?id=2100,,Mental health,f.2100.0.0,2100,,,2006-2010,ACE/Touchscreen,Mental health
+depressed_whole_week,Ever depressed for a whole week,http://biobank.ndph.ox.ac.uk/showcase/field.cgi?id=4598,,Mental health,f.4598.0.0,4598,,,2006-2010,ACE/Touchscreen,Mental health
+depression_duration,Longest period of depression,http://biobank.ndph.ox.ac.uk/showcase/field.cgi?id=4609,,Mental health,f.4609.0.0,4609,,,2006-2010,ACE/Touchscreen,Mental health
+depression_episodes,Number of depression episodes,http://biobank.ndph.ox.ac.uk/showcase/field.cgi?id=4620,,Mental health,f.4620.0.0,4620,,,2006-2010,ACE/Touchscreen,Mental health
+unenthusiastic_whole_week,Ever unenthusiastic/disinterested for a whole week,http://biobank.ndph.ox.ac.uk/showcase/field.cgi?id=4631,,Mental health,f.4631.0.0,4631,,,2006-2010,ACE/Touchscreen,Mental health
+unenthusiastic_duration,Longest period of unenthusiasm / disinterest,http://biobank.ndph.ox.ac.uk/showcase/field.cgi?id=5375,,Mental health,f.5375.0.0,5375,,,2006-2010,ACE/Touchscreen,Mental health
+unenthusiastic_episodes,Number of unenthusiastic/disinterested episodes,http://biobank.ndph.ox.ac.uk/showcase/field.cgi?id=5386,,Mental health,f.5386.0.0,5386,,,2006-2010,ACE/Touchscreen,Mental health
+manic,Ever manic/hyper for 2 days,http://biobank.ndph.ox.ac.uk/showcase/field.cgi?id=4642,,Mental health,f.4642.0.0,4642,,,2006-2010,ACE/Touchscreen,Mental health
+irritable,Ever highly irritable/argumentative for 2 days,http://biobank.ndph.ox.ac.uk/showcase/field.cgi?id=4653,,Mental health,f.4653.0.0,4653,,,2006-2010,ACE/Touchscreen,Mental health
+manic_symptoms_creative,Manic/hyper symptoms,http://biobank.ndph.ox.ac.uk/showcase/field.cgi?id=6156,,Mental health,f.6156.0.0 - f.6156.0.3,6156,,,2006-2010,ACE/Touchscreen,Mental health
+manic_symptoms_active,Manic/hyper symptoms,http://biobank.ndph.ox.ac.uk/showcase/field.cgi?id=6156,,Mental health,f.6156.0.0 - f.6156.0.3,6156,,,,,
+manic_symptoms_less_sleep,Manic/hyper symptoms,http://biobank.ndph.ox.ac.uk/showcase/field.cgi?id=6156,,Mental health,f.6156.0.0 - f.6156.0.3,6156,,,,,
+manic_symptoms_talkative,Manic/hyper symptoms,http://biobank.ndph.ox.ac.uk/showcase/field.cgi?id=6156,,Mental health,f.6156.0.0 - f.6156.0.3,6156,,,,,
+manic_symptoms_all,Manic/hyper symptoms,http://biobank.ndph.ox.ac.uk/showcase/field.cgi?id=6156,,Mental health,f.6156.0.0 - f.6156.0.3,6156,,,,,
+manic_duration,Length of longest manic/irritable episode,http://biobank.ndph.ox.ac.uk/showcase/field.cgi?id=5663,,Mental health,f.5663.0.0,5663,,,2006-2010,ACE/Touchscreen,Mental health
+manic_episodes,Severity of manic/irritable episodes,http://biobank.ndph.ox.ac.uk/showcase/field.cgi?id=5674,,Mental health,f.5674.0.0,5674,,,2006-2010,ACE/Touchscreen,Mental health
+mobile_phone_duration,Length of mobile phone use,http://biobank.ndph.ox.ac.uk/showcase/field.cgi?id=1110,,Electronics use,f.1110.0.0,1110,,,2006-2010,ACE/Touchscreen,Electronic device use
+mobile_phone_weekly_usage,Weekly usage of mobile phone in last 3 months,http://biobank.ndph.ox.ac.uk/showcase/field.cgi?id=1120,,Electronics use,f.1120.0.0,1120,,,2006-2010,ACE/Touchscreen,Electronic device use
+speakerphone,Hands-free device/speakerphone use with mobile phone in last 3 month,http://biobank.ndph.ox.ac.uk/showcase/field.cgi?id=1130,,Electronics use,f.1130.0.0,1130,,,2006-2010,ACE/Touchscreen,Electronic device use
+mobile_phone_2yrs,Difference in mobile phone use compared to two years previously,http://biobank.ndph.ox.ac.uk/showcase/field.cgi?id=1140,,Electronics use,f.1140.0.0,1140,,,2006-2010,ACE/Touchscreen,Electronic device use
+head_side_phone,Usual side of head for mobile phone use,http://biobank.ndph.ox.ac.uk/showcase/field.cgi?id=1150,,Electronics use,f.1150.0.0,1150,,,2006-2010,ACE/Touchscreen,Electronic device use
+computer_games,Plays computer games,http://biobank.ndph.ox.ac.uk/showcase/field.cgi?id=2237,,Electronics use,f.2237.0.0,2237,,,2006-2010,ACE/Touchscreen,Electronic device use
+sleep_hours,Sleep duration,http://biobank.ndph.ox.ac.uk/showcase/field.cgi?id=1160,,Sleep,f.1160.0.0,1160,,,2006-2010,ACE/Touchscreen,Sleep
+sleep_hours_categorical,"Sleep duration split according to <7, 7-9, and >9 hours of sleep (derived)",NA,,Sleep,NA,NA,,,,,
+easy_wake,Getting up in morning,http://biobank.ndph.ox.ac.uk/showcase/field.cgi?id=1170,,Sleep,f.1170.0.0,1170,,,2006-2010,ACE/Touchscreen,Sleep
+chronotype,Morning/evening person (chronotype),http://biobank.ndph.ox.ac.uk/showcase/field.cgi?id=1180,,Sleep,f.1180.0.0,1180,,,2006-2010,ACE/Touchscreen,Sleep
+nap,Nap during day,http://biobank.ndph.ox.ac.uk/showcase/field.cgi?id=1190,,Sleep,f.1190.0.0,1190,,,2006-2010,ACE/Touchscreen,Sleep
+sleep_difficulty,Sleeplessness / insomnia,http://biobank.ndph.ox.ac.uk/showcase/field.cgi?id=1200,,Sleep,f.1200.0.0,1200,,,2006-2010,ACE/Touchscreen,Sleep
+snoring,Snoring,http://biobank.ndph.ox.ac.uk/showcase/field.cgi?id=1210,,Sleep,f.1210.0.0,1210,,,2006-2010,ACE/Touchscreen,Sleep
+narcolepsy,Daytime dozing / sleeping (narcolepsy),http://biobank.ndph.ox.ac.uk/showcase/field.cgi?id=1220,,Sleep,f.1220.0.0,1220,,,2006-2010,ACE/Touchscreen,Sleep
+ever_smoked,Ever smoked,http://biobank.ndph.ox.ac.uk/showcase/field.cgi?id=20160,,Smoking,f.20160.0.0,20160,,,,,
+pack_years_prop,Pack years adult smoking as proportion of life span exposed to smoking,http://biobank.ndph.ox.ac.uk/showcase/field.cgi?id=20162,,Smoking,f.20162.0.0,20162,,,2006-2010,ACE/Touchscreen,Smoking
+pack_years,Pack years of smoking,http://biobank.ndph.ox.ac.uk/showcase/field.cgi?id=20161,,Smoking,f.20161.0.0,20161,,,2006-2010,ACE/Touchscreen,Smoking
+smoking_status,Smoking status,http://biobank.ndph.ox.ac.uk/showcase/field.cgi?id=20116,,Smoking,f.20116.0.0,20116,,,2006-2010,ACE/Touchscreen,Smoking
+tobacco,Current tobacco smoking,http://biobank.ndph.ox.ac.uk/showcase/field.cgi?id=1239,,Smoking,f.1239.0.0,1239,,,2006-2010,ACE/Touchscreen,Smoking
+past_tobacco,Past tobacco smoking,http://biobank.ndph.ox.ac.uk/showcase/field.cgi?id=1249,,Smoking,f.1249.0.0,1249,,,2006-2010,ACE/Touchscreen,Smoking
+light_smoking,"Light smokers, at least 100 smokes in lifetime",http://biobank.ndph.ox.ac.uk/showcase/field.cgi?id=2644,,Smoking,f.2644.0.0,2644,,,2006-2010,ACE/Touchscreen,Smoking
+smoking_start_age_current,Age started smoking in current smokers,http://biobank.ndph.ox.ac.uk/showcase/field.cgi?id=3436,,Smoking,f.3436.0.0,3436,,,2006-2010,ACE/Touchscreen,Smoking
+tobacco_type,Type of tobacco currently smoked,http://biobank.ndph.ox.ac.uk/showcase/field.cgi?id=3446,,Smoking,"f.3446.0.0	",3446,,,2006-2010,ACE/Touchscreen,Smoking
+previous_smoker,Previously smoked cigarettes on most/all days,http://biobank.ndph.ox.ac.uk/showcase/field.cgi?id=5959,,Smoking,f.5959.0.0,5959,,,2006-2010,ACE/Touchscreen,Smoking
+number_cigarettes,Number of cigarettes currently smoked daily (current cigarette smokers),http://biobank.ndph.ox.ac.uk/showcase/field.cgi?id=3456,,Smoking,f.3456.0.0,3456,,,2006-2010,ACE/Touchscreen,Smoking
+cigarettes_stop_age,Age stopped smoking cigarettes (current cigar/pipe or previous cigarette smoker),http://biobank.ndph.ox.ac.uk/showcase/field.cgi?id=6194,,Smoking,"f.6194.0.0	",6194,,,2006-2010,ACE/Touchscreen,Smoking
+previous_number_cigarettes,Number of cigarettes previously smoked daily (current cigar/pipe smokers),http://biobank.ndph.ox.ac.uk/showcase/field.cgi?id=6183,,Smoking,"f.6183.0.0	",6183,,,2006-2010,ACE/Touchscreen,Smoking
+waking_smoke_time,Time from waking to first cigarette,http://biobank.ndph.ox.ac.uk/showcase/field.cgi?id=3466,,Smoking,f.3466.0.0,3466,,,2006-2010,ACE/Touchscreen,Smoking
+difficulty_not_smoking_1day,Difficulty not smoking for 1 day,http://biobank.ndph.ox.ac.uk/showcase/field.cgi?id=3476,,Smoking,f.3476.0.0,3476,,,2006-2010,ACE/Touchscreen,Smoking
+stop_smoking_attempt,Ever tried to stop smoking,http://biobank.ndph.ox.ac.uk/showcase/field.cgi?id=3486,,Smoking,f.3486.0.0,3486,,,2006-2010,ACE/Touchscreen,Smoking
+stop_smoking_desire,Wants to stop smoking,http://biobank.ndph.ox.ac.uk/showcase/field.cgi?id=3496,,Smoking,f.3496.0.0,3496,,,2006-2010,ACE/Touchscreen,Smoking
+smoking_10yrs,Smoking compared to 10 years previous,http://biobank.ndph.ox.ac.uk/showcase/field.cgi?id=3506,,Smoking,f.3506.0.0,3506,,,2006-2010,ACE/Touchscreen,Smoking
+why_reduced_smoking.0.0,Why reduced smoking,http://biobank.ndph.ox.ac.uk/showcase/field.cgi?id=6158,,Smoking,f.6158.0.0,6158,,,2006-2010,ACE/Touchscreen,Smoking
+why_reduced_smoking.0.1,,,,Smoking,f.6158.0.1,,,,,,
+why_reduced_smoking.0.2,,,,Smoking,f.6158.0.2,,,,,,
+why_reduced_smoking.0.3,,,,Smoking,f.6158.0.3,,,,,,
+smoking_start_age_former,Age started smoking in former smokers,http://biobank.ndph.ox.ac.uk/showcase/field.cgi?id=2867,,Smoking,f.2867.0.0,2867,,,2006-2010,ACE/Touchscreen,Smoking
+tobacco_type_previous,Type of tobacco previously smoked,http://biobank.ndph.ox.ac.uk/showcase/field.cgi?id=2877,,Smoking,f.2877.0.0,2877,,,2006-2010,ACE/Touchscreen,Smoking
+number_cigarettes_previous,Number of cigarettes previously smoked daily,http://biobank.ndph.ox.ac.uk/showcase/field.cgi?id=2887,,Smoking,f.2887.0.0,2887,,,2006-2010,ACE/Touchscreen,Smoking
+smoking_stop_age,Age stopped smoking,http://biobank.ndph.ox.ac.uk/showcase/field.cgi?id=2897,,Smoking,f.2897.0.0,2897,,,2006-2010,ACE/Touchscreen,Smoking
+,Ever stopped smoking for 6+ months,http://biobank.ndph.ox.ac.uk/showcase/field.cgi?id=2907,,Smoking,f.2907.0.0,2907,,,2006-2010,ACE/Touchscreen,Smoking
+why_stopped_smoking.0.0,Why stopped smoking,http://biobank.ndph.ox.ac.uk/showcase/field.cgi?id=6157,,Smoking,f.6157.0.0,6157,,,2006-2010,ACE/Touchscreen,Smoking
+why_stopped_smoking.0.1,,,,Smoking,f.6157.0.1,,,,,,
+why_stopped_smoking.0.2,,,,Smoking,f.6157.0.2,,,,,,
+why_stopped_smoking.0.3,,,,Smoking,f.6157.0.3,,,,,,
+number_quit_attempts,Number of unsuccessful stop-smoking attempts,http://biobank.ndph.ox.ac.uk/showcase/field.cgi?id=2926,,Smoking,f.2926.0.0,2926,,,2006-2010,ACE/Touchscreen,Smoking
+resume_smoking_likelihood,Likelihood of resuming smoking,http://biobank.ndph.ox.ac.uk/showcase/field.cgi?id=2936,,Smoking,"f.2936.0.0	",2936,,,2006-2010,ACE/Touchscreen,Smoking
+hshld_smokers,Smoking/smokers in household,http://biobank.ndph.ox.ac.uk/showcase/field.cgi?id=1259,,Smoking,"f.1259.0.0	",1259,,,2006-2010,ACE/Touchscreen,Smoking
+tobacco_exposure_home,Exposure to tobacco smoke at home,http://biobank.ndph.ox.ac.uk/showcase/field.cgi?id=1269,,Smoking,"f.1269.0.0	",1269,,,2006-2010,ACE/Touchscreen,Smoking
+tobacco_exposure_outside,Exposure to tobacco smoke outside home,http://biobank.ndph.ox.ac.uk/showcase/field.cgi?id=1279,,Smoking,"f.1279.0.0	",1279,,,2006-2010,ACE/Touchscreen,Smoking
+alcohol_status,Alcohol drinker status,http://biobank.ndph.ox.ac.uk/showcase/field.cgi?id=20117,,Alcohol,f.20117.0.0,20117,,,2006-2010,ACE/Touchscreen,Alcohol
+alcohol_freq,Alcohol intake frequency.,http://biobank.ndph.ox.ac.uk/showcase/field.cgi?id=1558,,Alcohol,f.1558.0.0,1558,,,2006-2010,ACE/Touchscreen,Alcohol
+alcohol_former,Former alcohol drinker,http://biobank.ndph.ox.ac.uk/showcase/field.cgi?id=3731,,Alcohol,f.3731.0.0,3731,,,2006-2010,ACE/Touchscreen,Alcohol
+red_wine_monthly,Average monthly red wine intake,http://biobank.ndph.ox.ac.uk/showcase/field.cgi?id=4407,,Alcohol,f.4407.0.0,4407,,,2006-2010,ACE/Touchscreen,Alcohol
+white_wine_monthly,Average monthly champagne plus white wine intake,http://biobank.ndph.ox.ac.uk/showcase/field.cgi?id=4418,,Alcohol,f.4418.0.0,4418,,,2006-2010,ACE/Touchscreen,Alcohol
+beer_monthly,Average monthly beer plus cider intake,http://biobank.ndph.ox.ac.uk/showcase/field.cgi?id=4429,,Alcohol,f.4429.0.0,4429,,,2006-2010,ACE/Touchscreen,Alcohol
+spirits_monthly,Average monthly spirits intake,http://biobank.ndph.ox.ac.uk/showcase/field.cgi?id=4440,,Alcohol,f.4440.0.0,4440,,,2006-2010,ACE/Touchscreen,Alcohol
+fortified_wine_monthly,Average monthly fortified wine intake,http://biobank.ndph.ox.ac.uk/showcase/field.cgi?id=4451,,Alcohol,f.4451.0.0,4451,,,2006-2010,ACE/Touchscreen,Alcohol
+other_alcohol_monthly,Average monthly intake of other alcoholic drinks,http://biobank.ndph.ox.ac.uk/showcase/field.cgi?id=4462,,Alcohol,f.4462.0.0,4462,,,2006-2010,ACE/Touchscreen,Alcohol
+red_wine_weekly,Average weekly red wine intake,http://biobank.ndph.ox.ac.uk/showcase/field.cgi?id=1568,,Alcohol,f.1568.0.0,1568,,,2006-2010,ACE/Touchscreen,Alcohol
+white_wine_weekly,Average weekly champagne plus white wine intake,http://biobank.ndph.ox.ac.uk/showcase/field.cgi?id=1578,,Alcohol,f.1578.0.0,1578,,,2006-2010,ACE/Touchscreen,Alcohol
+beer_weekly,Average weekly beer plus cider intake,http://biobank.ndph.ox.ac.uk/showcase/field.cgi?id=1588,,Alcohol,f.1588.0.0,1588,,,2006-2010,ACE/Touchscreen,Alcohol
+spirits_weekly,Average weekly spirits intake,http://biobank.ndph.ox.ac.uk/showcase/field.cgi?id=1598,,Alcohol,f.1598.0.0,1598,,,2006-2010,ACE/Touchscreen,Alcohol
+fortified_wine_weekly,Average weekly fortified wine intake,http://biobank.ndph.ox.ac.uk/showcase/field.cgi?id=1608,,Alcohol,f.1608.0.0,1608,,,2006-2010,ACE/Touchscreen,Alcohol
+other_alcohol_weekly,Average weekly intake of other alcoholic drinks,http://biobank.ndph.ox.ac.uk/showcase/field.cgi?id=5364,,Alcohol,f.5364.0.0,5364,,,2006-2010,ACE/Touchscreen,Alcohol
+alcohol_with_meals,Alcohol usually taken with meals,http://biobank.ndph.ox.ac.uk/showcase/field.cgi?id=1618,,Alcohol,f.1618.0.0,1618,,,2006-2010,ACE/Touchscreen,Alcohol
+alcohol_10yrs,Alcohol intake versus 10 years previously,http://biobank.ndph.ox.ac.uk/showcase/field.cgi?id=1628,,Alcohol,f.1628.0.0,1628,,,2006-2010,ACE/Touchscreen,Alcohol
+reason_reducing_alcohol,Reason for reducing amount of alcohol drunk,http://biobank.ndph.ox.ac.uk/showcase/field.cgi?id=2664,,Alcohol,f.2664.0.0,2664,,,2006-2010,ACE/Touchscreen,Alcohol
+reason_stopped_alcoho,Reason former drinker stopped drinking alcohol,http://biobank.ndph.ox.ac.uk/showcase/field.cgi?id=3859,,Alcohol,f.3859.0.0,3859,,,2006-2010,ACE/Touchscreen,Alcohol
+cooked_veg,Cooked vegetable intake,http://biobank.ndph.ox.ac.uk/showcase/field.cgi?id=1289,,Diet,f.1289.0.0,1289,,,2006-2010,ACE/Touchscreen,Diet
+salad_or_raw_veg,Salad / raw vegetable intake,http://biobank.ndph.ox.ac.uk/showcase/field.cgi?id=1299,,Diet,f.1299.0.0,1299,,,2006-2010,ACE/Touchscreen,Diet
+fresh_fruit,Fresh fruit intake,http://biobank.ndph.ox.ac.uk/showcase/field.cgi?id=1309,,Diet,f.1309.0.0,1309,,,2006-2010,ACE/Touchscreen,Diet
+dried_fruit,Dried fruit intake,http://biobank.ndph.ox.ac.uk/showcase/field.cgi?id=1319,,Diet,f.1319.0.0,1319,,,2006-2010,ACE/Touchscreen,Diet
+oily_fish,Oily fish intake,http://biobank.ndph.ox.ac.uk/showcase/field.cgi?id=1329,,Diet,f.1329.0.0,1329,,,2006-2010,ACE/Touchscreen,Diet
+non_oily_fish,Non-oily fish intake,http://biobank.ndph.ox.ac.uk/showcase/field.cgi?id=1339,,Diet,f.1339.0.0,1339,,,2006-2010,ACE/Touchscreen,Diet
+processed_meat,Processed meat intake,http://biobank.ndph.ox.ac.uk/showcase/field.cgi?id=1349,,Diet,f.1349.0.0,1349,,,2006-2010,ACE/Touchscreen,Diet
+poultry,Poultry intake,http://biobank.ndph.ox.ac.uk/showcase/field.cgi?id=1359,,Diet,f.1359.0.0,1359,,,2006-2010,ACE/Touchscreen,Diet
+beef,Beef intake,http://biobank.ndph.ox.ac.uk/showcase/field.cgi?id=1369,,Diet,f.1369.0.0,1369,,,2006-2010,ACE/Touchscreen,Diet
+lamb,Lamb/mutton intake,http://biobank.ndph.ox.ac.uk/showcase/field.cgi?id=1379,,Diet,f.1379.0.0,1379,,,2006-2010,ACE/Touchscreen,Diet
+pork,Pork intake,http://biobank.ndph.ox.ac.uk/showcase/field.cgi?id=1389,,Diet,f.1389.0.0,1389,,,2006-2010,ACE/Touchscreen,Diet
+meat_age_last,Age when last ate meat,http://biobank.ndph.ox.ac.uk/showcase/field.cgi?id=3680,,Diet,f.3680.0.0,3680,,,2006-2010,ACE/Touchscreen,Diet
+never_eat_sugar,"Never eat eggs, dairy, wheat, sugar",http://biobank.ndph.ox.ac.uk/showcase/field.cgi?id=6144,,Diet,f.6144.0.0 - f.6144.0.3,6144,,,2006-2010,ACE/Touchscreen,Diet
+never_eat_eggs,"Never eat eggs, dairy, wheat, sugar",http://biobank.ndph.ox.ac.uk/showcase/field.cgi?id=6144,,Diet,f.6144.0.0 - f.6144.0.3,6144,,,,,Diet
+never_eat_wheat,"Never eat eggs, dairy, wheat, sugar",http://biobank.ndph.ox.ac.uk/showcase/field.cgi?id=6144,,Diet,f.6144.0.0 - f.6144.0.3,6144,,,,,Diet
+never_eat_dairy,"Never eat eggs, dairy, wheat, sugar",http://biobank.ndph.ox.ac.uk/showcase/field.cgi?id=6144,,Diet,f.6144.0.0 - f.6144.0.3,6144,,,,,Diet
+cheese,Cheese intake,http://biobank.ndph.ox.ac.uk/showcase/field.cgi?id=1408,,Diet,f.1408.0.0,1408,,,2006-2010,ACE/Touchscreen,Diet
+milk_type,Milk type used,http://biobank.ndph.ox.ac.uk/showcase/field.cgi?id=1418,,Diet,f.1418.0.0,1418,,,2006-2010,ACE/Touchscreen,Diet
+spread_type,Spread type,http://biobank.ndph.ox.ac.uk/showcase/field.cgi?id=1428,,Diet,f.1428.0.0,1428,,,2006-2010,ACE/Touchscreen,Diet
+spread_type_details,Non-butter spread type details,http://biobank.ndph.ox.ac.uk/showcase/field.cgi?id=2654,,Diet,f.2654.0.0,2654,,,2006-2010,ACE/Touchscreen,Diet
+bread,Bread intake,http://biobank.ndph.ox.ac.uk/showcase/field.cgi?id=1438,,Diet,f.1438.0.0,1438,,,2006-2010,ACE/Touchscreen,Diet
+bread_type,Bread type,http://biobank.ndph.ox.ac.uk/showcase/field.cgi?id=1448,,Diet,f.1448.0.0,1448,,,2006-2010,ACE/Touchscreen,Diet
+cereal,Cereal intake,http://biobank.ndph.ox.ac.uk/showcase/field.cgi?id=1458,,Diet,f.1458.0.0,1458,,,2006-2010,ACE/Touchscreen,Diet
+cereal_type,Cereal type,http://biobank.ndph.ox.ac.uk/showcase/field.cgi?id=1468,,Diet,f.1468.0.0,1468,,,2006-2010,ACE/Touchscreen,Diet
+salt,Salt added to food,http://biobank.ndph.ox.ac.uk/showcase/field.cgi?id=1478,,Diet,f.1478.0.0,1478,,,2006-2010,ACE/Touchscreen,Diet
+tea,Tea intake,http://biobank.ndph.ox.ac.uk/showcase/field.cgi?id=1488,,Diet,f.1488.0.0,1488,,,2006-2010,ACE/Touchscreen,Diet
+coffee,Coffee intake,http://biobank.ndph.ox.ac.uk/showcase/field.cgi?id=1498,,Diet,f.1498.0.0,1498,,,2006-2010,ACE/Touchscreen,Diet
+coffee_type,Coffee type,http://biobank.ndph.ox.ac.uk/showcase/field.cgi?id=1508,,Diet,f.1508.0.0,1508,,,2006-2010,ACE/Touchscreen,Diet
+hot_drink_temp,Hot drink temperature,http://biobank.ndph.ox.ac.uk/showcase/field.cgi?id=1518,,Diet,f.1518.0.0,1518,,,2006-2010,ACE/Touchscreen,Diet
+water,Water intake,http://biobank.ndph.ox.ac.uk/showcase/field.cgi?id=1528,,Diet,f.1528.0.0,1528,,,2006-2010,ACE/Touchscreen,Diet
+diet_change_5yrs,Major dietary changes in the last 5 years,http://biobank.ndph.ox.ac.uk/showcase/field.cgi?id=1538,,Diet,f.1538.0.0,1538,,,2006-2010,ACE/Touchscreen,Diet
+diet_variation,Variation in diet,http://biobank.ndph.ox.ac.uk/showcase/field.cgi?id=1548,,Diet,f.1548.0.0,1548,,,2006-2010,ACE/Touchscreen,Diet
+bread_fiber,Derived bread fiber score based on previous publication,https://doi.org/10.1017/jns.2017.66,,Diet,,,,,,,Diet
+cereal_fiber,Derived cereal fiber score based on previous publication,https://doi.org/10.1017/jns.2017.66,,Diet,,,,,,,Diet
+partial_fiber_score,Derived partial fiber score based on previous publication,https://doi.org/10.1017/jns.2017.66,,Diet,,,,,,,Diet
+total_fruit,Derived total fruit intake score based on previous publication,https://doi.org/10.1093/ije/dyz064,,Diet,,,,,,,Diet
+total_veg,Derived total vegetable intake score based on previous publication,https://doi.org/10.1093/ije/dyz064,,Diet,,,,,,,Diet
+red_meat,Derived total red meat intake score based on previous publication,https://doi.org/10.1093/ije/dyz064,,Diet,,,,,,,Diet
+dairy_milk,Derived total dairy milk intake score based on previous publication,https://doi.org/10.1093/ije/dyz064,,Diet,,,,,,,Diet
+alcohol_daily_intake,Derived alcohol daily intake amount based on previous publication,https://doi.org/10.1093/ije/dyz064,,Diet,,,,,,,Diet
+summer_outdoors_time,Time spend outdoors in summer,http://biobank.ndph.ox.ac.uk/showcase/field.cgi?id=1050,,Sun exposure,f.1050.0.0,1050,,,2006-2010,ACE/Touchscreen,Sun exposure
+winter_outdoors_time,Time spent outdoors in winter,http://biobank.ndph.ox.ac.uk/showcase/field.cgi?id=1060,,Sun exposure,f.1060.0.0,1060,,,2006-2010,ACE/Touchscreen,Sun exposure
+skin_color,Skin colour,http://biobank.ndph.ox.ac.uk/showcase/field.cgi?id=1717,,Sun exposure,f.1717.0.0,1717,,,2006-2010,ACE/Touchscreen,Sun exposure
+skin_tan_ease,Ease of skin tanning,http://biobank.ndph.ox.ac.uk/showcase/field.cgi?id=1727,,Sun exposure,f.1727.0.0,1727,,,2006-2010,ACE/Touchscreen,Sun exposure
+childhood_sunburn_number,Childhood sunburn occasions,http://biobank.ndph.ox.ac.uk/showcase/field.cgi?id=1737,,Sun exposure,f.1737.0.0,1737,,,2006-2010,ACE/Touchscreen,Sun exposure
+hair_color,"Hair colour (natural, before greying)",http://biobank.ndph.ox.ac.uk/showcase/field.cgi?id=1747,,Sun exposure,f.1747.0.0,1747,,,2006-2010,ACE/Touchscreen,Sun exposure
+facial_aging,Facial ageing,http://biobank.ndph.ox.ac.uk/showcase/field.cgi?id=1757,,Sun exposure,f.1757.0.0,1757,,,2006-2010,ACE/Touchscreen,Sun exposure
+sun_protection_use,Use of sun/uv protection,http://biobank.ndph.ox.ac.uk/showcase/field.cgi?id=2267,,Sun exposure,f.2267.0.0,2267,,,2006-2010,ACE/Touchscreen,Sun exposure
+solarium_freq,Frequency of solarium/sunlamp use,http://biobank.ndph.ox.ac.uk/showcase/field.cgi?id=2277,,Sun exposure,f.2277.0.0,2277,,,2006-2010,ACE/Touchscreen,Sun exposure
+sex_age_first,Age first had sexual intercourse,http://biobank.ndph.ox.ac.uk/showcase/field.cgi?id=2139,,Sexual history,f.2139.0.0,2139,,,2006-2010,ACE/Touchscreen,Sexual factors
+number_sex_partners,Lifetime number of sexual partners,http://biobank.ndph.ox.ac.uk/showcase/field.cgi?id=2149,,Sexual history,f.2149.0.0,2149,,,2006-2010,ACE/Touchscreen,Sexual factors
+same_sex_intercourse,Ever had same-sex intercourse,http://biobank.ndph.ox.ac.uk/showcase/field.cgi?id=2159,,Sexual history,f.2159.0.0,2159,,,2006-2010,ACE/Touchscreen,Sexual factors
+number_same_sex_partners,Lifetime number of same-sex sexual partners,http://biobank.ndph.ox.ac.uk/showcase/field.cgi?id=3669,,Sexual history,f.3669.0.0,3669,,,2006-2010,ACE/Touchscreen,Sexual factors
+above_activity_recommendation,Above moderate/vigorous recommendation,http://biobank.ndph.ox.ac.uk/showcase/field.cgi?id=22035,,Physical activity,f.22035.0.0,22035,,,2006-2010,ACE/Touchscreen,MET scores
+above_activity_recommendation_incl_walk,Above moderate/vigorous/walking recommendation,http://biobank.ndph.ox.ac.uk/showcase/field.cgi?id=22036,,Physical activity,f.22036.0.0,22036,,,2006-2010,ACE/Touchscreen,MET scores
+IPAQ_activity_group,IPAQ activity group,http://biobank.ndph.ox.ac.uk/showcase/field.cgi?id=22032,,Physical activity,f.22032.0.0,22032,,,2006-2010,ACE/Touchscreen,MET scores
+MET_mins_moderate_activty,MET minutes per week for moderate activity,http://biobank.ndph.ox.ac.uk/showcase/field.cgi?id=22038,,Physical activity,f.22038.0.0,22038,,,2006-2010,ACE/Touchscreen,MET scores
+MET_mins_vigorous_activty,MET minutes per week for vigorous activity,http://biobank.ndph.ox.ac.uk/showcase/field.cgi?id=22039,,Physical activity,f.22039.0.0,22039,,,2006-2010,ACE/Touchscreen,MET scores
+MET_mins_walking,MET minutes per week for walking,http://biobank.ndph.ox.ac.uk/showcase/field.cgi?id=22037,,Physical activity,f.22037.0.0,22037,,,2006-2010,ACE/Touchscreen,MET scores
+MET_mins_sum,Summed MET minutes per week for all activity,http://biobank.ndph.ox.ac.uk/showcase/field.cgi?id=22040,,Physical activity,f.22040.0.0,22040,,,2006-2010,ACE/Touchscreen,MET scores
+days_activity_sum,Summed days activity,http://biobank.ndph.ox.ac.uk/showcase/field.cgi?id=22033,,Physical activity,f.22033.0.0,22033,,,2006-2010,ACE/Touchscreen,MET scores
+mins_activity_sum,Summed minutes activity,http://biobank.ndph.ox.ac.uk/showcase/field.cgi?id=22034,,Physical activity,f.22034.0.0,22034,,,2006-2010,ACE/Touchscreen,MET scores
+fast_driving,Drive faster than motorway speed limit,http://biobank.ndph.ox.ac.uk/showcase/field.cgi?id=1100,,Physical activity,f.1100.0.0,1100,,,2006-2010,ACE/Touchscreen,Physical activity
+heavy_DIY_duration,Duration of heavy DIY,http://biobank.ndph.ox.ac.uk/showcase/field.cgi?id=2634,,Physical activity,f.2634.0.0,2634,,,2006-2010,ACE/Touchscreen,Physical activity
+light_DIY_duration,Duration of light DIY,http://biobank.ndph.ox.ac.uk/showcase/field.cgi?id=1021,,Physical activity,f.1021.0.0,1021,,,2006-2010,ACE/Touchscreen,Physical activity
+moderate_activity_duration,Duration of moderate activity,http://biobank.ndph.ox.ac.uk/showcase/field.cgi?id=894,,Physical activity,f.894.0.0,894,,,2006-2010,ACE/Touchscreen,Physical activity
+other_exercise_duration,Duration of other exercises,http://biobank.ndph.ox.ac.uk/showcase/field.cgi?id=3647,,Physical activity,f.3647.0.0,3647,,,2006-2010,ACE/Touchscreen,Physical activity
+strenuous_sports_duration,Duration of strenuous sports,http://biobank.ndph.ox.ac.uk/showcase/field.cgi?id=1001,,Physical activity,f.1001.0.0,1001,,,2006-2010,ACE/Touchscreen,Physical activity
+vigorous_activity_duration,Duration of vigorous activity,http://biobank.ndph.ox.ac.uk/showcase/field.cgi?id=914,,Physical activity,f.914.0.0,914,,,2006-2010,ACE/Touchscreen,Physical activity
+walks_duration,Duration of walks,http://biobank.ndph.ox.ac.uk/showcase/field.cgi?id=874,,Physical activity,f.874.0.0,874,,,2006-2010,ACE/Touchscreen,Physical activity
+pleasure_walks_duration,Duration walking for pleasure,http://biobank.ndph.ox.ac.uk/showcase/field.cgi?id=981,,Physical activity,f.981.0.0,981,,,2006-2010,ACE/Touchscreen,Physical activity
+heavy_DIY_freq_4wks,Frequency of heavy DIY in last 4 weeks,http://biobank.ndph.ox.ac.uk/showcase/field.cgi?id=2624,,Physical activity,f.2624.0.0,2624,,,2006-2010,ACE/Touchscreen,Physical activity
+light_DIY_freq_4wks,Frequency of light DIY in last 4 weeks,http://biobank.ndph.ox.ac.uk/showcase/field.cgi?id=1011,,Physical activity,f.1011.0.0,1011,,,2006-2010,ACE/Touchscreen,Physical activity
+other_exercise_freq_4wks,Frequency of other exercises in last 4 weeks,http://biobank.ndph.ox.ac.uk/showcase/field.cgi?id=3637,,Physical activity,f.3637.0.0,3637,,,2006-2010,ACE/Touchscreen,Physical activity
+stair_climbing_freq_4wks,Frequency of stair climbing in last 4 weeks,http://biobank.ndph.ox.ac.uk/showcase/field.cgi?id=943,,Physical activity,f.943.0.0,943,,,2006-2010,ACE/Touchscreen,Physical activity
+strenuous_sports_freq_4wks,Frequency of strenuous sports in last 4 weeks,http://biobank.ndph.ox.ac.uk/showcase/field.cgi?id=991,,Physical activity,f.991.0.0,991,,,2006-2010,ACE/Touchscreen,Physical activity
+pleasure_walks_freq_4wks,Frequency of walking for pleasure in last 4 weeks,http://biobank.ndph.ox.ac.uk/showcase/field.cgi?id=971,,Physical activity,f.971.0.0,971,,,2006-2010,ACE/Touchscreen,Physical activity
+moderate_activity_over_10mins_days,Number of days/week of moderate physical activity 10+ minutes,http://biobank.ndph.ox.ac.uk/showcase/field.cgi?id=884,,Physical activity,f.884.0.0,884,,,2006-2010,ACE/Touchscreen,Physical activity
+vigorous_activity_over_10mins_days,Number of days/week of vigorous physical activity 10+ minutes,http://biobank.ndph.ox.ac.uk/showcase/field.cgi?id=904,,Physical activity,f.904.0.0,904,,,2006-2010,ACE/Touchscreen,Physical activity
+walked_over_10mins_days,Number of days/week walked 10+ minutes,http://biobank.ndph.ox.ac.uk/showcase/field.cgi?id=864,,Physical activity,f.864.0.0,864,,,2006-2010,ACE/Touchscreen,Physical activity
+driving_time,Time spent driving,http://biobank.ndph.ox.ac.uk/showcase/field.cgi?id=1090,,Physical activity,f.1090.0.0,1090,,,2006-2010,ACE/Touchscreen,Physical activity
+computer_time,Time spent using computer,http://biobank.ndph.ox.ac.uk/showcase/field.cgi?id=1080,,Physical activity,f.1080.0.0,1080,,,2006-2010,ACE/Touchscreen,Physical activity
+TV_time,Time spent watching television (TV),http://biobank.ndph.ox.ac.uk/showcase/field.cgi?id=1070,,Physical activity,f.1070.0.0,1070,,,2006-2010,ACE/Touchscreen,Physical activity
+light_DIY_4wks,Types of physical activity in last 4 weeks,http://biobank.ndph.ox.ac.uk/showcase/field.cgi?id=6164,,Physical activity,f.6164.0.0 - f.6164.0.4,6164,,,2006-2010,ACE/Touchscreen,Physical activity
+pleasure_walks_4wks,Types of physical activity in last 4 weeks,http://biobank.ndph.ox.ac.uk/showcase/field.cgi?id=6164,,Physical activity,f.6164.0.0 - f.6164.0.4,6164,,,,,
+other_exercise_4wks,Types of physical activity in last 4 weeks,http://biobank.ndph.ox.ac.uk/showcase/field.cgi?id=6164,,Physical activity,f.6164.0.0 - f.6164.0.4,6164,,,,,
+heavy_DIY_4wks,Types of physical activity in last 4 weeks,http://biobank.ndph.ox.ac.uk/showcase/field.cgi?id=6164,,Physical activity,f.6164.0.0 - f.6164.0.4,6164,,,,,
+strenuous_sports_4wks,Types of physical activity in last 4 weeks,http://biobank.ndph.ox.ac.uk/showcase/field.cgi?id=6164,,Physical activity,f.6164.0.0 - f.6164.0.4,6164,,,,,
+car_transport_4wks,Types of transport used (excluding work),http://biobank.ndph.ox.ac.uk/showcase/field.cgi?id=6162,,Physical activity,f.6162.0.0 - f.6162.0.3,6162,,,2006-2018,ACE/Touchscreen,Physical activity
+walk_transport_4wks,Types of transport used (excluding work),http://biobank.ndph.ox.ac.uk/showcase/field.cgi?id=6162,,Physical activity,f.6162.0.0 - f.6162.0.3,6162,,,,,
+public_transport_4wks,Types of transport used (excluding work),http://biobank.ndph.ox.ac.uk/showcase/field.cgi?id=6162,,Physical activity,f.6162.0.0 - f.6162.0.3,6162,,,,,
+cycle_transport_4wks,Types of transport used (excluding work),http://biobank.ndph.ox.ac.uk/showcase/field.cgi?id=6162,,Physical activity,f.6162.0.0 - f.6162.0.3,6162,,,,,
+sedentary,Derived variable on total hours of sedentary behavior based on previous publication,https://doi.org/10.1186/s12916-019-1339-0,,Physical activity,,,,,,,
+LTPA,Derived leisure time physical activity based on previous publication,https://doi.org/10.1186/s12966-020-00937-4,,Physical activity,,,,,,,
+OPA,Derived occupational physical activity based on previous publication,https://doi.org/10.1186/s12966-020-00937-4,,Physical activity,,,,,,,
+usual_walking_pace,Usual walking pace,http://biobank.ndph.ox.ac.uk/showcase/field.cgi?id=924,,Physical activity,f.924.0.0,924,,,2006-2018,ACE/Touchscreen,Physical activity
+visual_acuity_left,"logMAR, final (left)",http://biobank.ndph.ox.ac.uk/showcase/field.cgi?id=5208,,Physical measures,f.5208.0.0,5208,,,2006-2010,ACE/Physical measures,Visual acuity
+visual_acuity_right,"logMAR, final (right)",http://biobank.ndph.ox.ac.uk/showcase/field.cgi?id=5201,,Physical measures,f.5201.0.0,5201,,,2006-2010,ACE/Physical measures,Visual acuity
+speech_reception_threshold_left,Speech-reception-threshold (SRT) estimate (left),http://biobank.ndph.ox.ac.uk/showcase/field.cgi?id=20019,,Physical measures,f.20019.0.0,20019,,,2006-2010,ACE/Physical measures,Hearing test
+speech_reception_threshold_right,Speech-reception-threshold (SRT) estimate (right),http://biobank.ndph.ox.ac.uk/showcase/field.cgi?id=20021,,Physical measures,f.20021.0.0,20021,,,2006-2010,ACE/Physical measures,Hearing test
+diastolic_bp1,"Diastolic blood pressure, automated reading",http://biobank.ndph.ox.ac.uk/showcase/field.cgi?id=4079,,Physical measures,f.4079.0.0,4079,,,,,
+diastolic_bp2,"Diastolic blood pressure, automated reading",http://biobank.ndph.ox.ac.uk/showcase/field.cgi?id=4079,,Physical measures,f.4079.0.1,4079,,,,,
+diastolic_bp,Average of two diastolic blood pressure readings,http://biobank.ndph.ox.ac.uk/showcase/field.cgi?id=4079,,Physical measures,,4079,,,2006-2010,ACE/Physical measures,Blood pressure
+systolic_bp1,"Systolic blood pressure, automated reading",http://biobank.ndph.ox.ac.uk/showcase/field.cgi?id=4080,,Physical measures,f.4080.0.0,4080,,,,,
+systolic_bp2,"Systolic blood pressure, automated reading",http://biobank.ndph.ox.ac.uk/showcase/field.cgi?id=4080,,Physical measures,f.4080.0.1,4080,,,,,
+systolic_bp,Average systolic blood pressure across both readings,http://biobank.ndph.ox.ac.uk/showcase/field.cgi?id=4080,,Physical measures,,4080,,,2006-2010,ACE/Physical measures,Blood pressure
+pulse_rate1,"Pulse rate, automated reading",http://biobank.ndph.ox.ac.uk/showcase/field.cgi?id=102,,,f.102.0.0,102,,,,,
+pulse_rate2,"Pulse rate, automated reading",http://biobank.ndph.ox.ac.uk/showcase/field.cgi?id=102,,,f.102.0.1,102,,,,,
+pulse_rate,Average pulse rate across both readings,http://biobank.ndph.ox.ac.uk/showcase/field.cgi?id=102,,Physical measures,,102,,,2006-2010,ACE/Physical measures,Blood pressure
+pulse_wave_notch_position,Position of pulse wave notch,http://biobank.ndph.ox.ac.uk/showcase/field.cgi?id=4199,,Physical measures,f.4199.0.0,4199,,,2006-2010,ACE/Physical measures,Arterial stiffness
+pulse_wave_peak_position,Position of the pulse wave peak,http://biobank.ndph.ox.ac.uk/showcase/field.cgi?id=4198,,Physical measures,f.4198.0.0,4198,,,2006-2010,ACE/Physical measures,Arterial stiffness
+pulse_wave_shoulder_position,Position of the shoulder on the pulse waveform,http://biobank.ndph.ox.ac.uk/showcase/field.cgi?id=4200,,Physical measures,f.4200.0.0,4200,,,2006-2010,ACE/Physical measures,Arterial stiffness
+pulse_rate_a_stiff,Pulse rate,http://biobank.ndph.ox.ac.uk/showcase/field.cgi?id=4194,,Physical measures,f.4194.0.0,4194,,,2006-2010,ACE/Physical measures,Arterial stiffness
+pulse_wave_arterial_stiffness_index,Pulse wave Arterial Stiffness index,http://biobank.ndph.ox.ac.uk/showcase/field.cgi?id=21021,,Physical measures,f.21021.0.0,21021,,,2006-2010,ACE/Physical measures,Arterial stiffness
+pulse_wave_peak_to_peak_time,Pulse wave peak to peak time,http://biobank.ndph.ox.ac.uk/showcase/field.cgi?id=4196,,Physical measures,f.4196.0.0,4196,,,2006-2010,ACE/Physical measures,Arterial stiffness
+pulse_wave_reflection_index,Pulse wave reflection index,http://biobank.ndph.ox.ac.uk/showcase/field.cgi?id=4195,,Physical measures,f.4195.0.0,4195,,,2006-2010,ACE/Physical measures,Arterial stiffness
+waist_circumference,Waist circumference,http://biobank.ndph.ox.ac.uk/showcase/field.cgi?id=48,,Physical measures,f.48.0.0,48,,,2006-2010,ACE/Physical measures,Body size measures
+weight,Weight,http://biobank.ndph.ox.ac.uk/showcase/field.cgi?id=21002,,Physical measures,f.21002.0.0,21002,,,2006-2010,ACE/Physical measures,Body size measures
+BMI,Body mass index (BMI),http://biobank.ndph.ox.ac.uk/showcase/field.cgi?id=21001,,Physical measures,f.21001.0.0,21001,,,2006-2010,ACE/Physical measures,Body size measures
+hip_circumference,Hip circumference,http://biobank.ndph.ox.ac.uk/showcase/field.cgi?id=49,,Physical measures,f.49.0.0,49,,,2006-2010,ACE/Physical measures,Body size measures
+standing_height,Standing height,http://biobank.ndph.ox.ac.uk/showcase/field.cgi?id=50,,Physical measures,f.50.0.0,50,,,2006-2010,ACE/Physical measures,Body size measures
+seated_height,Seated height,http://biobank.ndph.ox.ac.uk/showcase/field.cgi?id=51,,Physical measures,f.51.0.0,51,,,2006-2010,ACE/Physical measures,Body size measures
+sitting_height,Sitting height,http://biobank.ndph.ox.ac.uk/showcase/field.cgi?id=20015,,Physical measures,f.20015.0.0,20015,,,2006-2010,ACE/Physical measures,Body size measures
+hand_grip_strength_left,Hand grip strength (left),http://biobank.ndph.ox.ac.uk/showcase/field.cgi?id=46,,Physical measures,f.46.0.0,46,,,2006-2010,ACE/Physical measures,Hand grip strength
+hand_grip_strength_left_normalized,Hand grip strength (left) normalized by weight (derived),NA,,Physical measures,NA,NA,,,,,
+hand_grip_strength_right,Hand grip strength (right) normalized by weight (derived),http://biobank.ndph.ox.ac.uk/showcase/field.cgi?id=47,,Physical measures,f.47.0.0,47,,,2006-2010,ACE/Physical measures,Hand grip strength
+hand_grip_strength_right_normalized,Hand grip strength (right),NA,,Physical measures,NA,NA,,,,,
+leg_fat_free_mass_right,Leg fat-free mass (right),http://biobank.ndph.ox.ac.uk/showcase/field.cgi?id=23113,,Physical measures,f.23113.0.0,23113,,,2006-2010,ACE/Physical measures,Impedance measures
+leg_predicted_mass_left,Leg predicted mass (left),http://biobank.ndph.ox.ac.uk/showcase/field.cgi?id=23118,,Physical measures,f.23118.0.0,23118,,,2006-2010,ACE/Physical measures,Impedance measures
+leg_predicted_mass_right,Leg predicted mass (right),http://biobank.ndph.ox.ac.uk/showcase/field.cgi?id=23114,,Physical measures,f.23114.0.0,23114,,,2006-2010,ACE/Physical measures,Impedance measures
+arm_fat_percentage_left,Arm fat percentage (left),http://biobank.ndph.ox.ac.uk/showcase/field.cgi?id=23123,,Physical measures,f.23123.0.0,23123,,,2006-2010,ACE/Physical measures,Impedance measures
+arm_fat_percentage_right,Arm fat percentage (right),http://biobank.ndph.ox.ac.uk/showcase/field.cgi?id=23119,,Physical measures,f.23119.0.0,23119,,,2006-2010,ACE/Physical measures,Impedance measures
+arm_fat_mass_left,Arm fat mass (left),http://biobank.ndph.ox.ac.uk/showcase/field.cgi?id=23124,,Physical measures,f.23124.0.0,23124,,,2006-2010,ACE/Physical measures,Impedance measures
+arm_fat_mass_right,Arm fat mass (right),http://biobank.ndph.ox.ac.uk/showcase/field.cgi?id=23120,,Physical measures,f.23120.0.0,23120,,,2006-2010,ACE/Physical measures,Impedance measures
+arm_fat_free_mass_right,Arm fat-free mass (right),http://biobank.ndph.ox.ac.uk/showcase/field.cgi?id=23121,,Physical measures,f.23121.0.0,23121,,,2006-2010,ACE/Physical measures,Impedance measures
+arm_fat_free_mass_left,Arm fat-free mass (left),http://biobank.ndph.ox.ac.uk/showcase/field.cgi?id=23125,,Physical measures,f.23125.0.0,23125,,,2006-2010,ACE/Physical measures,Impedance measures
+arm_predicted_mass_left,Arm predicted mass (left),http://biobank.ndph.ox.ac.uk/showcase/field.cgi?id=23126,,Physical measures,f.23126.0.0,23126,,,2006-2010,ACE/Physical measures,Impedance measures
+arm_predicted_mass_right,Arm predicted mass (right),http://biobank.ndph.ox.ac.uk/showcase/field.cgi?id=23122,,Physical measures,f.23122.0.0,23122,,,2006-2010,ACE/Physical measures,Impedance measures
+trunk_fat_percentage,Trunk fat percentage,http://biobank.ndph.ox.ac.uk/showcase/field.cgi?id=23127,,Physical measures,f.23127.0.0,23127,,,2006-2010,ACE/Physical measures,Impedance measures
+trunk_fat_mass,Trunk fat mass,http://biobank.ndph.ox.ac.uk/showcase/field.cgi?id=23128,,Physical measures,f.23128.0.0,23128,,,2006-2010,ACE/Physical measures,Impedance measures
+trunk_fat_free_mass,Trunk fat-free mass,http://biobank.ndph.ox.ac.uk/showcase/field.cgi?id=23129,,Physical measures,f.23129.0.0,23129,,,2006-2010,ACE/Physical measures,Impedance measures
+trunk_predicted_mass,Trunk predicted mass,http://biobank.ndph.ox.ac.uk/showcase/field.cgi?id=23130,,Physical measures,f.23130.0.0,23130,,,2006-2010,ACE/Physical measures,Impedance measures
+basal_metabolic_rate,Basal metabolic rate,http://biobank.ndph.ox.ac.uk/showcase/field.cgi?id=23105,,Physical measures,"f.23105.0.0	",23105,,,2006-2010,ACE/Physical measures,Impedance measures
+body_fat_percent,Body fat percentage,http://biobank.ndph.ox.ac.uk/showcase/field.cgi?id=23099,,Physical measures,f.23099.0.0,23099,,,2006-2010,ACE/Physical measures,Impedance measures
+whole_body_fat_mass,Whole body fat mass,http://biobank.ndph.ox.ac.uk/showcase/field.cgi?id=23100,,Physical measures,f.23100.0.0,23100,,,2006-2010,ACE/Physical measures,Impedance measures
+whole_body_fat_free_mass,Whole body fat-free mass,http://biobank.ndph.ox.ac.uk/showcase/field.cgi?id=23101,,Physical measures,f.23101.0.0,23101,,,2006-2010,ACE/Physical measures,Impedance measures
+whole_body_water_mass,Whole body water mass,http://biobank.ndph.ox.ac.uk/showcase/field.cgi?id=23102,,Physical measures,f.23102.0.0,23102,,,2006-2010,ACE/Physical measures,Impedance measures
+leg_fat_percentage_left,Leg fat percentage (left),http://biobank.ndph.ox.ac.uk/showcase/field.cgi?id=23115,,Physical measures,f.23115.0.0,23115,,,2006-2010,ACE/Physical measures,Impedance measures
+leg_fat_percentage_right,Leg fat percentage (right),http://biobank.ndph.ox.ac.uk/showcase/field.cgi?id=23111,,Physical measures,f.23111.0.0,23111,,,2006-2010,ACE/Physical measures,Impedance measures
+leg_fat_mass_left,Leg fat mass (left),http://biobank.ndph.ox.ac.uk/showcase/field.cgi?id=23116,,Physical measures,f.23116.0.0,23116,,,2006-2010,ACE/Physical measures,Impedance measures
+leg_fat_mass_right,Leg fat mass (right),http://biobank.ndph.ox.ac.uk/showcase/field.cgi?id=23112,,Physical measures,f.23112.0.0,23112,,,2006-2010,ACE/Physical measures,Impedance measures
+leg_fat_free_mass_left,Leg fat-free mass (left),http://biobank.ndph.ox.ac.uk/showcase/field.cgi?id=23117,,Physical measures,f.23117.0.0,23117,,,2006-2010,ACE/Physical measures,Impedance measures
+whole_body_impedance,Impedance of whole body,http://biobank.ndph.ox.ac.uk/showcase/field.cgi?id=23106,,Physical measures,f.23106.0.0,23106,,,2006-2010,ACE/Physical measures,Impedance measures
+arm_left_impedance,Impedance of arm (left),http://biobank.ndph.ox.ac.uk/showcase/field.cgi?id=23110,,Physical measures,f.23110.0.0,23110,,,2006-2010,ACE/Physical measures,Impedance measures
+arm_right_impedance,Impedance of arm (right),http://biobank.ndph.ox.ac.uk/showcase/field.cgi?id=23109,,Physical measures,f.23109.0.0,23109,,,2006-2010,ACE/Physical measures,Impedance measures
+leg_left_impedance,Impedance of leg (left),http://biobank.ndph.ox.ac.uk/showcase/field.cgi?id=23108,,Physical measures,f.23108.0.0,23108,,,2006-2010,ACE/Physical measures,Impedance measures
+leg_right_impedance,Impedance of leg (right),http://biobank.ndph.ox.ac.uk/showcase/field.cgi?id=23107,,Physical measures,f.23107.0.0,23107,,,2006-2010,ACE/Physical measures,Impedance measures
+FVC_standardized,FVC best score standardized by standing height squared (derived),NA,,Physical measures,NA,NA,,,,,
+FVC_best,"Forced vital capacity (FVC), Best measure",http://biobank.ndph.ox.ac.uk/crystal/field.cgi?id=20151,,Physical measures,f.20151.0.0,20151,,,2006-2010,ACE/Physical measures,Spirometry
+FVC_z_score,Forced vital capacity (FVC) Z-score,http://biobank.ndph.ox.ac.uk/crystal/field.cgi?id=20257,,Physical measures,f.20257.0.0,20257,,,2006-2010,ACE/Physical measures,Spirometry
+FEV1_standardized,FEV1 best score standardized by standing height squared (derived),NA,,Physical measures,NA,NA,,,,,
+FEV1_best,"Forced expiratory volume in 1-second (FEV1), Best measure",http://biobank.ndph.ox.ac.uk/crystal/field.cgi?id=20150,,Physical measures,f.20150.0.0,20150,,,2006-2010,ACE/Physical measures,Spirometry
+FEV1_predicted,"Forced expiratory volume in 1-second (FEV1), predicted",http://biobank.ndph.ox.ac.uk/crystal/field.cgi?id=20153,,Physical measures,f.20153.0.0,20153,,,2006-2010,ACE/Physical measures,Spirometry
+FEV1_predicted_percentage,"Forced expiratory volume in 1-second (FEV1), predicted percentage",http://biobank.ndph.ox.ac.uk/crystal/field.cgi?id=20154,,Physical measures,f.20154.0.0,20154,,,2006-2010,ACE/Physical measures,Spirometry
+FEV1_z_score,Forced expiratory volume in 1-second (FEV1) Z-score,http://biobank.ndph.ox.ac.uk/crystal/field.cgi?id=20256,,Physical measures,f.20256.0.0,20256,,,2006-2010,ACE/Physical measures,Spirometry
+FEV1_FVC_ratio_z_score,FEV1/ FVC ratio Z-score,http://biobank.ndph.ox.ac.uk/crystal/field.cgi?id=20258,,Physical measures,f.20258.0.0,20258,,,2006-2010,ACE/Physical measures,Spirometry
+fractured_heel,Fractured heel,http://biobank.ndph.ox.ac.uk/showcase/field.cgi?id=3082,,Physical measures,"f.3082.0.0	",3082,,,2006-2010,ACE/Physical measures,Bone-densitometry of heel
+bone_density_measure_foot,Foot measured for bone density,http://biobank.ndph.ox.ac.uk/showcase/field.cgi?id=3081,,Physical measures,"f.3081.0.0	",3081,,,2006-2010,ACE/Physical measures,Bone-densitometry of heel
+heel_sound_speed,Speed of sound through heel,http://biobank.ndph.ox.ac.uk/showcase/field.cgi?id=3146,,Physical measures,f.3146.0.0,3146,,,2006-2010,ACE/Physical measures,Bone-densitometry of heel
+ankle_spacing_width,Ankle spacing width,http://biobank.ndph.ox.ac.uk/showcase/field.cgi?id=3143,,Physical measures,f.3143.0.0,3143,,,2006-2010,ACE/Physical measures,Bone-densitometry of heel
+heel_broadband_attenuation,"Heel Broadband ultrasound attenuation, direct entry",http://biobank.ndph.ox.ac.uk/showcase/field.cgi?id=3144,,Physical measures,"f.3144.0.0	",3144,,,2006-2010,ACE/Physical measures,Bone-densitometry of heel
+heel_QUI,"Heel quantitative ultrasound index (QUI), direct entry",http://biobank.ndph.ox.ac.uk/showcase/field.cgi?id=3147,,Physical measures,"f.3147.0.0	",3147,,,2006-2010,ACE/Physical measures,Bone-densitometry of heel
+heel_bone_mineral_density,Heel bone mineral density (BMD),http://biobank.ndph.ox.ac.uk/showcase/field.cgi?id=3148,,Physical measures,f.3148.0.0,3148,,,2006-2010,ACE/Physical measures,Bone-densitometry of heel
+heel_bone_mineral_density_t_score,"Heel bone mineral density (BMD) T-score, automated",http://biobank.ndph.ox.ac.uk/showcase/field.cgi?id=78,,Physical measures,f.78.0.0,78,,,2006-2010,ACE/Physical measures,Bone-densitometry of heel
+fractured_heel_left,Fractured heel (left),http://biobank.ndph.ox.ac.uk/showcase/field.cgi?id=4093,,Physical measures,f.4093.0.0,4093,,,2006-2010,ACE/Physical measures,Bone-densitometry of heel
+fractured_heel_right,Fractured heel (right),http://biobank.ndph.ox.ac.uk/showcase/field.cgi?id=4096,,Physical measures,f.4096.0.0,4096,,,2006-2010,ACE/Physical measures,Bone-densitometry of heel
+ankle_spacing_width_left,Ankle spacing width (left),http://biobank.ndph.ox.ac.uk/showcase/field.cgi?id=4100,,Physical measures,f.4100.0.0,4100,,,2006-2010,ACE/Physical measures,Bone-densitometry of heel
+ankle_spacing_width_right,Ankle spacing width (right),http://biobank.ndph.ox.ac.uk/showcase/field.cgi?id=4119,,Physical measures,f.4119.0.0,4119,,,2006-2010,ACE/Physical measures,Bone-densitometry of heel
+heel_sound_speed_left,Speed of sound through heel (left),http://biobank.ndph.ox.ac.uk/showcase/field.cgi?id=4103,,Physical measures,f.4103.0.0,4103,,,2006-2010,ACE/Physical measures,Bone-densitometry of heel
+heel_sound_speed_right,Speed of sound through heel (right),http://biobank.ndph.ox.ac.uk/showcase/field.cgi?id=4122,,Physical measures,"f.4122.0.0	",4122,,,2006-2010,ACE/Physical measures,Bone-densitometry of heel
+heel_broadband_attenuation_left,Heel broadband ultrasound attenuation (left),http://biobank.ndph.ox.ac.uk/showcase/field.cgi?id=4101,,Physical measures,f.4101.0.0,4101,,,2006-2010,ACE/Physical measures,Bone-densitometry of heel
+heel_broadband_attenuation_right,Heel broadband ultrasound attenuation (right),http://biobank.ndph.ox.ac.uk/showcase/field.cgi?id=4120,,Physical measures,f.4120.0.0,4120,,,2006-2010,ACE/Physical measures,Bone-densitometry of heel
+heel_QUI_left,"Heel quantitative ultrasound index (QUI), direct entry (left)",http://biobank.ndph.ox.ac.uk/showcase/field.cgi?id=4104,,Physical measures,f.4104.0.0,4104,,,2006-2010,ACE/Physical measures,Bone-densitometry of heel
+heel_QUI_right,"Heel quantitative ultrasound index (QUI), direct entry (right)",http://biobank.ndph.ox.ac.uk/showcase/field.cgi?id=4123,,Physical measures,f.4123.0.0,4123,,,2006-2010,ACE/Physical measures,Bone-densitometry of heel
+heel_bone_mineral_density_left,Heel bone mineral density (BMD) (left),http://biobank.ndph.ox.ac.uk/showcase/field.cgi?id=4105,,Physical measures,f.4105.0.0,4105,,,2006-2010,ACE/Physical measures,Bone-densitometry of heel
+heel_bone_mineral_density_right,Heel bone mineral density (BMD) (right),http://biobank.ndph.ox.ac.uk/showcase/field.cgi?id=4124,,Physical measures,"f.4124.0.0	",4124,,,2006-2010,ACE/Physical measures,Bone-densitometry of heel
+heel_bone_mineral_density_t_score_left,"Heel bone mineral density (BMD) T-score, automated (left)",http://biobank.ndph.ox.ac.uk/showcase/field.cgi?id=4106,,Physical measures,f.4106.0.0,4106,,,2006-2010,ACE/Physical measures,Bone-densitometry of heel
+heel_bone_mineral_density_t_score_right,"Heel bone mineral density (BMD) T-score, automated (right)",http://biobank.ndph.ox.ac.uk/showcase/field.cgi?id=4125,,Physical measures,f.4125.0.0,4125,,,2006-2010,ACE/Physical measures,Bone-densitometry of heel
+identify_matches_mean_time,Mean time to correctly identify matches,http://biobank.ndph.ox.ac.uk/showcase/field.cgi?id=20023,,Cognitive function,f.20023.0.0,20023,,,2006-2010,ACE/Cognitive function,Reaction time
+maximum_digits_remembered,Maximum digits remembered correctly,http://biobank.ndph.ox.ac.uk/showcase/field.cgi?id=4282,,Cognitive function,f.4282.0.0,4282,,,2006-2010,ACE/Cognitive function,Numeric memory
+fluid_intelligence,Fluid intelligence score,http://biobank.ndph.ox.ac.uk/showcase/field.cgi?id=20016,,Cognitive function,"f.20016.0.0	",20016,,,2006-2010,ACE/Cognitive function,Fluid intelligence / reasoning
+prospective_memory,Prospective memory result,http://biobank.ndph.ox.ac.uk/showcase/field.cgi?id=20018,,Cognitive function,f.20018.0.0,20018,,,2006-2010,ACE/Cognitive function,Prospective memory
+incorrect_matches_round1,Number of incorrect matches in round,http://biobank.ndph.ox.ac.uk/showcase/field.cgi?id=399,,Cognitive function,f.399.0.1,399,,,2006-2010,ACE/Cognitive function,Pairs matching
+incorrect_matches_round2,Number of incorrect matches in round,http://biobank.ndph.ox.ac.uk/showcase/field.cgi?id=399,,Cognitive function,f.399.0.2,399,,,,,
+IMD_services_Scotland,Access to services score (Scotland),http://biobank.ndph.ox.ac.uk/showcase/field.cgi?id=26433,,Material deprivation,f.26433.0.0,26433,,,2009,Population characteristics,Indices of multiple deprivation
+IMD_services_Wales,Access to services score (Wales),http://biobank.ndph.ox.ac.uk/showcase/field.cgi?id=26422,,Material deprivation,f.26422.0.0,26422,,,2008,Population characteristics,Indices of multiple deprivation
+IMD_community_safety_Wales,Community safety score (Wales),http://biobank.ndph.ox.ac.uk/showcase/field.cgi?id=26425,,Material deprivation,f.26425.0.0,26425,,,2008,Population characteristics,Indices of multiple deprivation
+IMD_crime_England,Crime score (England),http://biobank.ndph.ox.ac.uk/showcase/field.cgi?id=26416,,Material deprivation,f.26416.0.0,26416,,,2010,Population characteristics,Indices of multiple deprivation
+IMD_crime_Scotland,Crime score (Scotland),http://biobank.ndph.ox.ac.uk/showcase/field.cgi?id=26434,,Material deprivation,f.26434.0.0,26434,,,2009,Population characteristics,Indices of multiple deprivation
+IMD_education_England,Education score (England),http://biobank.ndph.ox.ac.uk/showcase/field.cgi?id=26414,,Material deprivation,f.26414.0.0,26414,,,2010,Population characteristics,Indices of multiple deprivation
+IMD_education_Scotland,Education score (Scotland),http://biobank.ndph.ox.ac.uk/showcase/field.cgi?id=26431,,Material deprivation,f.26431.0.0,26431,,,2009,Population characteristics,Indices of multiple deprivation
+IMD_education_Wales,Education score (Wales),http://biobank.ndph.ox.ac.uk/showcase/field.cgi?id=26421,,Material deprivation,f.26421.0.0,26421,,,2008,Population characteristics,Indices of multiple deprivation
+IMD_employment_England,Employment score (England),http://biobank.ndph.ox.ac.uk/showcase/field.cgi?id=26412,,Material deprivation,f.26412.0.0,26412,,,2010,Population characteristics,Indices of multiple deprivation
+IMD_employment_Scotland,Employment score (Scotland),http://biobank.ndph.ox.ac.uk/showcase/field.cgi?id=26429,,Material deprivation,"f.26429.0.0	",26429,,,2009,Population characteristics,Indices of multiple deprivation
+IMD_employment_Wales,Employment score (Wales),http://biobank.ndph.ox.ac.uk/showcase/field.cgi?id=26419,,Material deprivation,f.26419.0.0,26419,,,2008,Population characteristics,Indices of multiple deprivation
+IMD_health_England,Health score (England),http://biobank.ndph.ox.ac.uk/showcase/field.cgi?id=26413,,Material deprivation,f.26413.0.0,26413,,,2010,Population characteristics,Indices of multiple deprivation
+IMD_health_Scotland,Health score (Scotland),http://biobank.ndph.ox.ac.uk/showcase/field.cgi?id=26430,,Material deprivation,f.26430.0.0,26430,,,2009,Population characteristics,Indices of multiple deprivation
+IMD_health_Wales,Health score (Wales),http://biobank.ndph.ox.ac.uk/showcase/field.cgi?id=26420,,Material deprivation,f.26420.0.0,26420,,,2008,Population characteristics,Indices of multiple deprivation
+IMD_housing_England,Housing score (England),http://biobank.ndph.ox.ac.uk/showcase/field.cgi?id=26415,,Material deprivation,f.26415.0.0,26415,,,2010,Population characteristics,Indices of multiple deprivation
+IMD_housing_Scotland,Housing score (Scotland),http://biobank.ndph.ox.ac.uk/showcase/field.cgi?id=26432,,Material deprivation,f.26432.0.0,26432,,,2009,Population characteristics,Indices of multiple deprivation
+IMD_housing_Wales,Housing score (Wales),http://biobank.ndph.ox.ac.uk/showcase/field.cgi?id=26423,,Material deprivation,f.26423.0.0,26423,,,2008,Population characteristics,Indices of multiple deprivation
+IMD_income_England,Income score (England),http://biobank.ndph.ox.ac.uk/showcase/field.cgi?id=26411,,Material deprivation,f.26411.0.0,26411,,,2010,Population characteristics,Indices of multiple deprivation
+IMD_income_Scotland,Income score (Scotland),http://biobank.ndph.ox.ac.uk/showcase/field.cgi?id=26428,,Material deprivation,f.26428.0.0,26428,,,2009,Population characteristics,Indices of multiple deprivation
+IMD_income_Wales,Income score (Wales),http://biobank.ndph.ox.ac.uk/showcase/field.cgi?id=26418,,Material deprivation,f.26418.0.0,26418,,,2008,Population characteristics,Indices of multiple deprivation
+IMD_total_England,Index of Multiple Deprivation (England),http://biobank.ndph.ox.ac.uk/showcase/field.cgi?id=26410,,Material deprivation,f.26410.0.0,26410,,,2010,Population characteristics,Indices of multiple deprivation
+IMD_total_Scotland,Index of Multiple Deprivation (Scotland),http://biobank.ndph.ox.ac.uk/showcase/field.cgi?id=26427,,Material deprivation,f.26427.0.0,26427,,,2009,Population characteristics,Indices of multiple deprivation
+IMD_total_Wales,Index of Multiple Deprivation (Wales),http://biobank.ndph.ox.ac.uk/showcase/field.cgi?id=26426,,Material deprivation,f.26426.0.0,26426,,,2008,Population characteristics,Indices of multiple deprivation
+IMD_living_environ_England,Living environment score (England),http://biobank.ndph.ox.ac.uk/showcase/field.cgi?id=26417,,Material deprivation,f.26417.0.0,26417,,,2010,Population characteristics,Indices of multiple deprivation
+IMD_phsyical_environ_Wales,Physical environment score (Wales),http://biobank.ndph.ox.ac.uk/showcase/field.cgi?id=26424,,Material deprivation,f.26424.0.0,26424,,,2008,Population characteristics,Indices of multiple deprivation
+townsend_deprivation_index,Townsend deprivation index at recruitment,http://biobank.ndph.ox.ac.uk/showcase/field.cgi?id=189,,Material deprivation,f.189.0.0,189,,,2006-2010,Population characteristics,Baseline characteristics
+LTL_unadj,Adjusted T/S ratio,https://biobank.ndph.ox.ac.uk/ukb/field.cgi?id=22191,,Blood biomarkers,f.22191.0.0,22191,,,,,
+LTL_adj,Unadjusted T/S ratio,https://biobank.ndph.ox.ac.uk/ukb/field.cgi?id=22190,,Blood biomarkers,f.22190.0.0,22190,,,,,
+LTL_zadj,Z-adjusted T/S log,https://biobank.ndph.ox.ac.uk/ukb/field.cgi?id=22192,,Blood biomarkers,f.22192.0.0,22192,,,,,
+alanine_aminotransferase,Alanine aminotransferase,http://biobank.ndph.ox.ac.uk/showcase/field.cgi?id=30620,,Blood biomarkers,f.30620.0.0,30620,,,2006-2010,Biological samples/Assay results,Blood biochemistry
+albumin,Albumin,http://biobank.ndph.ox.ac.uk/showcase/field.cgi?id=30600,,Blood biomarkers,f.30600.0.0,30600,,,2006-2010,Biological samples/Assay results,Blood biochemistry
+alkaline_phosphatase,Alkaline phosphatase,http://biobank.ndph.ox.ac.uk/showcase/field.cgi?id=30610,,Blood biomarkers,f.30610.0.0,30610,,,2006-2010,Biological samples/Assay results,Blood biochemistry
+apolipoprotein_A,Apolipoprotein A,http://biobank.ndph.ox.ac.uk/showcase/field.cgi?id=30630,,Blood biomarkers,f.30630.0.0,30630,,,2006-2010,Biological samples/Assay results,Blood biochemistry
+apolipoprotein_B,Apolipoprotein B,http://biobank.ndph.ox.ac.uk/showcase/field.cgi?id=30640,,Blood biomarkers,f.30640.0.0,30640,,,2006-2010,Biological samples/Assay results,Blood biochemistry
+aspartate_aminotransferase,Aspartate aminotransferase,http://biobank.ndph.ox.ac.uk/showcase/field.cgi?id=30650,,Blood biomarkers,f.30650.0.0,30650,,,2006-2010,Biological samples/Assay results,Blood biochemistry
+C_reactive_protein,C-reactive protein,http://biobank.ndph.ox.ac.uk/showcase/field.cgi?id=30710,,Blood biomarkers,f.30710.0.0,30710,,,2006-2010,Biological samples/Assay results,Blood biochemistry
+calcium,Calcium,http://biobank.ndph.ox.ac.uk/showcase/field.cgi?id=30680,,Blood biomarkers,f.30680.0.0,30680,,,2006-2010,Biological samples/Assay results,Blood biochemistry
+cholesterol,Cholesterol,http://biobank.ndph.ox.ac.uk/showcase/field.cgi?id=30690,,Blood biomarkers,f.30690.0.0,30690,,,2006-2010,Biological samples/Assay results,Blood biochemistry
+creatinine,Creatinine,http://biobank.ndph.ox.ac.uk/showcase/field.cgi?id=30700,,Blood biomarkers,f.30700.0.0,30700,,,2006-2010,Biological samples/Assay results,Blood biochemistry
+cystatin_C,Cystatin C,http://biobank.ndph.ox.ac.uk/showcase/field.cgi?id=30720,,Blood biomarkers,f.30720.0.0,30720,,,2006-2010,Biological samples/Assay results,Blood biochemistry
+direct_bilirubin,Direct bilirubin,http://biobank.ndph.ox.ac.uk/showcase/field.cgi?id=30660,,Blood biomarkers,f.30660.0.0,30660,,,2006-2010,Biological samples/Assay results,Blood biochemistry
+gamma_glutamyltransferase,Gamma glutamyltransferase,http://biobank.ndph.ox.ac.uk/showcase/field.cgi?id=30730,,Blood biomarkers,f.30730.0.0,30730,,,2006-2010,Biological samples/Assay results,Blood biochemistry
+glucose,Glucose,http://biobank.ndph.ox.ac.uk/showcase/field.cgi?id=30740,,Blood biomarkers,f.30740.0.0,30740,,,2006-2010,Biological samples/Assay results,Blood biochemistry
+hbA1c,Glycated haemoglobin (HbA1c),http://biobank.ndph.ox.ac.uk/showcase/field.cgi?id=30750,,Blood biomarkers,f.30750.0.0,30750,,,2006-2010,Biological samples/Assay results,Blood biochemistry
+HDL_cholesterol,HDL cholesterol,http://biobank.ndph.ox.ac.uk/showcase/field.cgi?id=30760,,Blood biomarkers,f.30760.0.0,30760,,,2006-2010,Biological samples/Assay results,Blood biochemistry
+IGF1,IGF-1,http://biobank.ndph.ox.ac.uk/showcase/field.cgi?id=30770,,Blood biomarkers,f.30770.0.0,30770,,,2006-2010,Biological samples/Assay results,Blood biochemistry
+LDL_direct,LDL direct,http://biobank.ndph.ox.ac.uk/showcase/field.cgi?id=30780,,Blood biomarkers,f.30780.0.0,30780,,,2006-2010,Biological samples/Assay results,Blood biochemistry
+lipoprotein_a,Lipoprotein A,http://biobank.ndph.ox.ac.uk/showcase/field.cgi?id=30790,,Blood biomarkers,f.30790.0.0,30790,,,2006-2010,Biological samples/Assay results,Blood biochemistry
+oestradiol,Oestradiol,http://biobank.ndph.ox.ac.uk/showcase/field.cgi?id=30800,,Blood biomarkers,f.30800.0.0,30800,,,2006-2010,Biological samples/Assay results,Blood biochemistry
+phosphate,Phosphate,http://biobank.ndph.ox.ac.uk/showcase/field.cgi?id=30810,,Blood biomarkers,f.30810.0.0,30810,,,2006-2010,Biological samples/Assay results,Blood biochemistry
+rheumatoid_factor,Rheumatoid factor,http://biobank.ndph.ox.ac.uk/showcase/field.cgi?id=30820,,Blood biomarkers,f.30820.0.0,30820,,,2006-2010,Biological samples/Assay results,Blood biochemistry
+SHBG,SHBG,http://biobank.ndph.ox.ac.uk/showcase/field.cgi?id=30830,,Blood biomarkers,f.30830.0.0,30830,,,2006-2010,Biological samples/Assay results,Blood biochemistry
+testosterone,Testosterone,http://biobank.ndph.ox.ac.uk/showcase/field.cgi?id=30850,,Blood biomarkers,f.30850.0.0,30850,,,2006-2010,Biological samples/Assay results,Blood biochemistry
+total_bilirubin,Total bilirubin,http://biobank.ndph.ox.ac.uk/showcase/field.cgi?id=30840,,Blood biomarkers,f.30840.0.0,30840,,,2006-2010,Biological samples/Assay results,Blood biochemistry
+total_protein,Total protein,http://biobank.ndph.ox.ac.uk/showcase/field.cgi?id=30860,,Blood biomarkers,f.30860.0.0,30860,,,2006-2010,Biological samples/Assay results,Blood biochemistry
+triglycerides,Triglycerides,http://biobank.ndph.ox.ac.uk/showcase/field.cgi?id=30870,,Blood biomarkers,f.30870.0.0,30870,,,2006-2010,Biological samples/Assay results,Blood biochemistry
+urate,Urate,http://biobank.ndph.ox.ac.uk/showcase/field.cgi?id=30880,,Blood biomarkers,f.30880.0.0,30880,,,2006-2010,Biological samples/Assay results,Blood biochemistry
+urea,Urea,http://biobank.ndph.ox.ac.uk/showcase/field.cgi?id=30670,,Blood biomarkers,f.30670.0.0,30670,,,2006-2010,Biological samples/Assay results,Blood biochemistry
+vitamin_D,Vitamin D,http://biobank.ndph.ox.ac.uk/showcase/field.cgi?id=30890,,Blood biomarkers,f.30890.0.0,30890,,,2006-2010,Biological samples/Assay results,Blood biochemistry
+basophill_count,Basophill count,http://biobank.ndph.ox.ac.uk/showcase/field.cgi?id=30160,,Blood count,f.30160.0.0,30160,,,2006-2010,Biological samples/Assay results,Blood count
+basophill_percentage,Basophill percentage,http://biobank.ndph.ox.ac.uk/showcase/field.cgi?id=30220,,Blood count,f.30220.0.0,30220,,,2006-2010,Biological samples/Assay results,Blood count
+eosinophill_count,Eosinophill count,http://biobank.ndph.ox.ac.uk/showcase/field.cgi?id=30150,,Blood count,f.30150.0.0,30150,,,2006-2010,Biological samples/Assay results,Blood count
+eosinophill_percentage,Eosinophill percentage,http://biobank.ndph.ox.ac.uk/showcase/field.cgi?id=30210,,Blood count,f.30210.0.0,30210,,,2006-2010,Biological samples/Assay results,Blood count
+haematocrit_percentage,Haematocrit percentage,http://biobank.ndph.ox.ac.uk/showcase/field.cgi?id=30030,,Blood count,f.30030.0.0,30030,,,2006-2010,Biological samples/Assay results,Blood count
+haemoglobin_concentration,Haemoglobin concentration,http://biobank.ndph.ox.ac.uk/showcase/field.cgi?id=30020,,Blood count,f.30020.0.0,30020,,,2006-2010,Biological samples/Assay results,Blood count
+high_light_scatter_reticulocyte_count,High light scatter reticulocyte count,http://biobank.ndph.ox.ac.uk/showcase/field.cgi?id=30300,,Blood count,f.30300.0.0,30300,,,2006-2010,Biological samples/Assay results,Blood count
+high_light_scatter_reticulocyte_percentage,High light scatter reticulocyte percentage,http://biobank.ndph.ox.ac.uk/showcase/field.cgi?id=30290,,Blood count,f.30290.0.0,30290,,,2006-2010,Biological samples/Assay results,Blood count
+immature_reticulocyte_fraction,Immature reticulocyte fraction,http://biobank.ndph.ox.ac.uk/showcase/field.cgi?id=30280,,Blood count,f.30280.0.0,30280,,,2006-2010,Biological samples/Assay results,Blood count
+lymphocyte_count,Lymphocyte count,http://biobank.ndph.ox.ac.uk/showcase/field.cgi?id=30120,,Blood count,f.30120.0.0,30120,,,2006-2010,Biological samples/Assay results,Blood count
+lymphocyte_percentage,Lymphocyte percentage,http://biobank.ndph.ox.ac.uk/showcase/field.cgi?id=30180,,Blood count,f.30180.0.0,30180,,,2006-2010,Biological samples/Assay results,Blood count
+mean_corpuscular_haemoglobin,Mean corpuscular haemoglobin,http://biobank.ndph.ox.ac.uk/showcase/field.cgi?id=30050,,Blood count,f.30050.0.0,30050,,,2006-2010,Biological samples/Assay results,Blood count
+mean_corpuscular_haemoglobin_concentration,Mean corpuscular haemoglobin concentration,http://biobank.ndph.ox.ac.uk/showcase/field.cgi?id=30060,,Blood count,f.30060.0.0,30060,,,2006-2010,Biological samples/Assay results,Blood count
+mean_corpuscular_volume,Mean corpuscular volume,http://biobank.ndph.ox.ac.uk/showcase/field.cgi?id=30040,,Blood count,f.30040.0.0,30040,,,2006-2010,Biological samples/Assay results,Blood count
+mean_platelet_volume,Mean platelet (thrombocyte) volume,http://biobank.ndph.ox.ac.uk/showcase/field.cgi?id=30100,,Blood count,f.30100.0.0,30100,,,2006-2010,Biological samples/Assay results,Blood count
+mean_reticulocyte_volume,Mean reticulocyte volume,http://biobank.ndph.ox.ac.uk/showcase/field.cgi?id=30260,,Blood count,f.30260.0.0,30260,,,2006-2010,Biological samples/Assay results,Blood count
+mean_sphered_cell_volume,Mean sphered cell volume,http://biobank.ndph.ox.ac.uk/showcase/field.cgi?id=30270,,Blood count,f.30270.0.0,30270,,,2006-2010,Biological samples/Assay results,Blood count
+monocyte_count,Monocyte count,http://biobank.ndph.ox.ac.uk/showcase/field.cgi?id=30130,,Blood count,f.30130.0.0,30130,,,2006-2010,Biological samples/Assay results,Blood count
+monocyte_percentage,Monocyte percentage,http://biobank.ndph.ox.ac.uk/showcase/field.cgi?id=30190,,Blood count,f.30190.0.0,30190,,,2006-2010,Biological samples/Assay results,Blood count
+neutrophill_count,Neutrophill count,http://biobank.ndph.ox.ac.uk/showcase/field.cgi?id=30140,,Blood count,f.30140.0.0,30140,,,2006-2010,Biological samples/Assay results,Blood count
+neutrophill_percentage,Neutrophill percentage,http://biobank.ndph.ox.ac.uk/showcase/field.cgi?id=30200,,Blood count,f.30200.0.0,30200,,,2006-2010,Biological samples/Assay results,Blood count
+nucleated_red_blood_cell_count,Nucleated red blood cell count,http://biobank.ndph.ox.ac.uk/showcase/field.cgi?id=30170,,Blood count,f.30170.0.0,30170,,,2006-2010,Biological samples/Assay results,Blood count
+nucleated_red_blood_cell_percentage,Nucleated red blood cell percentage,http://biobank.ndph.ox.ac.uk/showcase/field.cgi?id=30230,,Blood count,f.30230.0.0,30230,,,2006-2010,Biological samples/Assay results,Blood count
+platelet_count,Platelet count,http://biobank.ndph.ox.ac.uk/showcase/field.cgi?id=30080,,Blood count,f.30080.0.0,30080,,,2006-2010,Biological samples/Assay results,Blood count
+platelet_crit,Platelet crit,http://biobank.ndph.ox.ac.uk/showcase/field.cgi?id=30090,,Blood count,f.30090.0.0,30090,,,2006-2010,Biological samples/Assay results,Blood count
+platelet_distribution_width,Platelet distribution width,http://biobank.ndph.ox.ac.uk/showcase/field.cgi?id=30110,,Blood count,f.30110.0.0,30110,,,2006-2010,Biological samples/Assay results,Blood count
+erythrocyte_count,Red blood cell (erythrocyte) count,http://biobank.ndph.ox.ac.uk/showcase/field.cgi?id=30010,,Blood count,f.30010.0.0,30010,,,2006-2010,Biological samples/Assay results,Blood count
+erythrocyte_distribution_width,Red blood cell (erythrocyte) distribution width,http://biobank.ndph.ox.ac.uk/showcase/field.cgi?id=30070,,Blood count,f.30070.0.0,30070,,,2006-2010,Biological samples/Assay results,Blood count
+reticulocyte_count,Reticulocyte count,http://biobank.ndph.ox.ac.uk/showcase/field.cgi?id=30250,,Blood count,f.30250.0.0,30250,,,2006-2010,Biological samples/Assay results,Blood count
+reticulocyte_percentage,Reticulocyte percentage,http://biobank.ndph.ox.ac.uk/showcase/field.cgi?id=30240,,Blood count,f.30240.0.0,30240,,,2006-2010,Biological samples/Assay results,Blood count
+leukocyte_count,White blood cell (leukocyte) count,http://biobank.ndph.ox.ac.uk/showcase/field.cgi?id=30000,,Blood count,f.30000.0.0,30000,,,2006-2010,Biological samples/Assay results,Blood count
+creatinine_urine,Creatinine (enzymatic) in urine,http://biobank.ndph.ox.ac.uk/showcase/field.cgi?id=30510,,Urine biomarkers,f.30510.0.0,30510,,,2006-2010,Biological samples/Assay results,Urine assays
+microalbumin_urine,Microalbumin in urine,http://biobank.ndph.ox.ac.uk/showcase/field.cgi?id=30500,,Urine biomarkers,f.30500.0.0,30500,,,2006-2010,Biological samples/Assay results,Urine assays
+potassium_urine,Potassium in urine,http://biobank.ndph.ox.ac.uk/showcase/field.cgi?id=30520,,Urine biomarkers,f.30520.0.0,30520,,,2006-2010,Biological samples/Assay results,Urine assays
+sodium_urine,Sodium in urine,http://biobank.ndph.ox.ac.uk/showcase/field.cgi?id=30530,,Urine biomarkers,f.30530.0.0,30530,,,2006-2010,Biological samples/Assay results,Urine assays
+close_to_major_road,Close to major road,http://biobank.ndph.ox.ac.uk/showcase/field.cgi?id=24014,,Physical environment,f.24014.0.0,24014,,,2006-2010,Additional exposures/Local environment,Residential air pollution
+inverse_distance_nearest_major_road,Inverse distance to the nearest major road,http://biobank.ndph.ox.ac.uk/showcase/field.cgi?id=24012,,Physical environment,f.24012.0.0,24012,,,2006-2010,Additional exposures/Local environment,Residential air pollution
+inverse_distance_nearest_road,Inverse distance to the nearest road,http://biobank.ndph.ox.ac.uk/showcase/field.cgi?id=24010,,Physical environment,f.24010.0.0,24010,,,2006-2010,Additional exposures/Local environment,Residential air pollution
+NO2_2005,Nitrogen dioxide air pollution; 2005,http://biobank.ndph.ox.ac.uk/showcase/field.cgi?id=24016,,Physical environment,f.24016.0.0,24016,,,2006-2010,Additional exposures/Local environment,Residential air pollution
+NO2_2006,Nitrogen dioxide air pollution; 2006,http://biobank.ndph.ox.ac.uk/showcase/field.cgi?id=24017,,Physical environment,f.24017.0.0,24017,,,2006-2010,Additional exposures/Local environment,Residential air pollution
+NO2_2007,Nitrogen dioxide air pollution; 2007,http://biobank.ndph.ox.ac.uk/showcase/field.cgi?id=24018,,Physical environment,f.24018.0.0,24018,,,2006-2010,Additional exposures/Local environment,Residential air pollution
+NO2_2010,Nitrogen dioxide air pollution; 2010,http://biobank.ndph.ox.ac.uk/showcase/field.cgi?id=24003,,Physical environment,f.24003.0.0,24003,,,2006-2010,Additional exposures/Local environment,Residential air pollution
+NO_2010,Nitrogen oxides air pollution; 2010,http://biobank.ndph.ox.ac.uk/showcase/field.cgi?id=24004,,Physical environment,f.24004.0.0,24004,,,2006-2010,Additional exposures/Local environment,Residential air pollution
+PM10_2007,Particulate matter air pollution (pm10); 2007,http://biobank.ndph.ox.ac.uk/showcase/field.cgi?id=24019,,Physical environment,f.24019.0.0,24019,,,2006-2010,Additional exposures/Local environment,Residential air pollution
+PM10_2010,Particulate matter air pollution (pm10); 2010,http://biobank.ndph.ox.ac.uk/showcase/field.cgi?id=24005,,Physical environment,f.24005.0.0,24005,,,2006-2010,Additional exposures/Local environment,Residential air pollution
+PM2.5_absorbance_2010,Particulate matter air pollution (pm2.5) absorbance; 2010,http://biobank.ndph.ox.ac.uk/showcase/field.cgi?id=24007,,Physical environment,f.24007.0.0,24007,,,2006-2010,Additional exposures/Local environment,Residential air pollution
+PM2.5_2010,Particulate matter air pollution (pm2.5); 2010,http://biobank.ndph.ox.ac.uk/showcase/field.cgi?id=24006,,Physical environment,f.24006.0.0,24006,,,2006-2010,Additional exposures/Local environment,Residential air pollution
+PM2.5_to_10_2010,Particulate matter air pollution 2.5-10um; 2010,http://biobank.ndph.ox.ac.uk/showcase/field.cgi?id=24008,,Physical environment,f.24008.0.0,24008,,,2006-2010,Additional exposures/Local environment,Residential air pollution
+air_pollution_PC1,PC1 of all air pollution vars together ,,,Physical environment,,,,,,,
+air_pollution_PC2,PC2 of all air pollution vars together ,,,Physical environment,,,,,,,
+air_pollution_PC3,PC3 of all air pollution vars together ,,,Physical environment,,,,,,,
+road_length_sum_100m,Sum of road length of major roads within 100m,http://biobank.ndph.ox.ac.uk/showcase/field.cgi?id=24015,,Physical environment,f.24015.0.0,24015,,,2006-2010,Additional exposures/Local environment,Residential air pollution
+traffic_load_major_roads,Total traffic load on major roads,http://biobank.ndph.ox.ac.uk/showcase/field.cgi?id=24013,,Physical environment,f.24013.0.0,24013,,,2006-2010,Additional exposures/Local environment,Residential air pollution
+traffic_intensity_nearest_major_road,Traffic intensity on the nearest major road,http://biobank.ndph.ox.ac.uk/showcase/field.cgi?id=24011,,Physical environment,f.24011.0.0,24011,,,2006-2010,Additional exposures/Local environment,Residential air pollution
+traffic_intensity_nearest_road,Traffic intensity on the nearest road,http://biobank.ndph.ox.ac.uk/showcase/field.cgi?id=24009,,Physical environment,f.24009.0.0,24009,,,2006-2010,Additional exposures/Local environment,Residential air pollution
+sound_average_16hr,Average 16-hour sound level of noise pollution,http://biobank.ndph.ox.ac.uk/showcase/field.cgi?id=24023,,Physical environment,"f.24023.0.0	",24023,,,2006-2010,Additional exposures/Local environment,Residential noise pollution
+sound_average_24hr,Average 24-hour sound level of noise pollution,http://biobank.ndph.ox.ac.uk/showcase/field.cgi?id=24024,,Physical environment,f.24024.0.0,24024,,,2006-2010,Additional exposures/Local environment,Residential noise pollution
+daytime_sound_average,Average daytime sound level of noise pollution,http://biobank.ndph.ox.ac.uk/showcase/field.cgi?id=24020,,Physical environment,f.24020.0.0,24020,,,2006-2010,Additional exposures/Local environment,Residential noise pollution
+evening_sound_average,Average evening sound level of noise pollution,http://biobank.ndph.ox.ac.uk/showcase/field.cgi?id=24021,,Physical environment,f.24021.0.0,24021,,,2006-2010,Additional exposures/Local environment,Residential noise pollution
+night_sound_average,Average night-time sound level of noise pollution,http://biobank.ndph.ox.ac.uk/showcase/field.cgi?id=24022,,Physical environment,f.24022.0.0,24022,,,2006-2010,Additional exposures/Local environment,Residential noise pollution
+natural_environment_buffer_1000m,"Natural environment percentage, buffer 1000m",http://biobank.ndph.ox.ac.uk/showcase/field.cgi?id=24506,,Physical environment,f.24506.0.0,24506,,,2006-2010,Additional exposures/Local environment,Greenspace and coastal proximity
+natural_environment_buffer_300m,"Natural environment percentage, buffer 300m",http://biobank.ndph.ox.ac.uk/showcase/field.cgi?id=24507,,Physical environment,f.24507.0.0,24507,,,2006-2010,Additional exposures/Local environment,Greenspace and coastal proximity
+greenspace_buffer_1000m,"Greenspace percentage, buffer 1000m",http://biobank.ndph.ox.ac.uk/showcase/field.cgi?id=24500,,Physical environment,f.24500.0.0,24500,,,2006-2010,Additional exposures/Local environment,Greenspace and coastal proximity
+greenspace_buffer_300m,"Greenspace percentage, buffer 300m",http://biobank.ndph.ox.ac.uk/showcase/field.cgi?id=24503,,Physical environment,f.24503.0.0,24503,,,2006-2010,Additional exposures/Local environment,Greenspace and coastal proximity
+domestic_garden_buffer_1000m,"Domestic garden percentage, buffer 1000m",http://biobank.ndph.ox.ac.uk/showcase/field.cgi?id=24501,,Physical environment,f.24501.0.0,24501,,,2006-2010,Additional exposures/Local environment,Greenspace and coastal proximity
+domestic_garden_buffer_300m,"Domestic garden percentage, buffer 300m",http://biobank.ndph.ox.ac.uk/showcase/field.cgi?id=24504,,Physical environment,f.24504.0.0,24504,,,2006-2010,Additional exposures/Local environment,Greenspace and coastal proximity
+water_buffer_1000m,"Water percentage, buffer 1000m",http://biobank.ndph.ox.ac.uk/showcase/field.cgi?id=24502,,Physical environment,f.24502.0.0,24502,,,2006-2010,Additional exposures/Local environment,Greenspace and coastal proximity
+water_buffer_300m,"Water percentage, buffer 300m",http://biobank.ndph.ox.ac.uk/showcase/field.cgi?id=24505,,Physical environment,f.24505.0.0,24505,,,2006-2010,Additional exposures/Local environment,Greenspace and coastal proximity
+distance_to_coast,Distance (Euclidean) to coast,http://biobank.ndph.ox.ac.uk/showcase/field.cgi?id=24508,,Physical environment,f.24508.0.0,24508,,,2006-2010,Additional exposures/Local environment,Greenspace and coastal proximity
+greenspace_PC1,PC1 of all greenspace vars together ,,,Physical environment,,,,,,,
+greenspace_PC2,PC2 of all greenspace vars together ,,,Physical environment,,,,,,,
+home_population_density,Home area population density - urban or rural,http://biobank.ndph.ox.ac.uk/showcase/field.cgi?id=20118,,Physical environment,f.20118.0.0,20118,,,2006-2010,ACE/Recruitment,Reception
+population_density,Derived urban/rural using home area population density variable (from field ID listed in this row),http://biobank.ndph.ox.ac.uk/showcase/field.cgi?id=20118,,Physical environment,f.20118.0.0,20118,,,2006-2010,ACE/Recruitment,Reception
+traffic_PC1,PC1 of all traffic vars together ,,,Physical environment,,,,,,,
+noise_pollution_PC1,PC1 of all noise pollution vars together ,,,Physical environment,,,,,,,
+Portion_size,,,,Diet,,,,,,,
+Typical_diet_yesterday,,,,Diet,,,,,,,
+Drinking_water_intake,,,,Diet,,,,,,,
+Low_calorie_drink_intake,,,,Diet,,,,,,,
+Fizzy_drink_intake,,,,Diet,,,,,,,
+Squash_intake,,,,Diet,,,,,,,
+Orange_juice_intake,,,,Diet,,,,,,,
+Grapefruit_juice_intake,,,,Diet,,,,,,,
+Pure_fruit_or_vegetable_juice_intake,,,,Diet,,,,,,,
+Fruit_smoothie_intake,,,,Diet,,,,,,,
+Dairy_smoothie_intake,,,,Diet,,,,,,,
+Coffee_consumed,,,,Diet,,,,,,,
+Instant_coffee_intake,,,,Diet,,,,,,,
+Added_milk_to_instant_coffee,,,,Diet,,,,,,,
+Filtered_coffee_intake,,,,Diet,,,,,,,
+Added_milk_to_filtered_coffee,,,,Diet,,,,,,,
+Cappuccino_intake,,,,Diet,,,,,,,
+Latte_intake,,,,Diet,,,,,,,
+Espresso_intake,,,,Diet,,,,,,,
+Added_milk_to_espresso,,,,Diet,,,,,,,
+Other_coffee_type,,,,Diet,,,,,,,
+Added_milk_to_other_coffee_type,,,,Diet,,,,,,,
+Decaffeinated_coffee,,,,Diet,,,,,,,
+Intake_of_sugar_added_to_coffee,,,,Diet,,,,,,,
+Intake_of_artificial_sweetener_added_to_coffee,,,,Diet,,,,,,,
+Tea_consumed,,,,Diet,,,,,,,
+Standard_tea_intake,,,,Diet,,,,,,,
+Rooibos_tea_intake,,,,Diet,,,,,,,
+Green_tea_intake,,,,Diet,,,,,,,
+Herbal_tea_intake,,,,Diet,,,,,,,
+Other_tea_intake,,,,Diet,,,,,,,
+Added_milk_to_standard_tea,,,,Diet,,,,,,,
+Decaffeinated_tea,,,,Diet,,,,,,,
+Added_milk_to_rooibos_tea,,,,Diet,,,,,,,
+Intake_of_sugar_added_to_tea,,,,Diet,,,,,,,
+Intake_of_artificial_sweetener_added_to_tea,,,,Diet,,,,,,,
+Other_non_alcoholic_drinks,,,,Diet,,,,,,,
+Milk_intake,,,,Diet,,,,,,,
+Flavoured_milk_intake,,,,Diet,,,,,,,
+Low_calorie_hot_chocolate_intake,,,,Diet,,,,,,,
+Hot_chocolate_intake,,,,Diet,,,,,,,
+Other_drink_intake,,,,Diet,,,,,,,
+Alcohol_consumed,,,,Diet,,,,,,,
+Red_wine_intake,,,,Diet,,,,,,,
+Rose_wine_intake,,,,Diet,,,,,,,
+White_wine_intake,,,,Diet,,,,,,,
+Beer_or_cider_intake,,,,Diet,,,,,,,
+Fortified_wine_intake,,,,Diet,,,,,,,
+Spirits_intake,,,,Diet,,,,,,,
+Other_alcohol_intake,,,,Diet,,,,,,,
+Breakfast_cereal_consumed,,,,Diet,,,,,,,
+Porridge_intake,,,,Diet,,,,,,,
+Muesli_intake,,,,Diet,,,,,,,
+Oat_crunch_intake,,,,Diet,,,,,,,
+Sweetened_cereal_intake,,,,Diet,,,,,,,
+Plain_cereal_intake,,,,Diet,,,,,,,
+Bran_cereal_intake,,,,Diet,,,,,,,
+Whole_wheat_cereal_intake,,,,Diet,,,,,,,
+Other_cereal_intake,,,,Diet,,,,,,,
+Dried_fruit_added_to_cereal,,,,Diet,,,,,,,
+Milk_added_to_cereal,,,,Diet,,,,,,,
+Intake_of_sugar_added_to_cereal,,,,Diet,,,,,,,
+Intake_of_artificial_sweetener_added_to_cereal,,,,Diet,,,,,,,
+Type_milk_consumed,,,,Diet,,,,,,,
+Bread_consumed,,,,Diet,,,,,,,
+Sliced_bread_intake,,,,Diet,,,,,,,
+Baguette_intake,,,,Diet,,,,,,,
+Bap_intake,,,,Diet,,,,,,,
+Bread_roll_intake,,,,Diet,,,,,,,
+Naan_bread_intake,,,,Diet,,,,,,,
+Garlic_bread_intake,,,,Diet,,,,,,,
+Crispbread_intake,,,,Diet,,,,,,,
+Oatcakes_intake,,,,Diet,,,,,,,
+Other_bread_intake,,,,Diet,,,,,,,
+Butter_or_margarine_on_bread_or_crackers,,,,Diet,,,,,,,
+Number_of_bread_slices_with_butter_or_margarine,,,,Diet,,,,,,,
+Number_of_baguettes_with_butter_or_margarine,,,,Diet,,,,,,,
+Number_of_baps_with__butter_or_margarine,,,,Diet,,,,,,,
+Number_of_bread_rolls_with__butter_or_margarine,,,,Diet,,,,,,,
+Number_of_crackers_or_crispbreads_with_butter_or_margarine,,,,Diet,,,,,,,
+Number_of_oatcakes_with__butter_or_margarine,,,,Diet,,,,,,,
+Number_of_other_bread_types_with__butter_or_margarine,,,,Diet,,,,,,,
+Double_crust_pastry_intake,,,,Diet,,,,,,,
+Single_crust_pastry_intake,,,,Diet,,,,,,,
+Crumble_intake,,,,Diet,,,,,,,
+Pizza_intake,,,,Diet,,,,,,,
+Pancake_intake,,,,Diet,,,,,,,
+Scotch_pancake_intake,,,,Diet,,,,,,,
+Yorkshire_pudding_intake,,,,Diet,,,,,,,
+Indian_snacks_intake,,,,Diet,,,,,,,
+Croissant_intake,,,,Diet,,,,,,,
+Danish_pastry_intake,,,,Diet,,,,,,,
+Scone_intake,,,,Diet,,,,,,,
+Yogurt_or_ice_cream_consumers,,,,Diet,,,,,,,
+Yogurt_intake,,,,Diet,,,,,,,
+Ice_cream_intake,,,,Diet,,,,,,,
+Dessert_consumers,,,,Diet,,,,,,,
+Milk_based_pudding_intake,,,,Diet,,,,,,,
+Other_milk_based_pudding_intake,,,,Diet,,,,,,,
+Soya_dessert_intake,,,,Diet,,,,,,,
+Fruitcake_intake,,,,Diet,,,,,,,
+Cake_intake,,,,Diet,,,,,,,
+Doughnut_intake,,,,Diet,,,,,,,
+Sponge_pudding_intake,,,,Diet,,,,,,,
+Cheesecake_intake,,,,Diet,,,,,,,
+Other_dessert_intake,,,,Diet,,,,,,,
+Sweet_snack_consumers,,,,Diet,,,,,,,
+Chocolate_bar_intake,,,,Diet,,,,,,,
+White_chocolate_intake,,,,Diet,,,,,,,
+Milk_chocolate_intake,,,,Diet,,,,,,,
+Dark_chocolate_intake,,,,Diet,,,,,,,
+Chocolate_covered_raisin_intake,,,,Diet,,,,,,,
+Chocolate_sweet_intake,,,,Diet,,,,,,,
+Diet_sweets_intake,,,,Diet,,,,,,,
+Sweets_intake,,,,Diet,,,,,,,
+Chocolate_covered_biscuits_intake,,,,Diet,,,,,,,
+Chocolate_biscuits_intake,,,,Diet,,,,,,,
+Sweet_biscuits_intake,,,,Diet,,,,,,,
+Cereal_bar_intake,,,,Diet,,,,,,,
+Other_sweets_intake,,,,Diet,,,,,,,
+Savoury_snack_consumers,,,,Diet,,,,,,,
+Salted_peanuts_intake,,,,Diet,,,,,,,
+Unsalted_peanuts_intake,,,,Diet,,,,,,,
+Salted_nuts_intake,,,,Diet,,,,,,,
+Unsalted_nuts_intake,,,,Diet,,,,,,,
+Seeds_intake,,,,Diet,,,,,,,
+Crisp_intake,,,,Diet,,,,,,,
+Savoury_biscuits_intake,,,,Diet,,,,,,,
+Cheesy_biscuits_intake,,,,Diet,,,,,,,
+Olives_intake,,,,Diet,,,,,,,
+Other_savoury_snack_intake,,,,Diet,,,,,,,
+Soup_consumers,,,,Diet,,,,,,,
+Powdered_or_instant_soup_intake,,,,Diet,,,,,,,
+Canned_soup_intake,,,,Diet,,,,,,,
+Homemade_soup_intake,,,,Diet,,,,,,,
+Starchy_food_consumers,,,,Diet,,,,,,,
+White_pasta_intake,,,,Diet,,,,,,,
+Wholemeal_pasta_intake,,,,Diet,,,,,,,
+White_rice_intake,,,,Diet,,,,,,,
+Brown_rice_intake,,,,Diet,,,,,,,
+Sushi_intake,,,,Diet,,,,,,,
+Snackpot_intake,,,,Diet,,,,,,,
+Couscous_intake,,,,Diet,,,,,,,
+Other_grain_intake,,,,Diet,,,,,,,
+Cheese_consumers,,,,Diet,,,,,,,
+Low_fat_hard_cheese_intake,,,,Diet,,,,,,,
+Hard_cheese_intake,,,,Diet,,,,,,,
+Soft_cheese_intake,,,,Diet,,,,,,,
+Blue_cheese_intake,,,,Diet,,,,,,,
+Low_fat_cheese_spread_intake,,,,Diet,,,,,,,
+Cheese_spread_intake,,,,Diet,,,,,,,
+Cottage_cheese_intake,,,,Diet,,,,,,,
+Feta_intake,,,,Diet,,,,,,,
+Mozzarella_intake,,,,Diet,,,,,,,
+Goats_cheese_intake,,,,Diet,,,,,,,
+Other_cheese_intake,,,,Diet,,,,,,,
+Egg_consumers,,,,Diet,,,,,,,
+Whole_egg_intake,,,,Diet,,,,,,,
+Omelette_intake,,,,Diet,,,,,,,
+Eggs_in_sandwiches_intake,,,,Diet,,,,,,,
+Scotch_egg_intake,,,,Diet,,,,,,,
+Other_egg_intake,,,,Diet,,,,,,,
+Meat_consumers,,,,Diet,,,,,,,
+Sausage_intake,,,,Diet,,,,,,,
+Beef_intake,,,,Diet,,,,,,,
+Pork_intake,,,,Diet,,,,,,,
+Lamb_intake,,,,Diet,,,,,,,
+Crumbed_or_deep_fried_poultry_intake,,,,Diet,,,,,,,
+Poultry_intake,,,,Diet,,,,,,,
+Bacon_intake,,,,Diet,,,,,,,
+Ham_intake,,,,Diet,,,,,,,
+Liver_intake,,,,Diet,,,,,,,
+Other_meat_intake,,,,Diet,,,,,,,
+Fat_removed_from_meat,,,,Diet,,,,,,,
+Skin_removed_from_poultry,,,,Diet,,,,,,,
+Fish_consumer,,,,Diet,,,,,,,
+Tinned_tuna_intake,,,,Diet,,,,,,,
+Oily_fish_intake,,,,Diet,,,,,,,
+Breaded_fish_intake,,,,Diet,,,,,,,
+Battered_fish_intake,,,,Diet,,,,,,,
+White_fish_intake,,,,Diet,,,,,,,
+Prawns_intake,,,,Diet,,,,,,,
+Lobster_or_crab_intake,,,,Diet,,,,,,,
+Shellfish_intake,,,,Diet,,,,,,,
+Other_fish_intake,,,,Diet,,,,,,,
+Vegetarian_sausages_or_burgers_intake,,,,Diet,,,,,,,
+Tofu_intake,,,,Diet,,,,,,,
+Quorn_intake,,,,Diet,,,,,,,
+Other_vegetarian_alternative_intake,,,,Diet,,,,,,,
+Vegetable_consumers,,,,Diet,,,,,,,
+Baked_bean_intake,,,,Diet,,,,,,,
+Pulses_intake,,,,Diet,,,,,,,
+Fried_potatoes_intake,,,,Diet,,,,,,,
+Boiled_or_baked_potatoes_intake,,,,Diet,,,,,,,
+Butter_or_margarine_added_to_potatoes,,,,Diet,,,,,,,
+Mashed_potato_intake,,,,Diet,,,,,,,
+Mixed_vegetable_intake,,,,Diet,,,,,,,
+Vegetable_pieces_intake,,,,Diet,,,,,,,
+Coleslaw_intake,,,,Diet,,,,,,,
+Side_salad_intake,,,,Diet,,,,,,,
+Avocado_intake,,,,Diet,,,,,,,
+Broad_bean_intake,,,,Diet,,,,,,,
+Green_bean_intake,,,,Diet,,,,,,,
+Beetroot_intake,,,,Diet,,,,,,,
+Broccoli_intake,,,,Diet,,,,,,,
+Butternut_squash_intake,,,,Diet,,,,,,,
+Cabbage_or_kale_intake,,,,Diet,,,,,,,
+Carrot_intake,,,,Diet,,,,,,,
+Cauliflower_intake,,,,Diet,,,,,,,
+Celery_intake,,,,Diet,,,,,,,
+Courgette_intake,,,,Diet,,,,,,,
+Cucumber_intake,,,,Diet,,,,,,,
+Garlic_intake,,,,Diet,,,,,,,
+Leek_intake,,,,Diet,,,,,,,
+Lettuce_intake,,,,Diet,,,,,,,
+Mushroom_intake,,,,Diet,,,,,,,
+Onion_intake,,,,Diet,,,,,,,
+Parsnip_intake,,,,Diet,,,,,,,
+Pea_intake,,,,Diet,,,,,,,
+Sweet_pepper_intake,,,,Diet,,,,,,,
+Spinach_intake,,,,Diet,,,,,,,
+Sprouts_intake,,,,Diet,,,,,,,
+Sweetcorn_intake,,,,Diet,,,,,,,
+Sweet_potato_intake,,,,Diet,,,,,,,
+Fresh_tomato_intake,,,,Diet,,,,,,,
+Tinned_tomato_intake,,,,Diet,,,,,,,
+Turnip_or_swede_intake,,,,Diet,,,,,,,
+Watercress_intake,,,,Diet,,,,,,,
+Other_vegetables_intake,,,,Diet,,,,,,,
+Fruit_consumers,,,,Diet,,,,,,,
+Stewed_fruit_intake,,,,Diet,,,,,,,
+Prune_intake,,,,Diet,,,,,,,
+Dried_fruit_intake,,,,Diet,,,,,,,
+Mixed_fruit_intake,,,,Diet,,,,,,,
+Apple_intake,,,,Diet,,,,,,,
+Banana_intake,,,,Diet,,,,,,,
+Berry_intake,,,,Diet,,,,,,,
+Cherry_intake,,,,Diet,,,,,,,
+Grapefruit_intake,,,,Diet,,,,,,,
+Grape_intake,,,,Diet,,,,,,,
+Mango_intake,,,,Diet,,,,,,,
+Melon_intake,,,,Diet,,,,,,,
+Orange_intake,,,,Diet,,,,,,,
+Satsuma_intake,,,,Diet,,,,,,,
+Peach_or_nectarine_intake,,,,Diet,,,,,,,
+Pear_intake,,,,Diet,,,,,,,
+Pineapple_intake,,,,Diet,,,,,,,
+Plum_intake,,,,Diet,,,,,,,
+Other_fruit_intake,,,,Diet,,,,,,,
+Vitamin_supplement_user,,,,Diet,,,,,,,
+Time_spent_doing_vigorous_physical_activity,,,,Physical activity,,,,,,,
+Time_spent_doing_moderate_physical_activity,,,,Physical activity,,,,,,,
+Time_spent_doing_light_physical_activity,,,,Physical activity,,,,,,,
+,,,,,,,,,,,
+,,,,,,,,,,,
+,,,,,,,,,,,
+,,,,,,,,,,,
+,,,,,,,,,,,
+,,,,,,,,,,,
+,,,,,,,,,,,
+,,,,,,,,,,,
+,,,,,,,,,,,
+,,,,,,,,,,,
+,,,,,,,,,,,
+,,,,,,,,,,,
+,,,,,,,,,,,
+,,,,,,,,,,,
+,,,,,,,,,,,
+,,,,,,,,,,,
+,,,,,,,,,,,
+,,,,,,,,,,,
+,,,,,,,,,,,
+,,,,,,,,,,,
+,,,,,,,,,,,
+,,,,,,,,,,,
+,,,,,,,,,,,
+,,,,,,,,,,,
+,,,,,,,,,,,
+,,,,,,,,,,,
+,,,,,,,,,,,
+,,,,,,,,,,,
+,,,,,,,,,,,
+,,,,,,,,,,,
+,,,,,,,,,,,
+,,,,,,,,,,,
+,,,,,,,,,,,
+,,,,,,,,,,,
+,,,,,,,,,,,
+,,,,,,,,,,,
+,,,,,,,,,,,
+,,,,,,,,,,,
+,,,,,,,,,,,
+,,,,,,,,,,,
+,,,,,,,,,,,
+,,,,,,,,,,,
+,,,,,,,,,,,
+,,,,,,,,,,,
+,,,,,,,,,,,
+,,,,,,,,,,,
+,,,,,,,,,,,
+,,,,,,,,,,,
+,,,,,,,,,,,
+,,,,,,,,,,,
+,,,,,,,,,,,
+,,,,,,,,,,,
+,,,,,,,,,,,
+,,,,,,,,,,,
+,,,,,,,,,,,
+,,,,,,,,,,,
+,,,,,,,,,,,
+,,,,,,,,,,,
+,,,,,,,,,,,
+,,,,,,,,,,,
+,,,,,,,,,,,
+,,,,,,,,,,,
+,,,,,,,,,,,
+,,,,,,,,,,,
+,,,,,,,,,,,
+,,,,,,,,,,,
+blow_acceptability_text.0.0,Acceptability of each blow result (text),,,,f.20031.0.0,20031,,,2006-2010,ACE/Physical measures,Spirometry
+blow_acceptability_text.0.1,,,,,f.20031.0.1,,,,,,
+blow_acceptability_text.0.2,,,,,f.20031.0.2,,,,,,
+blow_acceptability.0.0,Acceptability of each blow result,,,,f.3061.0.0,3061,,,2006-2010,ACE/Physical measures,Spirometry
+blow_acceptability.0.1,,,,,f.3061.0.1,,,,,,
+blow_acceptability.0.2,,,,,f.3061.0.2,,,,,,
+number_spirometry_measurements,Number of measurements made,,,,f.3137.0.0,3137,,,2006-2010,ACE/Physical measures,Spirometry
+spirometry_QC,Spirometry QC measure,,,,f.20255.0.0,20255,,,2006-2010,ACE/Physical measures,Spirometry
+blow_ordering.0.0,Ordering of blows,,,,f.3065.0.0,3065,,,2006-2010,ACE/Physical measures,Spirometry
+blow_ordering.0.1,,,,,f.3065.0.1,,,,,,
+blow_ordering.0.2,,,,,f.3065.0.2,,,,,,
+blow_result_ranking.0.0,Result ranking,,,,f.3065.0.0,3059,,,2006-2010,ACE/Physical measures,Spirometry
+blow_result_ranking.0.1,,,,,f.3065.0.1,,,,,,
+blow_result_ranking.0.2,,,,,f.3065.0.2,,,,,,
+blow_data_points.0.0,Data points for blow,,,,f.3066.0.0,3066,,,2006-2010,ACE/Physical measures,Spirometry
+blow_data_points.0.1,,,,,f.3066.0.1,,,,,,
+blow_data_points.0.2,,,,,f.3066.0.2,,,,,,
+FVC.0.0,Forced vital capacity (FVC),,,,f.3062.0.0,3062,,,2006-2010,ACE/Physical measures,Spirometry
+FVC.0.1,,,,,f.3062.0.1,,,,,,
+FVC.0.2,,,,,f.3062.0.2,,,,,,
+,,,,,,,,,,,
+FEV1.0.0,Forced expiratory volume in 1-second (FEV1),,,,f.3063.0.0,3063,,,2006-2010,ACE/Physical measures,Spirometry
+FEV1.0.1,,,,,f.3063.0.1,,,,,,
+FEV1.0.2,,,,,f.3063.0.2,,,,,,
+,,,,,,,,,,,
+peak_expiratory_flow.0.0,Peak expiratory flow (PEF),,,,f.3064.0.0,3064,,,2006-2010,ACE/Physical measures,Spirometry
+peak_expiratory_flow.0.1,,,,,f.3064.0.1,,,,,,
+peak_expiratory_flow.0.2,,,,,f.3064.0.2,,,,,,
+,,,,,,,,,,,
+weight_manual,"Weight, manual entry",,,,f.3160.0.0,3160,,,2006-2010,ACE/Physical measures,Body size measures
+weight_impedance,Weight,,,,f.23098.0.0,23098,,,2006-2010,ACE/Physical measures,Impedance measures
+BMI_impedance,Body mass index (BMI),,,,f.23104.0.0,23104,,,2006-2010,ACE/Physical measures,Impedance measures
+,,,,,,,,,,,
+diastolic_bp_manual,"Diastolic blood pressure, manual reading",,,,f.94.0.0,94,,,2006-2010,ACE/Physical measures,Blood pressure
+systolic_bp_manual,"Systolic blood pressure, manual reading",,,,f.93.0.0,93,,,2006-2010,ACE/Physical measures,Blood pressure
+,,,,,,,,,,,
+pulse_rate_manual,Pulse rate (during blood-pressure measurement),,,,f.95.0.0,95,,,2006-2010,ACE/Physical measures,Blood pressure
+,,,,,,,,,,,
+whole_body_impedance_manual,"Impedance of whole body, manual entry",,,,f.6218.0.0,6218,,,2006-2010,ACE/Physical measures,Impedance measures
+arm_left_impedance_manual,"Impedance of arm, manual entry (left)",,,,f.6222.0.0,6222,,,2006-2010,ACE/Physical measures,Impedance measures
+arm_right_impedance_manual,"Impedance of arm, manual entry (right)",,,,f.6221.0.0,6221,,,2006-2010,ACE/Physical measures,Impedance measures
+leg_left_impedance_manual,"Impedance of leg, manual entry (left)",,,,f.6220.0.0,6220,,,2006-2010,ACE/Physical measures,Impedance measures
+leg_right_impedance_manual,"Impedance of leg, manual entry (right)",,,,f.6219.0.0,6219,,,2006-2010,ACE/Physical measures,Impedance measures
+,,,,,,,,,,,
+heel_sound_speed_manual,"Speed of sound through heel, manual entry",,,,"f.3086.0.0	",3086,,,2006-2010,ACE/Physical measures,Bone-densitometry of heel
+heel_broadband_attenuation_manual,"Heel Broadband ultrasound attenuation (BUA), manual entry",,,,f.3085.0.0,3085,,,2006-2010,ACE/Physical measures,Bone-densitometry of heel
+heel_QUI_manual,"Heel quantitative ultrasound index (QUI), manual entry",,,,f.3083.0.0,3083,,,2006-2010,ACE/Physical measures,Bone-densitometry of heel
+heel_bone_mineral_density_manual,"Heel bone mineral density (BMD), manual entry",,,,"f.3084.0.0	",3084,,,2006-2010,ACE/Physical measures,Bone-densitometry of heel
+heel_bone_ultrasound_t_score_manual,"Heel bone ultrasound T-score, manual entry",,,,f.77.0.0,77,,,2006-2010,ACE/Physical measures,Bone-densitometry of heel
+,,,,,,,,,,,
+heel_sound_speed_manual_left,"Speed of sound through heel, manual entry (left)",,,,f.4142.0.0,4142,,,2006-2010,ACE/Physical measures,Bone-densitometry of heel
+heel_sound_speed_manual_right,"Speed of sound through heel, manual entry (right)",,,,f.4147.0.0,4147,,,2006-2010,ACE/Physical measures,Bone-densitometry of heel
+heel_broadband_attenuation_manual_left,"Heel broadband ultrasound attenuation (BUA), manual entry (left)",,,,"f.4141.0.0	",4141,,,2006-2010,ACE/Physical measures,Bone-densitometry of heel
+heel_broadband_attenuation_manual_right,"Heel broadband ultrasound attenuation (BUA), manual entry (right)",,,,f.4146.0.0,4146,,,2006-2010,ACE/Physical measures,Bone-densitometry of heel
+heel_QUI_manual_left,"Heel quantitative ultrasound index (QUI), manual entry (left)",,,,f.4139.0.0,4139,,,2006-2010,ACE/Physical measures,Bone-densitometry of heel
+heel_QUI_manual_right,"Heel quantitative ultrasound index (QUI), manual entry (right)",,,,f.4144.0.0,4144,,,2006-2010,ACE/Physical measures,Bone-densitometry of heel
+heel_bone_mineral_density_manual_left,"Heel bone mineral density (BMD), manual entry (left)",,,,"f.4140.0.0	",4140,,,2006-2010,ACE/Physical measures,Bone-densitometry of heel
+heel_bone_mineral_density_manual_right,"Heel bone mineral density (BMD), manual entry (right)",,,,f.4145.0.0,4145,,,2006-2010,ACE/Physical measures,Bone-densitometry of heel
+heel_bone_mineral_density_t_score_manual_left,"Heel bone mineral density (BMD) T-score, manual entry (left)",,,,f.4138.0.0,4138,,,2006-2010,ACE/Physical measures,Bone-densitometry of heel
+heel_bone_mineral_density_t_score_manual_right,"Heel bone mineral density (BMD) T-score, manual entry (right)",,,,"f.4143.0.0	",4143,,,2006-2010,ACE/Physical measures,Bone-densitometry of heel
+,,,,,,,,,,,
+bipolar_old,Bipolar disorder status,,,,f.20122.0.0,20122,,,2006-2010,ACE/Touchscreen,Mental health
+MDD_moderate,Probable recurrent major depression (moderate),,,,f.20124.0.0,20124,,,2006-2010,ACE/Touchscreen,Mental health
+MDD_severe,Probable recurrent major depression (severe),,,,f.20125.0.0,20125,,,2006-2010,ACE/Touchscreen,Mental health
+MDD_single_ep,Single episode of probable major depression,,,,f.20123.0.0,20123,,,2006-2010,ACE/Touchscreen,Mental health
+,,,,,,,,,,,
+sex_questions_answered,Answered sexual history questions,,,,f.2129.0.0,2129,,,2006-2010,ACE/Touchscreen,Sexual factors
+,,,,,,,,,,,
+seating_box_height,Seating box height,,,,f.3077.0.0,3077,,,2006-2010,ACE/Physical measures,Body size measures
+,,,,,,,,,,,
+,Job code at visit,,,,,20277,,,2006-2010,ACE/Verbal interview,Employment
