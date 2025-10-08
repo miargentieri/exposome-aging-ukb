@@ -1,0 +1,373 @@
+
+```{r load}
+# load analysis datasets
+load("./data/ACM_final_analysis_datasets_jan_25_2023_all_data.RData")
+
+# load proteomic age clock (ProtAge)
+protAge_data <- read.csv('./data/proteomic_age/pAge_UKB_3k_post_Boruta_scores_UKB_dart_2023-12-28.csv')
+protAge_data$protAgeAccel <- protAge_data$predicted_values - protAge_data$age_granular
+
+model <- lm(protAgeAccel ~ age_granular, data = protAge_data)
+protAge_data$protAgeAccel_resid <- model$residuals
+
+# load XWAS results
+load("./results/ACM_XWAS_results_dec_11_2022_all_sexes_summary.RData")
+
+# load variable categories
+categories <- read.csv("./data/Argentieri UKB dataset data dictionary.csv")
+categories$Category[which(categories$Variable == "gym")] <- "Physical activity"
+```
+
+```{r exposures}
+library(Hmisc)
+
+# get vars significant in XWAS
+exposures <- unique(XWAS_total$Variable[which(XWAS_total$FDR.rep < 0.05)])
+exposures <- c(exposures, "education_years", "ethnicity")
+
+# # load exposures
+# exposures <- read.csv('./results/total_sig_vars_list_jan_31_2023_all_sexes.csv')
+# exposures <- as.vector(unlist(exposures[1]))
+
+# load list of vars not significant in disease sensitivity
+combined <- read.csv("./output/ACM_XWAS_sensitivity_non_sig_vars_list_jan_30_2023_all_sexes.csv")
+combined <- as.vector(combined[[2]])
+
+# list of variables to remove based on PheWAS
+remove <- c(
+    Cs(
+        hshld_parents,
+        hshld_siblings,
+        mobile_phone_use,
+        mobile_phone_duration,
+        mobile_phone_2yrs,
+        fast_driving,
+        hshld_vehicles,
+        facial_aging,
+        number_sex_partners,
+        sex_age_first,
+        folate_supplements
+    )
+)
+
+# combine
+remove <- c(remove, combined)
+
+# remove from exposures list
+exposures <- exposures[exposures %nin% remove]
+
+```
+
+```{r merge}
+
+# merge in protAge clock
+for (k in seq_along(all_data)) {
+    all_data[[k]] <- merge(
+        all_data[[k]],
+        protAge_data,
+        by = "eid",
+        all.x = TRUE,
+        all.y = FALSE,
+        sort = FALSE)
+}
+
+```
+
+```{r variable_prep}
+
+### Create 5-year birth cohorts -------------------------------------------------------------------
+
+# function to calculate birth cohorts
+split_birth_year <- function(x){
+    x$birth_cohort <- ifelse(
+        x$birth_year >= 1935 & x$birth_year < 1940,
+        "1935-1940",
+        ifelse(
+            x$birth_year >= 1940 & x$birth_year < 1945,
+            "1940-1945",
+            ifelse(
+                x$birth_year >= 1945 & x$birth_year < 1950,
+                "1945-1950",
+                ifelse(
+                    x$birth_year >= 1950 & x$birth_year < 1955,
+                    "1950-1955",
+                    ifelse(
+                        x$birth_year >= 1955 & x$birth_year < 1960,
+                        "1955-1960",
+                        ifelse(
+                            x$birth_year >= 1960 & x$birth_year < 1965,
+                            "1960-1965",
+                            ifelse(
+                                x$birth_year >= 1965 & x$birth_year <= 1970, 
+                                "1965-1970", 
+                                NA
+                            )
+                        )
+                    )
+                )
+            )
+        )
+    )
+    
+    x$birth_cohort <- as.factor(x$birth_cohort)
+    return(x)
+}
+
+# execute function across imputed datasets to create 5-year age bands
+all_data <- lapply(all_data, split_birth_year)
+
+### Scale -------------------------------------------------------------------
+
+# scale function
+scale_numeric <- function(x) { 
+    # create logical vector of numeric columns
+    nums <- sapply(x, is.numeric)
+    
+    # list of numeric variables to exclude from scaling
+    scale_exclude <- c(
+      Cs(
+        predicted_values,
+        predicted_scores,
+        protAgeAccel,
+        recruitment_age,
+        age_granular,
+        censor_age,
+        ACM_event_indicator,
+        eid,
+        time,
+        ACM_survival_time,
+        hazard,
+        birth_year
+      )
+    )
+    
+    # exclude those columns I don't want to scale
+    nums[names(nums) %in% scale_exclude] <- FALSE # don't want to scale these
+    
+    # don't bother scaling other numeric cols not in analysis
+    nums[names(nums) %nin% exposures] <- FALSE 
+
+    # perform scale
+    x[nums] <- scale(x[nums],
+                     scale = TRUE)
+    
+    # return entire dataset
+    return(x)
+}
+
+# scale desired numeric columns
+all_data <- lapply(all_data, scale_numeric)
+
+# set contrasts for regression
+set_contrasts <- function(x) {
+    
+    # find ordered variables
+    ord <- sapply(x, is.ordered)
+    
+    # set contrasts to only linear
+    for (k in seq(ncol(x[ord]))) {
+        contrasts(x[ord][[k]], how.many = 1) <- contr.poly(nlevels(x[ord][[k]]))
+    }
+    
+    return(x)
+    
+}
+
+# run in datasets
+all_data <- lapply(all_data, set_contrasts)
+
+```
+
+
+```{r run associations}
+library(pbapply)
+library(mice)
+library(data.table)
+
+# set global R options
+options(scipen = 999) # turn off scientific notation
+pboptions(type = "timer", char = "=") # initialize progress bar
+
+covar_list <- c("recruitment_age", "recruitment_centre", "education_years", "hshld_income", "ethnicity")
+
+## Model function ----
+
+model_function <- function(x){
+    
+  models <- lapply(all_data, function(y)
+    lm(as.formula(
+      paste0(
+        "protAgeAccel ~ sex +
+            recruitment_age +
+            recruitment_centre + education_years + ethnicity + ",
+        x)
+    ), data = y)
+  )
+  
+  pool <- pool(models)
+  rm(models)
+  return(pool)
+}
+  
+## Run models ----
+
+# create list to store model results
+pool_models <- as.list(seq(1,length(exposures))) 
+# run models
+pool_models <- pblapply(
+  exposures, 
+  FUN = model_function
+)
+
+## Summaries ----
+
+# get list of summaries for all pooled models (minus 3 above that overlap with covariates)
+smry <- lapply(pool_models,
+               summary,
+               conf.int = TRUE,
+               conf.level = 0.95)
+
+# get results just for exposure
+for (k in seq(1,length(exposures))) {
+  smry[[k]] <- smry[[k]][grepl(exposures[k], smry[[k]]$term, fixed = TRUE), ]
+}
+
+# extract all model summaries from the lists and convert to single data frame of estimates
+models_total <- rbindlist(smry)
+
+# rename column for exposure
+names(models_total)[names(models_total) == "term"] <- "Exposure"
+
+# rename column for betas
+names(models_total)[names(models_total) == "estimate"] <- "Beta"
+
+# rename column for beta 95% CIs
+names(models_total)[names(models_total) == "2.5 %"] <- "Beta_2.5%"
+names(models_total)[names(models_total) == "97.5 %"] <- "Beta_97.5%"
+
+## Categories ----
+
+## map variable names to results
+models_total$Variable <- NA
+# create vector of variable names
+variables <- sort(exposures)
+
+# add variable names based on partial match with XWAS output exposure column with variable response level 
+# (e.g., match "alcohol_daily_intake" to "alcohol_daily_intakeDaily or almost daily")
+for(j in seq_along(variables)) {
+  models_total$Variable[models_total$Exposure %in% models_total$Exposure[substring(
+    models_total$Exposure,
+    1,
+    nchar(variables[[j]])) == variables[[j]]]] <- variables[[j]]
+}
+
+## add in categories according to match with variable name
+models_total <- merge(models_total,  
+                      subset(categories, select = c("Variable", "Category")), 
+                      by = "Variable", 
+                      all = F, 
+                      sort = F)
+
+## FDR ----
+
+## calculate FDR in the discovery analyses using benjamini-hochberg method
+models_total$FDR <- p.adjust(models_total$p.value, 
+                             method = "BH")
+
+## Save ----
+
+# Re-order columns
+models_total <- subset(models_total,
+                       select = c("Exposure",
+                                  "Beta",
+                                  "Beta_2.5%",
+                                  "Beta_97.5%",
+                                  "p.value",
+                                  "FDR",
+                                  "std.error",
+                                  "statistic",
+                                  "df",
+                                  "Variable",
+                                  "Category"
+                       ))
+
+### output results
+options(scipen = 999)
+# subset results to columns for table
+models_table <-
+  subset(models_total,
+         select = c("Exposure",
+                    "Variable",
+                    "Category",
+                    "Beta",
+                    "Beta_2.5%",
+                    "Beta_97.5%",
+                    "p.value",
+                    "FDR"))
+
+# make column for replicated yes/no
+models_table$Significant <-
+  ifelse(models_table$FDR < 0.05,
+         "Yes",
+         "No")
+
+# make nicer column names
+colnames(models_table) <-
+  c("Exposure",
+    "Variable",
+    "Category",
+    "Beta",
+    "Beta 2.5% CI",
+    "Beta 97.5% CI",
+    "P-value",
+    "FDR",
+    "Significant"
+  )
+
+models_table$Exposure <- gsub(".L", "", models_table$Exposure, fixed = TRUE)
+
+```
+
+```{r compare_to_mortality}
+mort_table <- XWAS_total
+mort_table$mort_beta <- mort_table$Beta
+
+merged_table <- merge(
+  models_table,
+  subset(mort_table, select = c('Exposure', 'mort_beta')),
+  by = 'Exposure',
+  all.x = TRUE,
+  all.y = FALSE
+)
+
+# get list of sig vars
+sig_exposures <- as.vector(merged_table$Exposure[which(merged_table$FDR < 0.05)])
+sig_vars <- unique(as.vector(merged_table$Variable[which(merged_table$FDR < 0.05)]))
+
+# percentage of variables still associated after FDR
+length(sig_vars) / length(exposures)
+
+# subset to sig exposures
+sig_table <- merged_table[merged_table$Significant == 'Yes']
+
+# index of where vars agree and disagree in sign of beta between mortality and protAge
+agree_idx <- which(sig_table$Beta * sig_table$mort_beta > 0)
+disagree_idx <- which(sig_table$Beta * sig_table$mort_beta < 0)
+
+agree_sig <- unique(sig_table$Variable[agree_idx])
+disagree_sig <- unique(sig_table$Variable[disagree_idx])
+disagree_sig <- disagree_sig[disagree_sig %nin% agree_sig]
+
+# remove from sig vars list
+sig_vars <- sig_vars[sig_vars %nin% disagree_sig]
+
+# percentage of variables still associated after FDR
+length(sig_vars) / length(exposures)
+
+```
+
+```{r save}
+write.csv(merged_table, file = paste0(paste0("./output/protAge_associations_", Sys.Date()), ".csv"))
+write.csv(sig_vars, row.names = FALSE, file = paste0(paste0("./output/protAge_sig_vars_", Sys.Date()), ".csv"))
+```
+
