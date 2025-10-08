@@ -1,0 +1,298 @@
+
+```{r load}
+
+# set path
+path <- "."
+
+# imputation data dictionary
+dict1 <- read.csv("./dictionaries/imputation_data_dictionary_aug_03_2022.csv")
+
+dict1 <- dict1[c(2:4, 6:8)]
+
+# XWAS data dictionary
+dict2 <- read.csv("./exposome_data_dictionary_jan_25_2023.csv")
+
+dict3 <- dict3[which(dict3$Description != ""), ]
+
+# load female XWAS results
+load(paste0(path,"/results/sex-specific results/ACM_XWAS_results_dec_11_2022_women_summary.RData"))
+XWAS_total_female <- XWAS_total
+
+# load male XWAS results
+load(paste0(path,"/results/sex-specific results/ACM_XWAS_results_dec_11_2022_men_summary.RData"))
+XWAS_total_male <- XWAS_total
+
+# load disease sensitivity interaction results
+load(paste0(path, "/results/ACM_XWAS_sensitivity_results_jan_30_2022_interactions_intermediates_no_blood_all_data_summary.RData"))
+
+XWAS_total_disease <- XWAS_total
+
+# load survival time exclusion results
+load(paste0(path, "/results/ACM_XWAS_sensitivity_results_dec_11_2022_exclusions_time_all_data_summary_4yrs.RData"))
+
+XWAS_total_excl <- XWAS_total
+
+# load pooled XWAS results
+load(paste0(path,"/results/ACM_XWAS_results_dec_11_2022_all_sexes_summary.RData"))
+XWAS_total_pooled <- XWAS_total
+
+# PheWAS data dictionary
+dict3 <- read.csv("./dictionaries/PheWAS_data_dictionary_jan_30_2023.csv")
+
+# load biomarker results
+load("./results/biomarker_analysis_results_2024-08-15_resid.RData")
+
+# load disease results
+load("./results/all_disease_analysis_output_with_cs_2024-08-20.RData")
+
+# load protAge results
+protAge_df <- read.csv("./output/protAge_associations_2024-08-15.csv")
+protAge_df <- protAge_df[-1]
+protAge_df <- protAge_df[1:(length(protAge_df)-1)]
+
+
+date <- "aug_20_2022"
+```
+
+```{r PheWAS}
+
+# get file names
+files <- list.files(path = "./output/PheWAS",
+                    pattern = "*.RData", 
+                    full.names = TRUE)
+
+# get variable names
+var_names <- rep("a", length(files))
+    
+for (k in seq_along(files)) {
+
+    # set var name
+    var_names[k] <- gsub("_PheWAs_03_13_2023_summary.RData", "", files[k])
+    var_names[k] <- gsub("_PheWAs_03_14_2023_summary.RData", "", var_names[k])
+    var_names[k] <- gsub("_PheWAs_03_15_2023_summary.RData", "", var_names[k])
+    var_names[k] <- gsub("_PheWAs_03_16_2023_summary.RData", "", var_names[k])
+    var_names[k] <- gsub("_PheWAs_03_17_2023_summary.RData", "", var_names[k])
+    var_names[k] <- gsub(paste0(path, "/output/PheWAS/"), "", var_names[k])
+    
+}
+
+# list to store summary statistics
+file_list <- list(rep(1, length(files)))
+
+for (k in seq_along(files)) {
+
+    # load PheWAS file
+    load(files[k])
+
+    # set var name
+    var_name <- gsub("_PheWAs_03_13_2023_summary.RData", "", files[k])
+    var_name <- gsub("_PheWAs_03_14_2023_summary.RData", "", var_name)
+    var_name <- gsub("_PheWAs_03_15_2023_summary.RData", "", var_name)
+    var_name <- gsub("_PheWAs_03_16_2023_summary.RData", "", var_name)
+    var_name <- gsub("_PheWAs_03_17_2023_summary.RData", "", var_name)
+    var_name <- gsub(paste0(path, "/output/PheWAS?"), "", var_name)
+
+    # set options
+    options(digits = 2)
+    
+    # remove insulin V2
+    XWAS_total <- XWAS_total[which(XWAS_total$Variable != "insulin_v2"), ]
+    
+    # redo FDR
+    XWAS_total$FDR <- p.adjust(XWAS_total$p.value, method = "BH")
+    
+    file_list[[k]] <- XWAS_total
+    
+    rm(XWAS_total)
+    
+    # print progress
+    cat("\r", paste("completed:", paste(k, length(files), sep = "/")))
+}
+
+var_names <- gsub("./output/PheWAS/", "", var_names)
+
+var_names[var_names == "chronotype.Definitely.a..morning..person"] <- "chronotype.Definitely.morning" 
+var_names[var_names == "chronotype.Definitely.an..evening..person"] <- "chronotype.Definitely.evening" 
+var_names[var_names == "chronotype.More.an..evening..than.a..morning..person"] <- "chronotype.more.evening" 
+
+var_names[var_names == "mobile_phone_2yrs.I.didn.t.use.a.mobile.phone.two.years.ago"] <- "mobile_phone_2yrs.didn.t.use" 
+var_names[var_names == "mobile_phone_2yrs.Yes..use.is.now.less.frequent"] <- "mobile_phone_2yrs.less.frequent" 
+var_names[var_names == "mobile_phone_2yrs.Yes..use.is.now.more.frequent"] <- "mobile_phone_2yrs.more.frequent" 
+
+var_names[var_names == "natural_environment_buffer_1000m"] <- "nat_env_buffer_1000m" 
+var_names[var_names == "natural_environment_buffer_300m"] <- "nat_env_buffer_300m" 
+
+var_names[var_names == "own_or_rent.Live.in.accommodation.rent.free"] <- "own_or_rent.Live.rent.free" 
+var_names[var_names == "own_or_rent.Own.with.a.mortgage"] <- "own_or_rent.Own.with.mortgage" 
+var_names[var_names == "own_or_rent.Pay.part.rent.and.part.mortgage..shared.ownership."] <- "own_or_rent.Part.rent.part.mortgage." 
+var_names[var_names == "own_or_rent.Rent...from.local.authority..local.council..housing.association"] <- "own_or_rent.Rent.from.local.council" 
+var_names[var_names == "own_or_rent.Rent...from.private.landlord.or.letting.agency"] <- "own_or_rent.Rent.from.private.landlord" 
+
+var_names[var_names == "accommodation_type.Mobile.or.temporary.structure..i.e..caravan."] <- "accommodation_type.Mobile.structure" 
+
+
+names(file_list) <- var_names
+
+```
+
+```{r excel}
+library(glue)
+
+options(java.parameters = "-Xmx16000m")
+gc()
+
+# export all results as single xslx file
+# library(xlsx)
+library(openxlsx)
+
+# data dictionary 1
+write.xlsx(
+    dict1,
+    file = paste0(paste0(paste0(path, "/output/supplement/supplementary_files_"), date), ".xlsx"),
+    sheetName = "SF1 - Imputation data dictionary",
+    row.names = FALSE
+)
+
+# data dictionary 2
+write.xlsx(
+    dict2,
+    file = paste0(paste0(paste0(path, "/output/supplement/supplementary_files_"), date), ".xlsx"),
+    sheetName = "SF2 - XWAS data dictionary",
+    append = TRUE,
+    row.names = FALSE
+)
+
+# female XWAS
+write.xlsx(
+    XWAS_total_female,
+    file = paste0(paste0(paste0(path, "/output/supplement/supplementary_files_"), date), ".xlsx"),
+    sheetName = "SF3 - Female XWAS output",
+    append = TRUE,
+    row.names = FALSE
+)
+
+# male XWAS
+write.xlsx(
+    XWAS_total_male,
+    file = paste0(paste0(paste0(path, "/output/supplement/supplementary_files_"), date), ".xlsx"),
+    sheetName = "SF4 - Male XWAS output",
+    append = TRUE,
+    row.names = FALSE
+)
+
+# pooled XWAS
+write.xlsx(
+    XWAS_total_pooled,
+    file = paste0(paste0(paste0(path, "/output/supplement/supplementary_files_"), date), ".xlsx"),
+    sheetName = "SF5 - Pooled XWAS output",
+    append = TRUE,
+    row.names = FALSE
+)
+
+# disease sensitivity
+write.xlsx(
+    XWAS_total_disease,
+    file = paste0(paste0(paste0(path, "/output/supplement/supplementary_files_"), date), ".xlsx"),
+    sheetName = "SF6 - Disease sensitivity output",
+    append = TRUE,
+    row.names = FALSE
+)
+
+# survival time exclusion
+write.xlsx(
+    XWAS_total_excl,
+    file = paste0(paste0(paste0(path, "/output/supplement/supplementary_files_"), date), ".xlsx"),
+    sheetName = "SF7 - Survival time exclusion output",
+    append = TRUE,
+    row.names = FALSE
+)
+
+# protAge results
+write.xlsx(
+    protAge_df,
+    file = glue("./supplement/supplementary_files_{Sys.Date()}.xlsx"),
+    sheetName = "SF8 - Proteomic aging analysis",
+    # append = TRUE,
+    rowNames = FALSE
+)
+
+trim_string <- function(s) {
+  if (nchar(s) > 31) {
+    s <- substr(s, 1, 31)  # Trim the string if it's longer than 31 characters
+  }
+  return(s)
+}
+
+prefix <- "SF"
+suffix <- seq(9, 9 + length(biomarker_results))
+titles <- paste0(prefix, suffix)
+
+# append all biomarker results sheets
+for (k in seq(1:length(biomarker_results))) {
+  name <- paste(titles[k], names(biomarker_results[k]), sep = " - ")
+  name <- trim_string(name)
+
+    write.xlsx(
+    biomarker_results[[k]],
+    file = glue("./supplement/supplementary_files_{Sys.Date()}.xlsx"),
+    sheetName = name,
+    overwrite = FALSE,
+    append = TRUE,
+    rowNames = FALSE
+    )
+}
+
+prefix <- "SF"
+suffix <- seq(9 + length(biomarker_results), (9 + length(biomarker_results)) + length(disease_results))
+titles <- paste0(prefix, suffix)
+
+
+# append all disease results sheets
+for (k in seq(1:length(disease_results))) {
+  name <- paste(titles[k], names(disease_results[k]), sep = " - ")
+  name <- trim_string(name)
+  
+    write.xlsx(
+    disease_results[[k]],
+    file = glue("./supplement/supplementary_files_{Sys.Date()}.xlsx"),
+    sheetName = name,
+    append = TRUE,
+    rowNames = FALSE
+    )
+    
+    invisible(gc())
+}
+
+# data dictionary 3
+name <- "SF62 - PheWAS data dictionary"
+addWorksheet(wb, name) 
+writeData(wb, sheet = name, x = dict3, colNames = TRUE)
+
+# append all PheWAS results sheets
+
+prefix <- "SF"
+suffix <- seq(63, 63 + length(file_list))
+titles <- paste0(prefix, suffix)
+
+for (k in seq(1:length(file_list))) {
+    # write.xlsx(
+    # file_list[[k]],
+    # file = glue("./supplement/supplementary_files_{Sys.Date()}.xlsx"),
+    # sheetName = paste(titles[k], names(file_list[k]), sep = " - "),
+    # append = TRUE,
+    # row.names = FALSE
+    # )
+  
+  name <- paste(titles[k], names(file_list[k]), sep = " - ")
+  name <- trim_string(name)
+  
+  addWorksheet(wb, name) 
+  writeData(wb, sheet = name, x = file_list[[k]], colNames = TRUE)
+    
+}
+
+
+# Save the workbook
+saveWorkbook(wb, glue("./supplement/supplementary_files_{Sys.Date()}.xlsx"), overwrite = TRUE)
+
+```
